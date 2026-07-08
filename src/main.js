@@ -793,6 +793,154 @@ function deleteSelectedStep() {
   appendLog("info", `删除步骤：${removed.name}`);
 }
 
+function renderStepParamPanel(item) {
+  const panel = $("#step-param-panel");
+  if (!panel) return;
+  for (const element of panel.querySelectorAll("[data-step-types]")) {
+    const types = element.dataset.stepTypes.split(/\s+/).filter(Boolean);
+    element.hidden = !types.includes(item.type);
+  }
+  for (const element of panel.querySelectorAll("[data-param-for]")) {
+    const types = element.dataset.paramFor.split(/\s+/).filter(Boolean);
+    element.hidden = !types.includes(item.type);
+  }
+
+  $("#step-param-summary").textContent = paramSummaryForStep(item);
+  $("#param-hotkey").value = item.type === "hotkey" ? item.target || "" : "";
+
+  const point = parsePointText(item.target) || parsePointText(item.command);
+  $("#param-click-x").value = point?.x ?? "";
+  $("#param-click-y").value = point?.y ?? "";
+  $("#param-click-button").value = normalizedButton(item.command);
+  $("#param-click-mode").value = "hwnd-message";
+
+  $("#param-image-threshold").value = commandValue(item.command, "threshold") || "0.86";
+  $("#param-image-button").value = normalizedButton(item.command);
+  $("#param-image-point").value = commandValue(item.command, "point") || "center";
+  $("#param-image-target").value = ["image_click", "wait_image", "detect_page"].includes(item.type)
+    ? item.target || ""
+    : "";
+
+  $("#param-delay-ms").value = durationMsFromText(item.target) ?? item.timeoutMs ?? "";
+  $("#param-delay-reason").value = commandValue(item.command, "reason") || "";
+  $("#param-condition-target").value = item.type === "condition" ? item.target || "" : "";
+  $("#param-condition-guard").value = commandValue(item.command, "guard") || "";
+  $("#param-retry-target").value = item.type === "retry_until" ? item.target || "" : "";
+  $("#param-retry-interval").value = durationMsFromText(commandValue(item.command, "interval")) ?? "";
+}
+
+function paramSummaryForStep(item) {
+  const asset = assetForStep(item);
+  if (["image_click", "wait_image", "detect_page"].includes(item.type)) {
+    const threshold = commandValue(item.command, "threshold") || "0.86";
+    return asset ? `${asset.name} · threshold ${threshold}` : `未绑定图片目标 · threshold ${threshold}`;
+  }
+  if (item.type === "click") {
+    const point = parsePointText(item.target) || parsePointText(item.command);
+    return point ? `点击 ${point.x},${point.y}` : asset?.roi ? "点击绑定 ROI 中心" : "需要坐标或 ROI";
+  }
+  if (item.type === "hotkey") return item.target || "输入快捷键";
+  if (item.type === "delay") return `${durationMsFromText(item.target) ?? item.timeoutMs ?? 0} ms`;
+  return "保留为编排语义，当前后端不直接输入";
+}
+
+function bindStepParamEditor() {
+  $("#param-hotkey").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.target = event.target.value.trim();
+      item.command = commandWithValues(item.command, { mode: "hwnd-key" });
+    });
+  });
+  $("#param-click-x").addEventListener("input", updateClickPointFromParams);
+  $("#param-click-y").addEventListener("input", updateClickPointFromParams);
+  $("#param-click-button").addEventListener("change", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, {
+        button: event.target.value,
+        mode: "hwnd-message",
+      });
+    });
+  });
+  $("#param-image-threshold").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, { threshold: event.target.value.trim() });
+    });
+  });
+  $("#param-image-button").addEventListener("change", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, { button: event.target.value });
+    });
+  });
+  $("#param-image-point").addEventListener("change", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, { point: event.target.value });
+    });
+  });
+  $("#param-image-target").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.target = event.target.value.trim();
+    });
+  });
+  $("#param-delay-ms").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      const ms = normalizedNonNegativeInteger(event.target.value);
+      if (ms != null) {
+        item.target = `${ms}ms`;
+        item.timeoutMs = ms;
+      }
+    });
+  });
+  $("#param-delay-reason").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, { reason: event.target.value.trim() });
+    });
+  });
+  $("#param-condition-target").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.target = event.target.value.trim();
+    });
+  });
+  $("#param-condition-guard").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithValues(item.command, { guard: event.target.value.trim() });
+    });
+  });
+  $("#param-retry-target").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.target = event.target.value.trim();
+    });
+  });
+  $("#param-retry-interval").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      const ms = normalizedNonNegativeInteger(event.target.value);
+      if (ms != null) item.command = commandWithValues(item.command, { interval: `${ms}ms` });
+    });
+  });
+}
+
+function updateClickPointFromParams() {
+  updateSelectedStepFromParams((item) => {
+    const x = normalizedNonNegativeInteger($("#param-click-x").value);
+    const y = normalizedNonNegativeInteger($("#param-click-y").value);
+    if (x != null && y != null) {
+      item.target = `x=${x},y=${y}`;
+      item.command = commandWithValues(item.command, { mode: "hwnd-message" });
+    }
+  });
+}
+
+function updateSelectedStepFromParams(mutator) {
+  const item = selectedStep();
+  if (!item) return;
+  mutator(item);
+  $("#step-target").value = item.target || "";
+  $("#step-command").value = item.command || "";
+  $("#step-timeout").value = String(item.timeoutMs ?? 0);
+  markDirty("draft");
+  renderSteps();
+  renderStepParamPanel(item);
+}
+
 function renderStepEditor() {
   const item = selectedStep();
   $("#step-editor-empty").hidden = Boolean(item);
@@ -809,6 +957,7 @@ function renderStepEditor() {
   $("#step-on-fail").value = item.onFail || "stop";
   $("#step-on-success").value = item.onSuccess || "next";
   $("#step-notes").value = item.notes || "";
+  renderStepParamPanel(item);
 }
 
 function bindStepEditor() {
@@ -818,6 +967,7 @@ function bindStepEditor() {
     item[field] = coerce(event.target.value);
     markDirty("draft");
     renderSteps();
+    if (["target", "command"].includes(field)) renderStepParamPanel(item);
   };
   $("#step-name").addEventListener("input", update("name"));
   $("#step-target").addEventListener("input", update("target"));
@@ -848,10 +998,86 @@ function bindStepEditor() {
     item.retry = defaults.retry;
     item.onFail = defaults.onFail;
     item.onSuccess = defaults.onSuccess;
+    if (!["image_click", "wait_image", "detect_page", "click"].includes(item.type)) {
+      item.assetId = "";
+    }
     markDirty("draft");
     renderSteps();
     renderStepEditor();
   });
+}
+
+function commandParts(command) {
+  return String(command || "")
+    .split(/[;,]/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const splitAt = part.indexOf("=");
+      if (splitAt < 0) return { raw: part };
+      const key = part.slice(0, splitAt).trim();
+      const value = part.slice(splitAt + 1).trim();
+      return key ? { key, value } : { raw: part };
+    });
+}
+
+function commandValue(command, key) {
+  const expected = key.toLowerCase();
+  for (const part of commandParts(command)) {
+    if (part.key?.toLowerCase() === expected && part.value) return part.value;
+  }
+  return "";
+}
+
+function commandWithValues(command, updates) {
+  const updateKeys = new Set(Object.keys(updates).map((key) => key.toLowerCase()));
+  const parts = commandParts(command).filter((part) => !part.key || !updateKeys.has(part.key.toLowerCase()));
+  for (const [key, value] of Object.entries(updates)) {
+    const text = String(value ?? "").trim();
+    if (text) parts.push({ key, value: text });
+  }
+  return parts.map((part) => (part.key ? `${part.key}=${part.value}` : part.raw)).join("; ");
+}
+
+function parsePointText(value) {
+  let x = null;
+  let y = null;
+  for (const part of String(value || "")
+    .split(/[,\s;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)) {
+    const [rawKey, rawValue] = part.split("=");
+    if (!rawKey || !/^\d+$/.test(rawValue || "")) continue;
+    if (rawKey.toLowerCase() === "x") x = Number(rawValue);
+    if (rawKey.toLowerCase() === "y") y = Number(rawValue);
+  }
+  return x != null && y != null ? { x, y } : null;
+}
+
+function durationMsFromText(value) {
+  const text = String(value ?? "").trim().toLowerCase();
+  if (!text) return null;
+  let match = text.match(/^(\d+)ms$/);
+  if (match) return Number(match[1]);
+  match = text.match(/^(\d+(?:\.\d+)?)s$/);
+  if (match) return Math.round(Number(match[1]) * 1000);
+  return /^\d+$/.test(text) ? Number(text) : null;
+}
+
+function normalizedNonNegativeInteger(value) {
+  if (String(value ?? "").trim() === "") return null;
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function normalizedButton(command) {
+  const value = commandValue(command, "button").toLowerCase();
+  if (["right", "r", "secondary"].includes(value)) return "right";
+  return "left";
+}
+
+function assetForStep(item) {
+  return item?.assetId ? state.workspace.assets.find((asset) => asset.id === item.assetId) || null : null;
 }
 
 async function refreshPrivilege() {
@@ -1428,7 +1654,7 @@ function renderAssets() {
   }
 }
 
-function validateWorkflow(workflow = activeWorkflow()) {
+function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
   const issues = [];
   const warnings = [];
   if (!workflow) issues.push("没有当前任务");
@@ -1449,11 +1675,53 @@ function validateWorkflow(workflow = activeWorkflow()) {
     if (!item.target.trim() && !["delay", "snapshot"].includes(item.type)) {
       issues.push(`${prefix} 缺少目标`);
     }
-    if (item.timeoutMs < 0) issues.push(`${prefix} 超时不能为负数`);
-    if (item.retry < 0) issues.push(`${prefix} 重试不能为负数`);
+    if (!Number.isFinite(item.timeoutMs) || item.timeoutMs < 0) issues.push(`${prefix} 超时必须是非负数`);
+    if (!Number.isFinite(item.retry) || item.retry < 0) issues.push(`${prefix} 重试必须是非负数`);
     if (item.type === "hotkey" && !/[+]/.test(item.target)) warnings.push(`${prefix} 快捷键建议使用 ALT+N 这类组合格式`);
+    validateStepRuntimeFields(item, prefix, issues, warnings, mode);
   }
   return { issues, warnings };
+}
+
+function validateStepRuntimeFields(item, prefix, issues, warnings, mode) {
+  const button = commandValue(item.command, "button");
+  if (button && !["left", "l", "primary", "right", "r", "secondary"].includes(button.toLowerCase())) {
+    issues.push(`${prefix} 鼠标键只支持 left/right`);
+  }
+  const threshold = commandValue(item.command, "threshold");
+  if (threshold) {
+    const value = Number(threshold);
+    if (!Number.isFinite(value) || value < 0 || value > 1) {
+      issues.push(`${prefix} 匹配阈值必须在 0 到 1 之间`);
+    }
+  }
+  const point = parsePointText(item.target) || parsePointText(item.command);
+  const asset = assetForStep(item);
+  const hasRoi = Boolean(asset?.roi);
+  const hasImage = Boolean(asset?.dataUrl);
+  if (item.type === "click" && !point && !hasRoi) {
+    const message = `${prefix} 后台点击需要 x/y 坐标或绑定 ROI 目标`;
+    mode === "background" ? issues.push(message) : warnings.push(message);
+  }
+  if (["image_click", "wait_image", "detect_page"].includes(item.type) && !hasImage) {
+    const message = `${prefix} 图像步骤需要 Ctrl+V 图片或 ROI 裁剪图`;
+    mode === "background" ? issues.push(message) : warnings.push(message);
+  }
+  if (item.type === "image_click" && !hasImage && (point || hasRoi)) {
+    warnings.push(`${prefix} 没有图片时会退化为直接点击坐标/ROI，请确认这是有意行为`);
+  }
+  if (item.type === "ocr_assert" && mode === "background") {
+    issues.push(`${prefix} OCR 后端尚未实现，请先停用或替换为图像/点击步骤`);
+  }
+  if (item.type === "delay" && durationMsFromText(item.target) == null && item.timeoutMs <= 0) {
+    issues.push(`${prefix} 延迟步骤需要有效等待时长`);
+  }
+  if (item.type === "retry_until") {
+    const interval = commandValue(item.command, "interval");
+    if (interval && durationMsFromText(interval) == null) {
+      issues.push(`${prefix} 重试间隔格式应为 800ms 或 1s`);
+    }
+  }
 }
 
 function validateActiveWorkflow() {
@@ -1522,7 +1790,7 @@ function runSelected(mode) {
       appendLog("warn", `${target.display} 没有可运行任务`);
       continue;
     }
-    const validation = validateWorkflowQueue(workflows);
+    const validation = validateWorkflowQueue(workflows, mode);
     if (validation.issues.length) {
       appendLog("warn", `${target.display} 队列校验失败：${validation.issues.join("；")}`);
       continue;
@@ -1535,11 +1803,11 @@ function runSelected(mode) {
   setStatus(launched ? `已启动 ${launched} 个窗口队列` : "没有启动任何窗口队列");
 }
 
-function validateWorkflowQueue(workflows) {
+function validateWorkflowQueue(workflows, mode = "definition") {
   const issues = [];
   const warnings = [];
   for (const [index, workflow] of workflows.entries()) {
-    const result = validateWorkflow(workflow);
+    const result = validateWorkflow(workflow, mode);
     for (const issue of result.issues) issues.push(`${index + 1}.${workflow.name}: ${issue}`);
     for (const warning of result.warnings) warnings.push(`${index + 1}.${workflow.name}: ${warning}`);
   }
@@ -1693,7 +1961,7 @@ function modeLabel(mode) {
 }
 
 function dryRunDelay(item) {
-  if (item.type === "delay") return Math.max(120, Math.min(480, Number.parseInt(item.target) || item.timeoutMs || 200));
+  if (item.type === "delay") return Math.max(120, Math.min(480, durationMsFromText(item.target) ?? item.timeoutMs ?? 200));
   return Math.max(90, Math.min(260, Math.round((item.timeoutMs || 1000) / 24)));
 }
 
@@ -1834,6 +2102,7 @@ window.addEventListener("paste", handlePasteImage);
 
 bindWorkflowInputs();
 bindStepEditor();
+bindStepParamEditor();
 appendLog("info", "本地任务模型初始化中");
 await setupCloseToTray();
 await loadWorkspace();

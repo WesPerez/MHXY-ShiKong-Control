@@ -192,14 +192,103 @@
                     <input id="step-enabled" type="checkbox" />
                     启用此步骤
                   </label>
-                  <label>
-                    目标
+                  <label class="raw-field">
+                    兼容目标
                     <input id="step-target" type="text" />
                   </label>
-                  <label>
-                    动作参数
+                  <label class="raw-field">
+                    兼容参数
                     <input id="step-command" type="text" />
                   </label>
+                  <section id="step-param-panel" class="param-panel" aria-label="结构化步骤参数">
+                    <div class="param-panel-head">
+                      <strong>常用参数</strong>
+                      <span id="step-param-summary">按步骤类型同步到目标和动作参数</span>
+                    </div>
+                    <div class="param-grid" data-step-types="hotkey">
+                      <label class="wide">
+                        快捷键
+                        <input id="param-hotkey" type="text" placeholder="ALT+N" />
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="click">
+                      <label>
+                        X
+                        <input id="param-click-x" type="number" min="0" step="1" />
+                      </label>
+                      <label>
+                        Y
+                        <input id="param-click-y" type="number" min="0" step="1" />
+                      </label>
+                      <label>
+                        鼠标键
+                        <select id="param-click-button">
+                          <option value="left">左键</option>
+                          <option value="right">右键</option>
+                        </select>
+                      </label>
+                      <label>
+                        投递模式
+                        <select id="param-click-mode">
+                          <option value="hwnd-message">hwnd-message</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="image_click wait_image detect_page">
+                      <label>
+                        匹配阈值
+                        <input id="param-image-threshold" type="number" min="0" max="1" step="0.01" />
+                      </label>
+                      <label data-param-for="image_click">
+                        点击键
+                        <select id="param-image-button">
+                          <option value="left">左键</option>
+                          <option value="right">右键</option>
+                        </select>
+                      </label>
+                      <label data-param-for="image_click">
+                        点击点
+                        <select id="param-image-point">
+                          <option value="center">模板中心</option>
+                        </select>
+                      </label>
+                      <label>
+                        识别目标
+                        <input id="param-image-target" type="text" placeholder="button.target 或 page.home.ready" />
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="delay">
+                      <label>
+                        等待时长 ms
+                        <input id="param-delay-ms" type="number" min="0" step="100" />
+                      </label>
+                      <label>
+                        原因
+                        <input id="param-delay-reason" type="text" placeholder="animation" />
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="condition">
+                      <label>
+                        状态目标
+                        <input id="param-condition-target" type="text" placeholder="state.flag" />
+                      </label>
+                      <label>
+                        Guard
+                        <input id="param-condition-guard" type="text" placeholder="true 或 >0" />
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="retry_until">
+                      <label>
+                        等待目标
+                        <input id="param-retry-target" type="text" placeholder="page.target.ready" />
+                      </label>
+                      <label>
+                        间隔 ms
+                        <input id="param-retry-interval" type="number" min="0" step="100" />
+                      </label>
+                    </div>
+                    <p class="hint" data-step-types="snapshot restore ocr_assert">此类型当前没有可直接投递的后台输入；会保留在任务编排和日志中。</p>
+                  </section>
                   <label>
                     成功确认
                     <input id="step-expect" type="text" />

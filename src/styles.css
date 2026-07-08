@@ -752,6 +752,49 @@ label {
   gap: 8px;
 }
 
+.param-panel {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #30383d;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(100, 195, 180, 0.08), transparent 44%),
+    #121719;
+  padding: 9px;
+}
+
+.param-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.param-panel-head strong {
+  color: #f1ecdf;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.param-panel-head span {
+  overflow: hidden;
+  color: #87949c;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.step-editor .raw-field {
+  order: 20;
+}
+
 .hint {
   color: #87949c;
   font-size: 12px;
@@ -989,6 +1032,7 @@ progress::-webkit-progress-value {
   .step-toolbar,
   .form-grid,
   .inline-fields,
+  .param-grid,
   .capture-actions,
   .library-actions,
   .run-actions {
