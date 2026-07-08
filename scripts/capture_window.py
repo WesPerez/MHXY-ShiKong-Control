@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import ctypes
 import json
-import sys
 import time
 from ctypes import wintypes
 from pathlib import Path
@@ -34,7 +33,6 @@ MK_LBUTTON = 0x0001
 MAPVK_VSC_TO_VK_EX = 3
 CWP_SKIPINVISIBLE = 0x0001
 CWP_SKIPDISABLED = 0x0002
-SW_RESTORE = 9
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 TOKEN_QUERY = 0x0008
 TOKEN_ELEVATION_CLASS = 20
@@ -107,14 +105,6 @@ user32.GetDC.argtypes = [wintypes.HWND]
 user32.GetDC.restype = wintypes.HDC
 user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
 user32.ReleaseDC.restype = ctypes.c_int
-user32.IsIconic.argtypes = [wintypes.HWND]
-user32.IsIconic.restype = wintypes.BOOL
-user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
-user32.ShowWindow.restype = wintypes.BOOL
-user32.BringWindowToTop.argtypes = [wintypes.HWND]
-user32.BringWindowToTop.restype = wintypes.BOOL
-user32.SetForegroundWindow.argtypes = [wintypes.HWND]
-user32.SetForegroundWindow.restype = wintypes.BOOL
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
 user32.PostMessageW.restype = wintypes.BOOL
 user32.MapVirtualKeyW.argtypes = [wintypes.UINT, wintypes.UINT]
@@ -206,7 +196,6 @@ def main() -> int:
     parser.add_argument("--title", default=DEFAULT_TITLE)
     parser.add_argument("--index", type=int, default=0, help="0-based index among matching windows")
     parser.add_argument("--list", action="store_true")
-    parser.add_argument("--focus", action="store_true")
     parser.add_argument("--click", nargs=2, type=int, metavar=("X", "Y"))
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--output", type=Path, default=None)
@@ -233,7 +222,7 @@ def main() -> int:
     window = windows[args.index]
     hwnd = wintypes.HWND(window["hwnd"])
     privilege_block = input_privilege_block(current_elevated, window)
-    if (args.focus or args.click) and privilege_block:
+    if args.click and privilege_block:
         print(
             json.dumps(
                 {
@@ -242,7 +231,6 @@ def main() -> int:
                     "currentProcessElevated": current_elevated,
                     "window": window,
                     "requested": {
-                        "focus": bool(args.focus),
                         "click": args.click,
                     },
                 },
@@ -251,12 +239,6 @@ def main() -> int:
             )
         )
         return 2
-    if args.focus:
-        try:
-            focus_window(hwnd)
-        except OSError as error:
-            return print_input_error("focus", error, current_elevated, window, args)
-        time.sleep(max(0.05, args.delay))
     if args.click:
         try:
             click_client(hwnd, args.click[0], args.click[1])
@@ -286,7 +268,7 @@ def input_privilege_block(current_elevated: bool, window: dict[str, object]) -> 
     if window.get("elevated") is True and not current_elevated:
         return (
             "target window is elevated but capture_window.py is not; Windows UIPI "
-            "blocks hwnd-targeted focus/click/key messages. Re-run the helper or "
+            "blocks hwnd-targeted click/key messages. Re-run the helper or "
             "the Tauri control app as administrator."
         )
     return None
@@ -309,7 +291,6 @@ def print_input_error(
                 "currentProcessElevated": current_elevated,
                 "window": window,
                 "requested": {
-                    "focus": bool(args.focus),
                     "click": args.click,
                 },
             },
@@ -377,13 +358,6 @@ def is_control_app_window(title: str, process_name_value: str) -> bool:
     if any(marker in title for marker in CONTROL_TITLE_MARKERS):
         return True
     return process_name_value.lower() in CONTROL_PROCESS_NAMES
-
-
-def focus_window(hwnd: wintypes.HWND) -> None:
-    if user32.IsIconic(hwnd):
-        user32.ShowWindow(hwnd, SW_RESTORE)
-    user32.BringWindowToTop(hwnd)
-    user32.SetForegroundWindow(hwnd)
 
 
 def click_client(hwnd: wintypes.HWND, x: int, y: int) -> None:

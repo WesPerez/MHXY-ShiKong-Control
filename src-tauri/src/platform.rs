@@ -74,16 +74,6 @@ pub fn capture_client_rgb(_hwnd: isize) -> Result<RgbFrame, String> {
 }
 
 #[cfg(windows)]
-pub fn focus_window_by_hwnd(hwnd: isize) -> Result<(), String> {
-    windows_impl::focus_window_by_hwnd(hwnd)
-}
-
-#[cfg(not(windows))]
-pub fn focus_window_by_hwnd(_hwnd: isize) -> Result<(), String> {
-    Err("window focus is only implemented on Windows".to_string())
-}
-
-#[cfg(windows)]
 pub fn close_window_by_hwnd(hwnd: isize) -> Result<(), String> {
     windows_impl::close_window_by_hwnd(hwnd)
 }
@@ -225,13 +215,12 @@ mod windows_impl {
             UI::Input::KeyboardAndMouse::{MapVirtualKeyW, MAPVK_VSC_TO_VK_EX},
             UI::Shell::ShellExecuteW,
             UI::WindowsAndMessaging::{
-                BringWindowToTop, ChildWindowFromPointEx, EnumWindows, GetClientRect, GetWindow,
-                GetWindowLongW, GetWindowRect, GetWindowTextLengthW, GetWindowTextW,
-                GetWindowThreadProcessId, IsChild, IsIconic, IsWindow, IsWindowVisible,
-                PostMessageW, SetForegroundWindow, ShowWindow, CWP_SKIPDISABLED, CWP_SKIPINVISIBLE,
-                GWL_EXSTYLE, GW_OWNER, SW_RESTORE, SW_SHOWNORMAL, WM_CHAR, WM_CLOSE, WM_KEYDOWN,
-                WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_SYSKEYDOWN, WM_SYSKEYUP,
-                WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+                ChildWindowFromPointEx, EnumWindows, GetClientRect, GetWindow, GetWindowLongW,
+                GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+                IsChild, IsWindow, IsWindowVisible, PostMessageW, CWP_SKIPDISABLED,
+                CWP_SKIPINVISIBLE, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL, WM_CHAR, WM_CLOSE,
+                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_SYSKEYDOWN,
+                WM_SYSKEYUP, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
             },
         },
     };
@@ -352,20 +341,6 @@ mod windows_impl {
             ordinal: 1,
             display: String::new(),
         })
-    }
-
-    pub fn focus_window_by_hwnd(hwnd: isize) -> Result<(), String> {
-        unsafe {
-            let hwnd = HWND(hwnd as *mut c_void);
-            if IsIconic(hwnd).as_bool() {
-                let _ = ShowWindow(hwnd, SW_RESTORE);
-            }
-            let _ = BringWindowToTop(hwnd);
-            SetForegroundWindow(hwnd)
-                .as_bool()
-                .then_some(())
-                .ok_or_else(|| "SetForegroundWindow failed".to_string())
-        }
     }
 
     pub fn close_window_by_hwnd(hwnd: isize) -> Result<(), String> {

@@ -17,9 +17,8 @@ use inventory::{
     MaaTask, PipelineCompatReport, TemplateCaptureResult, TemplateCoverageReport,
 };
 use platform::{
-    capture_client_rgb, current_process_elevated, focus_window_by_hwnd, list_windows,
-    restart_current_process_as_admin, window_elevated_by_hwnd, window_identity_by_hwnd,
-    CaptureSource, RgbFrame, WindowIdentity,
+    capture_client_rgb, current_process_elevated, list_windows, restart_current_process_as_admin,
+    window_elevated_by_hwnd, window_identity_by_hwnd, CaptureSource, RgbFrame, WindowIdentity,
 };
 use runtime::{cancel_task, run_task, RunTaskRequest, TaskRunReport};
 use serde::{Deserialize, Serialize};
@@ -278,11 +277,6 @@ fn game_launch_status() -> Result<GameLaunchStatus, String> {
     let project = project_root()?;
     let config = read_game_launch_config(&project)?;
     Ok(build_game_launch_status(&project, &config))
-}
-
-#[tauri::command]
-fn focus_window(hwnd: isize) -> Result<(), String> {
-    focus_window_by_hwnd(hwnd)
 }
 
 #[tauri::command]
@@ -2511,7 +2505,6 @@ fn main() {
             restart_as_admin,
             launch_game_client,
             game_launch_status,
-            focus_window,
             capture_window_preview,
             preview_client_roi,
             save_window_snapshot,

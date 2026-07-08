@@ -285,21 +285,6 @@ function updateActiveMeta(override = null) {
     : "未选择窗口";
 }
 
-async function focusWindow() {
-  const target = activeWindow();
-  if (!target) {
-    setStatus("需要先选择窗口");
-    return;
-  }
-  try {
-    await invoke("focus_window", { hwnd: Number(target.hwnd) });
-    setStatus(`已置前：${target.display}`);
-  } catch (error) {
-    setStatus(`置前失败：${error}`);
-    appendLog("error", `置前失败：${error}`);
-  }
-}
-
 async function saveSnapshot() {
   const target = activeWindow();
   if (!target) {
@@ -636,7 +621,6 @@ $("#refresh-windows").addEventListener("click", refreshWindows);
 $("#launch-game-client").addEventListener("click", launchGameClient);
 $("#select-game-windows").addEventListener("click", selectGameWindows);
 $("#restart-admin").addEventListener("click", restartAsAdmin);
-$("#focus-window").addEventListener("click", focusWindow);
 $("#capture-preview").addEventListener("click", capturePreview);
 $("#save-snapshot").addEventListener("click", saveSnapshot);
 $("#load-offline-image").addEventListener("click", loadOfflineImage);
