@@ -5,6 +5,8 @@ mod inventory;
 mod ocr;
 mod platform;
 mod runtime;
+mod single_instance;
+mod tray;
 mod vision;
 
 use base64::{engine::general_purpose, Engine as _};
@@ -30,6 +32,7 @@ use std::{
     thread,
     time::{SystemTime, UNIX_EPOCH},
 };
+use tauri::Manager;
 use vision::merge_objects;
 
 const MAA_SOURCE_DIR: &str = "Maa_MHXY_MG";
@@ -2469,7 +2472,39 @@ fn main() {
     if let Some(code) = maybe_run_headless_acceptance_cli() {
         std::process::exit(code);
     }
+    if single_instance::notify_existing_instance(single_instance::DEFAULT_NOTIFY_TIMEOUT) {
+        return;
+    }
     tauri::Builder::default()
+        .setup(|app| {
+            tray::setup(app)?;
+            let app_handle = app.handle().clone();
+            match single_instance::start_listener(move || {
+                let handle = app_handle.clone();
+                let _ = app_handle.run_on_main_thread(move || {
+                    tray::show_main_window(&handle);
+                });
+            }) {
+                Ok(guard) => {
+                    app.manage(guard);
+                }
+                Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
+                    if single_instance::notify_existing_instance(
+                        single_instance::DEFAULT_NOTIFY_TIMEOUT,
+                    ) {
+                        app.handle().exit(0);
+                    }
+                }
+                Err(_) => {}
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            tray::handle_window_event(window, event);
+        })
+        .on_menu_event(|app, event| {
+            tray::handle_menu_event(app, event);
+        })
         .invoke_handler(tauri::generate_handler![
             list_game_windows,
             privilege_status,
@@ -2625,8 +2660,7 @@ mod tests {
         )
         .expect("write rejected");
 
-        let names =
-            completed_task_names_for_hwnd(&project, 1234, false, None).expect("scan logs");
+        let names = completed_task_names_for_hwnd(&project, 1234, false, None).expect("scan logs");
         let _ = std::fs::remove_dir_all(&project);
 
         assert!(names.contains("可信任务"));
@@ -2659,7 +2693,10 @@ mod tests {
         });
 
         assert!(task_report_matches_window_identity(&camel, Some(&expected)));
-        assert!(task_report_matches_window_identity(&legacy, Some(&expected)));
+        assert!(task_report_matches_window_identity(
+            &legacy,
+            Some(&expected)
+        ));
     }
 
     #[test]
