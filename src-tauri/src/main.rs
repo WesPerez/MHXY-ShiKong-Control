@@ -8,7 +8,7 @@ use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
     capture_client_rgb, current_process_elevated, list_windows, post_hotkey, post_mouse_click,
-    HwndPoint, RgbFrame,
+    window_for_hwnd, HwndPoint, RgbFrame,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -124,6 +124,25 @@ struct WorkflowStepInput {
     roi: Option<RoiRect>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpectedWindowInput {
+    #[serde(default)]
+    hwnd: Option<isize>,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    process_id: Option<u32>,
+    #[serde(default)]
+    process_name: Option<String>,
+    #[serde(default)]
+    client_width: Option<u32>,
+    #[serde(default)]
+    client_height: Option<u32>,
+    #[serde(default)]
+    elevated: Option<bool>,
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RoiRect {
@@ -162,6 +181,7 @@ const DEFAULT_IMAGE_THRESHOLD: f32 = 0.86;
 const MAX_TEMPLATE_DATA_URL_CHARS: usize = 5 * 1024 * 1024;
 const MAX_TEMPLATE_BYTES: usize = 4 * 1024 * 1024;
 const MAX_TEMPLATE_PIXELS: u64 = 2_000_000;
+const WINDOW_CLIENT_SIZE_TOLERANCE: u32 = 2;
 
 #[tauri::command]
 fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, String> {
@@ -238,7 +258,9 @@ fn save_workflow_workspace(
 fn execute_workflow_step(
     hwnd: isize,
     step: WorkflowStepInput,
+    expected_window: Option<ExpectedWindowInput>,
 ) -> Result<StepDispatchResult, String> {
+    validate_expected_window(hwnd, expected_window.as_ref())?;
     let step_type = step.step_type.trim().to_ascii_lowercase();
     let mut result = match step_type.as_str() {
         "hotkey" => dispatch_hotkey_step(hwnd, &step),
@@ -368,6 +390,85 @@ fn default_workflow_workspace() -> Value {
         "assets": [],
         "runHistory": []
     })
+}
+
+fn validate_expected_window(
+    hwnd: isize,
+    expected: Option<&ExpectedWindowInput>,
+) -> Result<(), String> {
+    let Some(expected) = expected else {
+        return Ok(());
+    };
+    let current = window_for_hwnd(hwnd)?;
+    compare_expected_window(&current, expected)
+}
+
+fn compare_expected_window(
+    current: &platform::AppWindow,
+    expected: &ExpectedWindowInput,
+) -> Result<(), String> {
+    if let Some(hwnd) = expected.hwnd.filter(|value| *value != 0) {
+        if current.hwnd != hwnd {
+            return Err(format!(
+                "target window identity mismatch: hwnd changed from {} to {}",
+                hwnd, current.hwnd
+            ));
+        }
+    }
+    if let Some(title) = non_empty_option(expected.title.as_deref()) {
+        if current.title != title {
+            return Err(format!(
+                "target window identity mismatch: title changed from {:?} to {:?}",
+                title, current.title
+            ));
+        }
+    }
+    if let Some(process_id) = expected.process_id.filter(|value| *value != 0) {
+        if current.process_id != process_id {
+            return Err(format!(
+                "target window identity mismatch: pid changed from {} to {}",
+                process_id, current.process_id
+            ));
+        }
+    }
+    if let Some(process_name) = non_empty_option(expected.process_name.as_deref()) {
+        if !current.process_name.eq_ignore_ascii_case(process_name) {
+            return Err(format!(
+                "target window identity mismatch: process changed from {:?} to {:?}",
+                process_name, current.process_name
+            ));
+        }
+    }
+    if let Some(client_width) = expected.client_width.filter(|value| *value > 0) {
+        if current.client_width.abs_diff(client_width) > WINDOW_CLIENT_SIZE_TOLERANCE {
+            return Err(format!(
+                "target window identity mismatch: client width changed from {} to {}",
+                client_width, current.client_width
+            ));
+        }
+    }
+    if let Some(client_height) = expected.client_height.filter(|value| *value > 0) {
+        if current.client_height.abs_diff(client_height) > WINDOW_CLIENT_SIZE_TOLERANCE {
+            return Err(format!(
+                "target window identity mismatch: client height changed from {} to {}",
+                client_height, current.client_height
+            ));
+        }
+    }
+    if let Some(elevated) = expected.elevated {
+        if current.elevated != Some(elevated) {
+            return Err(format!(
+                "target window identity mismatch: elevation changed from {:?} to {:?}",
+                Some(elevated),
+                current.elevated
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn non_empty_option(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
 }
 
 fn dispatch_hotkey_step(
@@ -948,6 +1049,26 @@ fn timestamp() -> u64 {
 mod tests {
     use super::*;
 
+    fn fake_window() -> platform::AppWindow {
+        platform::AppWindow {
+            hwnd: 42,
+            title: "梦幻西游：时空".to_string(),
+            process_id: 1234,
+            process_name: "MyGame_x64r".to_string(),
+            left: 0,
+            top: 0,
+            width: 1280,
+            height: 760,
+            client_left: 8,
+            client_top: 31,
+            client_width: 1264,
+            client_height: 720,
+            elevated: Some(true),
+            ordinal: 1,
+            display: "梦幻西游：时空 #1".to_string(),
+        }
+    }
+
     fn image_step(command: &str) -> WorkflowStepInput {
         WorkflowStepInput {
             step_type: "image_click".to_string(),
@@ -959,6 +1080,123 @@ mod tests {
             asset_data_url: None,
             roi: None,
         }
+    }
+
+    #[test]
+    fn accepts_matching_expected_window_identity() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("mygame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        assert!(compare_expected_window(&fake_window(), &expected).is_ok());
+    }
+
+    #[test]
+    fn rejects_changed_expected_window_identity() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(9999),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("pid changed"));
+    }
+
+    #[test]
+    fn ignores_empty_expected_window_fields() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(0),
+            title: Some(" ".to_string()),
+            process_id: Some(0),
+            process_name: None,
+            client_width: Some(0),
+            client_height: Some(0),
+            elevated: None,
+        };
+        assert!(compare_expected_window(&fake_window(), &expected).is_ok());
+    }
+
+    #[test]
+    fn allows_small_client_size_drift() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1262),
+            client_height: Some(722),
+            elevated: Some(true),
+        };
+        assert!(compare_expected_window(&fake_window(), &expected).is_ok());
+    }
+
+    #[test]
+    fn rejects_large_client_size_drift() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1261),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("client width changed"));
+    }
+
+    #[test]
+    fn rejects_title_mismatch() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("另一个窗口".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("title changed"));
+    }
+
+    #[test]
+    fn rejects_process_name_mismatch() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("OtherProcess".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("process changed"));
+    }
+
+    #[test]
+    fn rejects_elevation_mismatch() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(false),
+        };
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("elevation changed"));
     }
 
     #[test]

@@ -61,6 +61,18 @@ pub fn list_windows(_title_needle: &str) -> Result<Vec<AppWindow>, String> {
 }
 
 #[cfg(windows)]
+pub fn window_for_hwnd(hwnd: isize) -> Result<AppWindow, String> {
+    windows_impl::window_for_hwnd(hwnd)
+}
+
+#[cfg(not(windows))]
+pub fn window_for_hwnd(hwnd: isize) -> Result<AppWindow, String> {
+    Err(format!(
+        "hwnd window identity is only implemented on Windows: {hwnd}"
+    ))
+}
+
+#[cfg(windows)]
 pub fn capture_client_rgb(hwnd: isize) -> Result<RgbFrame, String> {
     windows_impl::capture_client_rgb(hwnd)
 }
@@ -221,6 +233,15 @@ mod windows_impl {
             };
         }
         Ok(records)
+    }
+
+    pub fn window_for_hwnd(hwnd: isize) -> Result<AppWindow, String> {
+        unsafe {
+            let hwnd = checked_hwnd(hwnd)?;
+            record_for_window(hwnd).ok_or_else(|| {
+                "target window identity is unavailable or no longer eligible".to_string()
+            })
+        }
     }
 
     fn is_control_app_window(item: &AppWindow) -> bool {

@@ -4,6 +4,7 @@ import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
 const WORKSPACE_SCHEMA_VERSION = 3;
+const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 
 const stepTypes = [
   ["detect_page", "检测页面"],
@@ -146,9 +147,7 @@ const state = {
   roiDragStart: null,
   workspace: createSeedWorkspace(),
   workspacePath: "",
-  workspaceLoadedFromDisk: false,
   selectedStepId: null,
-  selectedAssetId: null,
   saveTimer: null,
   sessions: {},
   sessionSerial: 0,
@@ -333,7 +332,6 @@ async function loadWorkspace() {
   try {
     const result = await invoke("load_workflow_workspace");
     state.workspacePath = result.path;
-    state.workspaceLoadedFromDisk = result.existed;
     state.workspace = normalizeWorkspace(result.data);
     if (!state.workspace.workflows.length) {
       state.workspace = createSeedWorkspace();
@@ -442,6 +440,7 @@ function normalizeAssignments(value, workflows = state.workspace.workflows) {
 
 function normalizeAssignment(hwnd, value, workflowIds = new Set(state.workspace.workflows.map((item) => item.id))) {
   const source = value && typeof value === "object" ? value : {};
+  const windowIdentity = normalizeWindowIdentity(source.windowIdentity || { ...source, hwnd });
   const legacyWorkflowId = source.workflowId ? String(source.workflowId) : "";
   const queue = Array.isArray(source.queue)
     ? source.queue.map(normalizeQueueItem)
@@ -452,12 +451,30 @@ function normalizeAssignment(hwnd, value, workflowIds = new Set(state.workspace.
     hwnd: source.hwnd ?? hwnd,
     title: String(source.title || ""),
     processId: source.processId ?? null,
+    processName: String(source.processName || windowIdentity.processName || ""),
+    clientWidth: Number(source.clientWidth || windowIdentity.clientWidth || 0),
+    clientHeight: Number(source.clientHeight || windowIdentity.clientHeight || 0),
+    elevated: typeof source.elevated === "boolean" ? source.elevated : windowIdentity.elevated,
     display: String(source.display || hwnd),
+    windowIdentity,
     queue: queue
       .filter((item) => workflowIds.has(item.workflowId))
       .map((item, index) => ({ ...item, order: index + 1 })),
     assignedAt: String(source.assignedAt || new Date().toISOString()),
     updatedAt: String(source.updatedAt || source.assignedAt || new Date().toISOString()),
+  };
+}
+
+function normalizeWindowIdentity(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    hwnd: Number(source.hwnd) || 0,
+    title: String(source.title || ""),
+    processId: Number(source.processId) || 0,
+    processName: String(source.processName || ""),
+    clientWidth: Number(source.clientWidth) || 0,
+    clientHeight: Number(source.clientHeight) || 0,
+    elevated: typeof source.elevated === "boolean" ? source.elevated : null,
   };
 }
 
@@ -549,7 +566,12 @@ function ensureAssignment(target) {
   assignment.hwnd = target.hwnd;
   assignment.title = target.title;
   assignment.processId = target.processId;
+  assignment.processName = target.processName || "";
+  assignment.clientWidth = Number(target.clientWidth) || 0;
+  assignment.clientHeight = Number(target.clientHeight) || 0;
+  assignment.elevated = typeof target.elevated === "boolean" ? target.elevated : null;
   assignment.display = target.display;
+  assignment.windowIdentity = windowIdentityForTarget(target);
   assignment.queue = Array.isArray(assignment.queue) ? assignment.queue.map(normalizeQueueItem) : [];
   assignment.updatedAt = now;
   state.workspace.assignments[key] = assignment;
@@ -812,7 +834,6 @@ function renderStepParamPanel(item) {
   $("#param-click-x").value = point?.x ?? "";
   $("#param-click-y").value = point?.y ?? "";
   $("#param-click-button").value = normalizedButton(item.command);
-  $("#param-click-mode").value = "hwnd-message";
 
   $("#param-image-threshold").value = commandValue(item.command, "threshold") || "0.86";
   $("#param-image-button").value = normalizedButton(item.command);
@@ -1642,7 +1663,6 @@ function renderAssets() {
       </span>
     `;
     row.addEventListener("click", () => {
-      state.selectedAssetId = asset.id;
       bindAssetToSelectedStep(asset);
       markDirty("asset");
       renderAssets();
@@ -1786,6 +1806,13 @@ function runSelected(mode) {
     const hasWindowQueue = Boolean(assignment?.queue?.length);
     const source = hasWindowQueue ? "queue" : "active";
     const workflows = hasWindowQueue ? queuedWorkflows : activeWorkflow() ? [activeWorkflow()] : [];
+    if (hasWindowQueue) {
+      const mismatch = windowIdentityMismatchReason(assignment.windowIdentity, windowIdentityForTarget(target));
+      if (mismatch) {
+        appendLog("warn", `${target.display} 队列窗口身份不匹配：${mismatch}；请刷新窗口后重新分配任务`);
+        continue;
+      }
+    }
     if (!workflows.length) {
       appendLog("warn", `${target.display} 没有可运行任务`);
       continue;
@@ -1836,7 +1863,7 @@ function startRunForWindow(target, workflows, mode, source) {
     source,
     hwnd: target.hwnd,
     display: target.display,
-    processId: target.processId,
+    windowIdentity: windowIdentityForTarget(target),
     workflowIds: workflowCopies.map((workflow) => workflow.id),
     workflowNames: workflowCopies.map((workflow) => workflow.name),
     workflowId: workflowCopies[0]?.id || "",
@@ -1905,6 +1932,7 @@ async function runSession(session, workflows) {
     queueLength: session.workflowIds.length,
     status: session.status,
     totalSteps: session.totalSteps,
+    windowIdentity: session.windowIdentity,
     startedAt: session.startedAt,
     endedAt: session.endedAt,
   });
@@ -1924,7 +1952,41 @@ async function executeBackendStep(session, item) {
   return invoke("execute_workflow_step", {
     hwnd: Number(session.hwnd),
     step: payload,
+    expectedWindow: session.windowIdentity || null,
   });
+}
+
+function windowIdentityForTarget(target) {
+  return {
+    hwnd: Number(target.hwnd) || 0,
+    title: target.title || "",
+    processId: Number(target.processId) || 0,
+    processName: target.processName || "",
+    clientWidth: Number(target.clientWidth) || 0,
+    clientHeight: Number(target.clientHeight) || 0,
+    elevated: typeof target.elevated === "boolean" ? target.elevated : null,
+  };
+}
+
+function windowIdentityMismatchReason(expected, actual) {
+  const left = normalizeWindowIdentity(expected);
+  const right = normalizeWindowIdentity(actual);
+  if (left.hwnd && right.hwnd && left.hwnd !== right.hwnd) return `hwnd ${left.hwnd} -> ${right.hwnd}`;
+  if (left.title && right.title && left.title !== right.title) return `title ${left.title} -> ${right.title}`;
+  if (left.processId && right.processId && left.processId !== right.processId) return `pid ${left.processId} -> ${right.processId}`;
+  if (left.processName && right.processName && left.processName.toLowerCase() !== right.processName.toLowerCase()) {
+    return `process ${left.processName} -> ${right.processName}`;
+  }
+  if (left.clientWidth && right.clientWidth && Math.abs(left.clientWidth - right.clientWidth) > WINDOW_CLIENT_SIZE_TOLERANCE) {
+    return `clientWidth ${left.clientWidth} -> ${right.clientWidth}`;
+  }
+  if (left.clientHeight && right.clientHeight && Math.abs(left.clientHeight - right.clientHeight) > WINDOW_CLIENT_SIZE_TOLERANCE) {
+    return `clientHeight ${left.clientHeight} -> ${right.clientHeight}`;
+  }
+  if (typeof left.elevated === "boolean" && typeof right.elevated === "boolean" && left.elevated !== right.elevated) {
+    return `elevated ${left.elevated} -> ${right.elevated}`;
+  }
+  return "";
 }
 
 function backendStepPayload(item) {

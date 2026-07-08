@@ -41,6 +41,13 @@ FOCUS_TOKENS = [
     "BringWindowToTop",
     "ShowWindow",
 ]
+IDENTITY_TOKENS = [
+    "ExpectedWindowInput",
+    "validate_expected_window",
+    "window_for_hwnd",
+    "expectedWindow",
+    "windowIdentity",
+]
 
 
 def main() -> int:
@@ -54,6 +61,12 @@ def main() -> int:
     forbidden = scan_tokens(files, FORBIDDEN_TOKENS)
     hwnd = scan_tokens(files, HWND_TOKENS)
     focus = scan_tokens(files, FOCUS_TOKENS)
+    identity = scan_tokens(files, IDENTITY_TOKENS)
+    identity_required = bool(hwnd)
+    identity_seen = {hit["token"] for hit in identity}
+    identity_missing = [
+        token for token in IDENTITY_TOKENS if identity_required and token not in identity_seen
+    ]
     report = {
         "version": 1,
         "projectRoot": str(project_root),
@@ -61,11 +74,15 @@ def main() -> int:
         "forbiddenTokens": forbidden,
         "hwndInputEvidence": hwnd,
         "focusAffectingEvidence": focus,
-        "passed": not forbidden and not focus,
+        "identityCheckEvidence": identity,
+        "identityCheckRequired": identity_required,
+        "identityCheckMissing": identity_missing,
+        "passed": not forbidden and not focus and not identity_missing,
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
             "Focus-affecting APIs indicate foreground-control risk. "
-            "hwndInputEvidence may be empty when this build has no runtime input dispatcher."
+            "hwndInputEvidence may be empty when this build has no runtime input dispatcher. "
+            "When hwnd input exists, expectedWindow identity evidence must also be present."
         ),
     }
     if args.json:
@@ -75,12 +92,17 @@ def main() -> int:
         print(f"forbiddenTokens={len(forbidden)}")
         print(f"hwndInputEvidence={len(hwnd)}")
         print(f"focusAffectingEvidence={len(focus)}")
+        print(f"identityCheckEvidence={len(identity)}")
+        print(f"identityCheckMissing={len(identity_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
         if focus:
             for hit in focus:
                 print(f"FORBIDDEN_FOCUS {hit['path']}:{hit['line']} {hit['token']}")
+        if identity_missing:
+            for token in identity_missing:
+                print(f"MISSING_IDENTITY {token}")
     return 0 if report["passed"] else 2
 
 
