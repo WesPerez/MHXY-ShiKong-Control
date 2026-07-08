@@ -15,7 +15,6 @@ const stepTypes = [
   ["delay", "延迟等待"],
   ["condition", "条件判断"],
   ["retry_until", "重试直到"],
-  ["paste_image", "粘贴图片"],
   ["snapshot", "截图记录"],
   ["restore", "恢复状态"],
 ];
@@ -111,16 +110,6 @@ const stepDefaults = {
     timeoutMs: 8000,
     retry: 5,
     onFail: "restore",
-    onSuccess: "next",
-  },
-  paste_image: {
-    name: "粘贴图片",
-    target: "asset.clipboard",
-    command: "Ctrl+V creates asset",
-    expect: "asset.bound",
-    timeoutMs: 500,
-    retry: 0,
-    onFail: "skip",
     onSuccess: "next",
   },
   snapshot: {
@@ -282,7 +271,7 @@ function createSampleWorkflows() {
       step("realm-06", "condition", "检查次数是否可用", "state.realm_attempts", "guard=>0", "continue"),
       step("realm-07", "hotkey", "打开背包检查材料", "ALT+E", "mode=hwnd-key", "bag.open"),
       step("realm-08", "wait_image", "查找秘境材料", "item.realm_material", "threshold=0.86", "visible"),
-      step("realm-09", "paste_image", "绑定材料样图", "asset.realm_material", "Ctrl+V creates asset", "asset.bound"),
+      step("realm-09", "wait_image", "确认材料图标", "asset.realm_material", "threshold=0.84", "material.visible"),
       step("realm-10", "click", "选择材料格", "grid.material_slot", "button=left; mode=hwnd-message", "item.selected"),
       step("realm-11", "retry_until", "等待准备就绪", "state.realm_ready", "interval=1000ms", "true", 9000, 5),
       step("realm-12", "snapshot", "记录准备状态", "window.client", "dry-run log only", "snapshot.recorded"),
@@ -1463,9 +1452,6 @@ function validateWorkflow(workflow = activeWorkflow()) {
     if (item.timeoutMs < 0) issues.push(`${prefix} 超时不能为负数`);
     if (item.retry < 0) issues.push(`${prefix} 重试不能为负数`);
     if (item.type === "hotkey" && !/[+]/.test(item.target)) warnings.push(`${prefix} 快捷键建议使用 ALT+N 这类组合格式`);
-    if (item.type === "paste_image" && !item.assetId && item.target === "asset.clipboard") {
-      warnings.push(`${prefix} 尚未绑定粘贴图片资产`);
-    }
   }
   return { issues, warnings };
 }

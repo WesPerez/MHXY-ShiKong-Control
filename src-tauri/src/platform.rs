@@ -329,18 +329,18 @@ mod windows_impl {
     ) -> Result<HwndInputResult, String> {
         unsafe {
             let hwnd = checked_hwnd(hwnd)?;
-            let (down, up, wparam) = match button.trim().to_ascii_lowercase().as_str() {
-                "right" | "r" | "secondary" => (WM_RBUTTONDOWN, WM_RBUTTONUP, MK_RBUTTON_FLAG),
-                _ => (WM_LBUTTONDOWN, WM_LBUTTONUP, MK_LBUTTON_FLAG),
-            };
+            let (_, _, width, height) = client_rect_on_screen(hwnd)
+                .ok_or_else(|| "target client rect unavailable".to_string())?;
+            validate_client_point(&point, width, height)?;
+            let button = parse_mouse_button(button)?;
             let lparam = point_lparam(point.x, point.y)?;
             post(hwnd, WM_MOUSEMOVE, WPARAM(0), lparam)?;
-            post(hwnd, down, WPARAM(wparam as usize), lparam)?;
-            post(hwnd, up, WPARAM(0), lparam)?;
+            post(hwnd, button.down, WPARAM(button.wparam as usize), lparam)?;
+            post(hwnd, button.up, WPARAM(0), lparam)?;
             Ok(HwndInputResult {
                 hwnd: hwnd.0 as isize,
                 sent_messages: 3,
-                detail: format!("posted {button} click at {},{}", point.x, point.y),
+                detail: format!("posted {} click at {},{}", button.label, point.x, point.y),
             })
         }
     }
@@ -390,6 +390,45 @@ mod windows_impl {
             return Err(format!("point is outside WM_* coordinate range: {x},{y}"));
         }
         Ok(LPARAM(((y as isize) << 16) | (x as isize & 0xffff)))
+    }
+
+    fn validate_client_point(point: &HwndPoint, width: u32, height: u32) -> Result<(), String> {
+        if width == 0 || height == 0 {
+            return Err("target client rect is empty".to_string());
+        }
+        if point.x >= width || point.y >= height {
+            return Err(format!(
+                "point {},{} is outside target client area {}x{}",
+                point.x, point.y, width, height
+            ));
+        }
+        Ok(())
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct MouseButton {
+        down: u32,
+        up: u32,
+        wparam: u32,
+        label: &'static str,
+    }
+
+    fn parse_mouse_button(value: &str) -> Result<MouseButton, String> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "" | "left" | "l" | "primary" => Ok(MouseButton {
+                down: WM_LBUTTONDOWN,
+                up: WM_LBUTTONUP,
+                wparam: MK_LBUTTON_FLAG,
+                label: "left",
+            }),
+            "right" | "r" | "secondary" => Ok(MouseButton {
+                down: WM_RBUTTONDOWN,
+                up: WM_RBUTTONUP,
+                wparam: MK_RBUTTON_FLAG,
+                label: "right",
+            }),
+            other => Err(format!("unsupported mouse button: {other}")),
+        }
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -678,13 +717,6 @@ mod windows_impl {
             }
         }
     }
-    impl std::ops::Deref for WindowDc {
-        type Target = HDC;
-
-        fn deref(&self) -> &Self::Target {
-            &self.dc
-        }
-    }
     impl Drop for WindowDc {
         fn drop(&mut self) {
             unsafe {
@@ -771,6 +803,23 @@ mod windows_impl {
         fn rejects_point_outside_message_range() {
             assert!(point_lparam(40_000, 10).is_err());
             assert!(point_lparam(10, 40_000).is_err());
+        }
+
+        #[test]
+        fn validates_client_point_bounds() {
+            assert!(validate_client_point(&HwndPoint { x: 0, y: 0 }, 10, 10).is_ok());
+            assert!(validate_client_point(&HwndPoint { x: 9, y: 9 }, 10, 10).is_ok());
+            assert!(validate_client_point(&HwndPoint { x: 10, y: 9 }, 10, 10).is_err());
+            assert!(validate_client_point(&HwndPoint { x: 9, y: 10 }, 10, 10).is_err());
+        }
+
+        #[test]
+        fn parses_supported_mouse_buttons() {
+            assert_eq!(parse_mouse_button("left").unwrap().label, "left");
+            assert_eq!(parse_mouse_button("primary").unwrap().label, "left");
+            assert_eq!(parse_mouse_button("right").unwrap().label, "right");
+            assert_eq!(parse_mouse_button("secondary").unwrap().label, "right");
+            assert!(parse_mouse_button("middle").is_err());
         }
 
         #[test]

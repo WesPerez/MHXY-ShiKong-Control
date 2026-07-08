@@ -157,6 +157,12 @@ struct TemplateMatch {
     score: f32,
 }
 
+const WORKSPACE_SCHEMA_VERSION: u32 = 3;
+const DEFAULT_IMAGE_THRESHOLD: f32 = 0.86;
+const MAX_TEMPLATE_DATA_URL_CHARS: usize = 5 * 1024 * 1024;
+const MAX_TEMPLATE_BYTES: usize = 4 * 1024 * 1024;
+const MAX_TEMPLATE_PIXELS: u64 = 2_000_000;
+
 #[tauri::command]
 fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, String> {
     list_windows(&title_needle)
@@ -355,7 +361,7 @@ fn workflow_workspace_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 
 fn default_workflow_workspace() -> Value {
     json!({
-        "schemaVersion": 2,
+        "schemaVersion": WORKSPACE_SCHEMA_VERSION,
         "activeWorkflowId": null,
         "workflows": [],
         "assignments": {},
@@ -411,6 +417,7 @@ fn dispatch_image_step(
     execute_click: bool,
 ) -> Result<StepDispatchResult, String> {
     let button = command_value(&step.command, "button").unwrap_or("left");
+    let threshold = image_threshold(step)?;
     if let Some(data_url) = step
         .asset_data_url
         .as_deref()
@@ -419,9 +426,6 @@ fn dispatch_image_step(
         let frame = capture_client_rgb(hwnd)?;
         let template = load_image_data_url_rgb(data_url)?;
         let search_roi = scaled_roi(step.roi, frame.width, frame.height);
-        let threshold = command_value(&step.command, "threshold")
-            .and_then(|value| value.parse::<f32>().ok())
-            .unwrap_or(0.86);
         let matched = match_template(&frame, &template, search_roi)?;
         let center = HwndPoint {
             x: matched.x + matched.width / 2,
@@ -579,10 +583,25 @@ fn command_value<'a>(command: &'a str, key: &str) -> Option<&'a str> {
     })
 }
 
+fn image_threshold(step: &WorkflowStepInput) -> Result<f32, String> {
+    let Some(raw) = command_value(&step.command, "threshold") else {
+        return Ok(DEFAULT_IMAGE_THRESHOLD);
+    };
+    let value = raw
+        .parse::<f32>()
+        .map_err(|_| format!("invalid image threshold: {raw}"))?;
+    if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+        return Err(format!(
+            "image threshold must be finite and within 0..=1: {raw}"
+        ));
+    }
+    Ok(value)
+}
+
 fn point_from_step(step: &WorkflowStepInput) -> Option<HwndPoint> {
     parse_point(&step.target)
         .or_else(|| parse_point(&step.command))
-        .or_else(|| step.roi.map(|roi| roi.center()))
+        .or_else(|| step.roi.and_then(|roi| roi.center()))
 }
 
 fn parse_point(value: &str) -> Option<HwndPoint> {
@@ -603,38 +622,68 @@ fn parse_point(value: &str) -> Option<HwndPoint> {
 }
 
 impl RoiRect {
-    fn center(self) -> HwndPoint {
-        HwndPoint {
-            x: self.x + self.w / 2,
-            y: self.y + self.h / 2,
-        }
+    fn center(self) -> Option<HwndPoint> {
+        let x = self.x.checked_add(self.w / 2)?;
+        let y = self.y.checked_add(self.h / 2)?;
+        Some(HwndPoint { x, y })
     }
 }
 
 fn scaled_roi(roi: Option<RoiRect>, width: u32, height: u32) -> Option<RoiRect> {
     let roi = roi?;
-    if roi.w == 0 || roi.h == 0 {
+    if roi.w == 0 || roi.h == 0 || width == 0 || height == 0 {
         return None;
     }
-    Some(RoiRect {
-        x: roi.x.min(width.saturating_sub(1)),
-        y: roi.y.min(height.saturating_sub(1)),
-        w: roi.w.min(width.saturating_sub(roi.x.min(width))),
-        h: roi.h.min(height.saturating_sub(roi.y.min(height))),
-    })
+    let x = roi.x.min(width);
+    let y = roi.y.min(height);
+    let w = roi.w.min(width.saturating_sub(x));
+    let h = roi.h.min(height.saturating_sub(y));
+    (w > 0 && h > 0).then_some(RoiRect { x, y, w, h })
 }
 
 fn load_image_data_url_rgb(data_url: &str) -> Result<RgbFrame, String> {
-    let payload = data_url
-        .split_once(',')
-        .map(|(_, payload)| payload)
-        .unwrap_or(data_url);
+    let data_url = data_url.trim();
+    if data_url.len() > MAX_TEMPLATE_DATA_URL_CHARS {
+        return Err(format!(
+            "template data URL is too large: {} chars",
+            data_url.len()
+        ));
+    }
+    let payload = if let Some((header, payload)) = data_url.split_once(',') {
+        let header = header.to_ascii_lowercase();
+        if !header.starts_with("data:image/") || !header.contains(";base64") {
+            return Err("template asset must be a base64 image data URL".to_string());
+        }
+        payload
+    } else {
+        data_url
+    };
+    if payload.len() > MAX_TEMPLATE_DATA_URL_CHARS {
+        return Err(format!(
+            "template base64 payload is too large: {} chars",
+            payload.len()
+        ));
+    }
     let bytes = general_purpose::STANDARD
         .decode(payload.trim())
         .map_err(|err| err.to_string())?;
+    if bytes.len() > MAX_TEMPLATE_BYTES {
+        return Err(format!(
+            "template image is too large: {} bytes",
+            bytes.len()
+        ));
+    }
     let image = image::load_from_memory(&bytes)
         .map_err(|err| err.to_string())?
         .to_rgb8();
+    let pixels = u64::from(image.width()) * u64::from(image.height());
+    if image.width() == 0 || image.height() == 0 || pixels > MAX_TEMPLATE_PIXELS {
+        return Err(format!(
+            "template dimensions are out of bounds: {}x{}",
+            image.width(),
+            image.height()
+        ));
+    }
     Ok(RgbFrame {
         width: image.width(),
         height: image.height(),
@@ -893,6 +942,116 @@ fn timestamp() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn image_step(command: &str) -> WorkflowStepInput {
+        WorkflowStepInput {
+            step_type: "image_click".to_string(),
+            target: String::new(),
+            command: command.to_string(),
+            expect: String::new(),
+            asset_id: None,
+            asset_kind: None,
+            asset_data_url: None,
+            roi: None,
+        }
+    }
+
+    #[test]
+    fn parses_bounded_image_threshold() {
+        assert_eq!(
+            image_threshold(&image_step("threshold=0.75")).unwrap(),
+            0.75
+        );
+        assert_eq!(
+            image_threshold(&image_step("button=left")).unwrap(),
+            DEFAULT_IMAGE_THRESHOLD
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_image_threshold() {
+        for raw in [
+            "threshold=-0.1",
+            "threshold=1.01",
+            "threshold=NaN",
+            "threshold=inf",
+        ] {
+            assert!(image_threshold(&image_step(raw)).is_err(), "{raw}");
+        }
+    }
+
+    #[test]
+    fn roi_center_uses_checked_addition() {
+        assert_eq!(
+            RoiRect {
+                x: 10,
+                y: 20,
+                w: 8,
+                h: 10
+            }
+            .center()
+            .map(|point| (point.x, point.y)),
+            Some((14, 25))
+        );
+        assert!(RoiRect {
+            x: u32::MAX,
+            y: 0,
+            w: 2,
+            h: 2
+        }
+        .center()
+        .is_none());
+    }
+
+    #[test]
+    fn scaled_roi_rejects_empty_clipped_regions() {
+        assert!(scaled_roi(
+            Some(RoiRect {
+                x: 100,
+                y: 0,
+                w: 5,
+                h: 5
+            }),
+            100,
+            100
+        )
+        .is_none());
+        assert!(scaled_roi(
+            Some(RoiRect {
+                x: 0,
+                y: 100,
+                w: 5,
+                h: 5
+            }),
+            100,
+            100
+        )
+        .is_none());
+        assert_eq!(
+            scaled_roi(
+                Some(RoiRect {
+                    x: 90,
+                    y: 90,
+                    w: 20,
+                    h: 20
+                }),
+                100,
+                100
+            )
+            .map(|roi| (roi.x, roi.y, roi.w, roi.h)),
+            Some((90, 90, 10, 10))
+        );
+    }
+
+    #[test]
+    fn rejects_non_image_data_url_assets() {
+        assert!(load_image_data_url_rgb("data:text/plain;base64,AA==").is_err());
+    }
 }
 
 fn main() {
