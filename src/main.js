@@ -6,6 +6,7 @@ const TARGET_TITLE = "梦幻西游：时空";
 const WORKSPACE_SCHEMA_VERSION = 4;
 const DEFAULT_IMAGE_THRESHOLD = 0.86;
 const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
+const MAX_LOG_ROWS = 500;
 const targetBackedStepTypes = new Set(["image_click", "wait_image", "detect_page", "click", "ocr_assert"]);
 const capturedImageStepTypes = new Set(["image_click", "wait_image", "detect_page"]);
 const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
@@ -139,6 +140,63 @@ const stepDefaults = {
   },
 };
 
+const stepBlockPresets = [
+  {
+    id: "open-panel",
+    label: "打开界面 · 3步",
+    steps: [
+      { type: "hotkey", name: "打开目标界面", target: "ALT+N", command: "mode=hwnd-key", expect: "panel.open" },
+      { type: "delay", name: "等待界面动画", target: "800ms", command: "reason=panel_transition", expect: "time.elapsed" },
+      { type: "detect_page", name: "确认界面就绪", target: "page.target.ready", command: "threshold=0.86", expect: "ready=true" },
+    ],
+  },
+  {
+    id: "image-click-flow",
+    label: "识图点击 · 4步",
+    steps: [
+      { type: "wait_image", name: "等待目标出现", target: "target.image", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "点击目标", target: "button.target", command: "button=left; point=center", expect: "screen.changed" },
+      { type: "delay", name: "等待点击反馈", target: "600ms", command: "reason=click_feedback", expect: "time.elapsed" },
+      { type: "retry_until", name: "等待下一状态", target: "page.next.ready", command: "interval=600ms", expect: "ready=true", timeoutMs: 5000, retry: 2 },
+    ],
+  },
+  {
+    id: "right-click-item",
+    label: "物品右键 · 4步",
+    steps: [
+      { type: "wait_image", name: "查找物品图标", target: "item.target", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "右键使用物品", target: "item.target", command: "button=right; point=center", expect: "action.accepted" },
+      { type: "delay", name: "等待服务器反馈", target: "1000ms", command: "reason=server_response", expect: "time.elapsed" },
+      { type: "snapshot", name: "记录使用结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+    ],
+  },
+  {
+    id: "guard-snapshot",
+    label: "状态检查 · 3步",
+    steps: [
+      { type: "detect_page", name: "检测当前页面", target: "page.current.ready", command: "threshold=0.86", expect: "ready=true" },
+      { type: "condition", name: "判断是否继续", target: "state.can_continue", command: "guard=true", expect: "continue" },
+      { type: "snapshot", name: "记录判断现场", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+    ],
+  },
+  {
+    id: "full-task-skeleton",
+    label: "完整任务骨架 · 10步",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开目标面板", target: "ALT+N", command: "mode=hwnd-key", expect: "panel.open" },
+      { type: "delay", name: "等待面板动画", target: "800ms", command: "reason=panel_transition", expect: "time.elapsed" },
+      { type: "wait_image", name: "等待入口出现", target: "entry.target", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "进入目标页面", target: "entry.target", command: "button=left; point=center", expect: "page.target.open" },
+      { type: "delay", name: "等待切页", target: "700ms", command: "reason=page_transition", expect: "time.elapsed" },
+      { type: "wait_image", name: "等待操作按钮", target: "button.primary_action", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "执行主要操作", target: "button.primary_action", command: "button=left; point=center", expect: "action.accepted" },
+      { type: "snapshot", name: "记录结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+];
+
 const state = {
   windows: [],
   selected: new Set(),
@@ -180,7 +238,10 @@ function setStatus(message) {
 }
 
 function setRunState(value) {
-  $("#run-state").textContent = value;
+  const element = $("#run-state");
+  element.textContent = value;
+  element.classList.remove("idle", "ready", "running", "blocked");
+  element.classList.add(value);
 }
 
 function appendLog(level, message) {
@@ -192,7 +253,11 @@ function appendLog(level, message) {
     <strong>${escapeHtml(level)}</strong>
     <p>${escapeHtml(message)}</p>
   `;
-  $("#run-log").prepend(row);
+  const log = $("#run-log");
+  log.prepend(row);
+  while (log.children.length > MAX_LOG_ROWS) {
+    log.lastElementChild?.remove();
+  }
 }
 
 function createSeedWorkspace() {
@@ -838,6 +903,17 @@ function fillStepTypeSelect(select) {
   );
 }
 
+function fillStepBlockSelect(select) {
+  select.replaceChildren(
+    ...stepBlockPresets.map((preset) => {
+      const option = document.createElement("option");
+      option.value = preset.id;
+      option.textContent = preset.label;
+      return option;
+    }),
+  );
+}
+
 function renderSteps() {
   const workflow = activeWorkflow();
   $("#step-count").textContent = String(workflow?.steps.length || 0);
@@ -908,17 +984,73 @@ function selectedStepIndex(workflow = activeWorkflow()) {
   return workflow?.steps.findIndex((item) => item.id === state.selectedStepId) ?? -1;
 }
 
-function insertStepAt(item, index) {
+function capturedStepNeedsImage(item) {
+  return capturedImageStepTypes.has(item?.type) && !targetForStep(item)?.dataUrl;
+}
+
+function selectStepAndTarget(item) {
+  if (!item) return false;
+  state.selectedStepId = item.id;
+  const boundTarget = targetForStep(item);
+  if (boundTarget) state.selectedTargetId = boundTarget.id;
+  return true;
+}
+
+function selectFirstUnboundCapturedStep(steps) {
+  return selectStepAndTarget(steps.find(capturedStepNeedsImage));
+}
+
+function selectNextUnboundCapturedStepAfter(stepId) {
+  const workflow = activeWorkflow();
+  const steps = workflow?.steps || [];
+  const index = steps.findIndex((item) => item.id === stepId);
+  if (index < 0) return false;
+  return selectStepAndTarget(steps.slice(index + 1).find(capturedStepNeedsImage));
+}
+
+function ensureTargetsForSteps(steps) {
+  for (const item of steps) {
+    if (!targetBackedStepTypes.has(item.type) || !isLogicalTargetName(item.target)) continue;
+    const id = item.target.trim();
+    if (state.workspace.targets.some((target) => target.id === id)) continue;
+    state.workspace.targets.unshift(
+      normalizeTarget({
+        id,
+        name: friendlyTargetName(id),
+        kind: targetKindForStep(item),
+        match: {
+          threshold: defaultThresholdForStep(item) || DEFAULT_IMAGE_THRESHOLD,
+          scope: "window",
+        },
+        click: {
+          button: normalizedButton(item.command),
+          point: commandValue(item.command, "point") || "center",
+        },
+        texts: item.type === "ocr_assert" ? [item.target] : [],
+        note: "由步骤片段自动创建，可直接 Ctrl+V 粘贴图片或绑定 ROI",
+      }),
+    );
+  }
+}
+
+function insertStepsAt(items, index) {
   const workflow = activeWorkflow();
   if (!workflow) return null;
+  const nextItems = items.filter(Boolean);
+  if (!nextItems.length) return null;
+  ensureTargetsForSteps(nextItems);
   const safeIndex = Math.max(0, Math.min(index, workflow.steps.length));
-  workflow.steps.splice(safeIndex, 0, item);
-  state.selectedStepId = item.id;
+  workflow.steps.splice(safeIndex, 0, ...nextItems);
+  state.selectedStepId = nextItems[0].id;
   markDirty("draft");
   renderSteps();
   renderStepEditor();
   renderTargets();
-  return item;
+  return nextItems;
+}
+
+function insertStepAt(item, index) {
+  return insertStepsAt([item], index)?.[0] || null;
 }
 
 function addStep() {
@@ -964,6 +1096,39 @@ function duplicateSelectedStep() {
   const item = cloneStepForInsert(workflow.steps[index]);
   insertStepAt(item, index + 1);
   appendLog("info", `复制步骤：${item.name}`);
+}
+
+function createStepFromBlockDefinition(definition) {
+  const item = createStep(definition.type);
+  return normalizeStep({
+    ...item,
+    ...definition,
+    id: randomId("step"),
+  });
+}
+
+function createStepBlock(presetId) {
+  const preset = stepBlockPresets.find((item) => item.id === presetId) || stepBlockPresets[0];
+  return {
+    preset,
+    steps: preset.steps.map(createStepFromBlockDefinition),
+  };
+}
+
+function insertStepBlock() {
+  const workflow = activeWorkflow();
+  if (!workflow) return;
+  const { preset, steps } = createStepBlock($("#step-block-preset").value);
+  const index = selectedStepIndex(workflow);
+  const inserted = insertStepsAt(steps, index >= 0 ? index + 1 : workflow.steps.length);
+  if (!inserted) return;
+  if (selectFirstUnboundCapturedStep(inserted)) {
+    renderSteps();
+    renderStepEditor();
+    renderTargets();
+  }
+  appendLog("info", `插入片段：${preset.label}（${inserted.length} 步）`);
+  setStatus(`已插入片段：${preset.label}`);
 }
 
 function moveSelectedStep(direction) {
@@ -2140,14 +2305,20 @@ async function targetFromRoi() {
     setStatus("需要先创建任务步骤");
     return;
   }
+  const shouldAdvance = Boolean(targetItem.dataUrl) && !destination.created && capturedStepNeedsImage(destination.step);
   const savedTarget = saveTargetForStep(targetItem, destination.step, { allowReplace: !destination.created });
   state.selectedTargetId = savedTarget.id;
   bindTargetToStep(destination.step, savedTarget, { preserveClick: !targetItem.dataUrl });
+  const advanced = shouldAdvance && selectNextUnboundCapturedStepAfter(destination.step.id);
   markDirty("target");
   renderTargets();
   renderSteps();
   renderStepEditor();
-  setStatus(`${destination.created ? "已自动新增步骤并保存" : "已保存"} ROI 目标：${savedTarget.name}`);
+  setStatus(
+    advanced
+      ? `已保存 ROI 目标：${savedTarget.name}，已跳到下一个待绑定图像步骤`
+      : `${destination.created ? "已自动新增步骤并保存" : "已保存"} ROI 目标：${savedTarget.name}`,
+  );
 }
 
 async function cropPreviewRoiDataUrl(roi) {
@@ -2189,14 +2360,21 @@ async function handlePasteImage(event) {
     setStatus("需要先创建任务步骤");
     return;
   }
+  const shouldAdvance = !destination.created && capturedStepNeedsImage(destination.step);
   const savedTarget = saveTargetForStep(targetItem, destination.step, { allowReplace: !destination.created });
   state.selectedTargetId = savedTarget.id;
   bindTargetToStep(destination.step, savedTarget);
+  const advanced = shouldAdvance && selectNextUnboundCapturedStepAfter(destination.step.id);
   markDirty("target");
   renderTargets();
   renderSteps();
   renderStepEditor();
-  appendLog("info", `${destination.created ? "已自动新增图像点击步骤并" : "已"}粘贴图片目标：${savedTarget.name}`);
+  appendLog(
+    "info",
+    advanced
+      ? `已粘贴图片目标并跳到下一个待绑定图像步骤：${savedTarget.name}`
+      : `${destination.created ? "已自动新增图像点击步骤并" : "已"}粘贴图片目标：${savedTarget.name}`,
+  );
 }
 
 function isEditablePasteTarget(target) {
@@ -2241,7 +2419,8 @@ function saveTargetForStep(incomingTarget, item, options = {}) {
   const allowReplace = options.allowReplace !== false;
   const existing = allowReplace && item ? targetForStep(item) : null;
   const existingUsages = existing ? targetUsages(existing.id) : [];
-  if (!existing || existingUsages.length > 1) {
+  const canReplaceExisting = existing && (existingUsages.length <= 1 || isStepBlockPlaceholderTarget(existing));
+  if (!canReplaceExisting) {
     state.workspace.targets.unshift(incomingTarget);
     return incomingTarget;
   }
@@ -2260,6 +2439,10 @@ function saveTargetForStep(incomingTarget, item, options = {}) {
   });
   Object.assign(existing, next);
   return existing;
+}
+
+function isStepBlockPlaceholderTarget(targetItem) {
+  return !targetItem?.dataUrl && !targetItem?.roi && String(targetItem?.note || "").includes("步骤片段自动创建");
 }
 
 function renderTargets(options = {}) {
@@ -2677,6 +2860,14 @@ async function executeBackgroundStep(session, item) {
 }
 
 async function executeRetryUntilStep(session, item) {
+  if (!retryUntilHasVisualTarget(item)) {
+    const result = await executeBackendStep(session, item);
+    return {
+      ...result,
+      action: "retry_until",
+      detail: `${result.detail}; no image or ROI target is bound, kept as planned state wait`,
+    };
+  }
   const timeoutMs = Math.max(0, Number(item.timeoutMs) || 0);
   const intervalMs = backgroundRetryDelay(item);
   const deadline = Date.now() + timeoutMs;
@@ -2706,6 +2897,11 @@ async function executeRetryUntilStep(session, item) {
     inputSent: false,
     matched: false,
   };
+}
+
+function retryUntilHasVisualTarget(item) {
+  const targetItem = targetForStep(item);
+  return Boolean(targetItem?.dataUrl || targetItem?.roi || parsePointText(item.target) || parsePointText(item.command));
 }
 
 function shouldRetryBackgroundStep(item, result) {
@@ -2925,6 +3121,7 @@ function escapeHtml(value) {
 
 fillStepTypeSelect($("#new-step-type"));
 fillStepTypeSelect($("#step-type"));
+fillStepBlockSelect($("#step-block-preset"));
 
 $("#refresh-windows").addEventListener("click", refreshWindows);
 $("#launch-game-client").addEventListener("click", launchGameClient);
@@ -2942,6 +3139,7 @@ $("#delete-workflow").addEventListener("click", deleteWorkflow);
 $("#add-step").addEventListener("click", addStep);
 $("#insert-step-below").addEventListener("click", insertStepBelowSelected);
 $("#duplicate-step").addEventListener("click", duplicateSelectedStep);
+$("#insert-step-block").addEventListener("click", insertStepBlock);
 $("#move-step-up").addEventListener("click", () => moveSelectedStep(-1));
 $("#move-step-down").addEventListener("click", () => moveSelectedStep(1));
 $("#delete-step").addEventListener("click", deleteSelectedStep);

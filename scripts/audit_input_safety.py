@@ -72,11 +72,20 @@ TARGET_CRUD_TOKENS = [
 STEP_EDIT_TOKENS = [
     "insert-step-below",
     "duplicate-step",
+    "step-block-preset",
+    "insert-step-block",
     "$(\"#insert-step-below\").addEventListener",
     "$(\"#duplicate-step\").addEventListener",
+    "$(\"#insert-step-block\").addEventListener",
     "insertStepBelowSelected",
     "duplicateSelectedStep",
     "cloneStepForInsert",
+    "stepBlockPresets",
+    "insertStepBlock",
+    "insertStepsAt",
+    "ensureTargetsForSteps",
+    "selectFirstUnboundCapturedStep",
+    "selectNextUnboundCapturedStepAfter",
 ]
 STEP_VALIDATION_TOKENS = [
     "stepValidation",
@@ -89,13 +98,22 @@ PASTE_AUTO_STEP_TOKENS = [
     "capturedImageStepTypes",
     "ensureCapturedTargetStep",
     "saveTargetForStep",
+    "isStepBlockPlaceholderTarget",
     "insertStepAt",
     "bindTargetToStep(destination.step",
 ]
 RUNNER_SEMANTIC_TOKENS = [
     "backgroundStepDelay",
     "executeRetryUntilStep",
+    "retryUntilHasVisualTarget",
     "type: \"wait_image\"",
+]
+UI_STABILITY_TOKENS = [
+    "MAX_LOG_ROWS",
+    "log.children.length > MAX_LOG_ROWS",
+    "element.classList.add(value)",
+    ".state-pill.running",
+    ".session-lane.failed",
 ]
 
 
@@ -117,6 +135,7 @@ def main() -> int:
     step_validation = scan_tokens(files, STEP_VALIDATION_TOKENS)
     paste_auto_step = scan_tokens(files, PASTE_AUTO_STEP_TOKENS)
     runner_semantics = scan_tokens(files, RUNNER_SEMANTIC_TOKENS)
+    ui_stability = scan_tokens(files, UI_STABILITY_TOKENS)
     identity_required = bool(hwnd)
     identity_seen = {hit["token"] for hit in identity}
     identity_missing = [
@@ -142,6 +161,10 @@ def main() -> int:
     runner_semantics_missing = [
         token for token in RUNNER_SEMANTIC_TOKENS if token not in runner_semantics_seen
     ]
+    ui_stability_seen = {hit["token"] for hit in ui_stability}
+    ui_stability_missing = [
+        token for token in UI_STABILITY_TOKENS if token not in ui_stability_seen
+    ]
     report = {
         "version": 1,
         "projectRoot": str(project_root),
@@ -163,6 +186,8 @@ def main() -> int:
         "pasteAutoStepMissing": paste_auto_step_missing,
         "runnerSemanticEvidence": runner_semantics,
         "runnerSemanticMissing": runner_semantics_missing,
+        "uiStabilityEvidence": ui_stability,
+        "uiStabilityMissing": ui_stability_missing,
         "passed": (
             not forbidden
             and not focus
@@ -172,13 +197,14 @@ def main() -> int:
             and not step_validation_missing
             and not paste_auto_step_missing
             and not runner_semantics_missing
+            and not ui_stability_missing
         ),
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
             "Focus-affecting APIs indicate foreground-control risk. "
             "hwndInputEvidence may be empty when this build has no runtime input dispatcher. "
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
-            "Step editing, validation badge, paste-to-step, and runner semantic tokens catch visible UI or modeled-step regressions."
+            "Step editing, validation badge, paste-to-step, runner semantic, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -201,6 +227,8 @@ def main() -> int:
         print(f"pasteAutoStepMissing={len(paste_auto_step_missing)}")
         print(f"runnerSemanticEvidence={len(runner_semantics)}")
         print(f"runnerSemanticMissing={len(runner_semantics_missing)}")
+        print(f"uiStabilityEvidence={len(ui_stability)}")
+        print(f"uiStabilityMissing={len(ui_stability_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
@@ -225,6 +253,9 @@ def main() -> int:
         if runner_semantics_missing:
             for token in runner_semantics_missing:
                 print(f"MISSING_RUNNER_SEMANTIC {token}")
+        if ui_stability_missing:
+            for token in ui_stability_missing:
+                print(f"MISSING_UI_STABILITY {token}")
     return 0 if report["passed"] else 2
 
 

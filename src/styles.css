@@ -331,6 +331,26 @@ h3 {
   color: #78d2a1;
 }
 
+.state-pill.ready {
+  border-color: #426752;
+  color: #9fd9ad;
+}
+
+.state-pill.running {
+  border-color: #6d5a2c;
+  color: #e4bd6a;
+}
+
+.state-pill.blocked {
+  border-color: #7b3d34;
+  color: #e99a8d;
+}
+
+.state-pill.idle {
+  border-color: #30383d;
+  color: #97a2a8;
+}
+
 .meta {
   display: inline-block;
   min-width: 0;
@@ -653,10 +673,20 @@ h3 {
 }
 
 .step-toolbar {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) repeat(6, auto);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.step-toolbar select {
+  flex: 1 1 170px;
+  min-width: 0;
+}
+
+.step-toolbar button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .step-row {
@@ -965,6 +995,14 @@ label {
 }
 
 .session-lane.stopped {
+  border-color: #7b3d34;
+}
+
+.session-lane.running {
+  border-color: #6d5a2c;
+}
+
+.session-lane.failed {
   border-color: #7b3d34;
 }
 
