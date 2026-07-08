@@ -336,7 +336,68 @@
                   <span id="target-count" class="count">0</span>
                 </div>
                 <p class="hint">可直接 Ctrl+V 粘贴图片到当前步骤，或把预览 ROI 存为目标。</p>
+                <div class="target-filters">
+                  <input id="target-search" type="search" placeholder="筛选目标" />
+                  <select id="target-kind-filter">
+                    <option value="all">全部类型</option>
+                  </select>
+                </div>
                 <div id="target-list" class="compact-list"></div>
+                <div id="target-editor-empty" class="empty-block compact">未选择目标</div>
+                <div id="target-editor" class="target-editor" hidden>
+                  <div class="section-row">
+                    <strong>目标属性</strong>
+                    <span id="target-usage" class="meta">0 处使用</span>
+                  </div>
+                  <div class="form-grid">
+                    <label class="wide">
+                      名称
+                      <input id="target-name" type="text" />
+                    </label>
+                    <label>
+                      类型
+                      <select id="target-kind">
+                        <option value="image">image</option>
+                        <option value="roi">roi</option>
+                        <option value="page">page</option>
+                        <option value="ocr">ocr</option>
+                        <option value="click_target">click_target</option>
+                        <option value="state">state</option>
+                        <option value="unknown">unknown</option>
+                      </select>
+                    </label>
+                    <label>
+                      阈值
+                      <input id="target-threshold" type="number" min="0" max="1" step="0.01" />
+                    </label>
+                    <label>
+                      点击键
+                      <select id="target-click-button">
+                        <option value="left">左键</option>
+                        <option value="right">右键</option>
+                      </select>
+                    </label>
+                    <label>
+                      点击点
+                      <select id="target-click-point">
+                        <option value="center">模板中心</option>
+                      </select>
+                    </label>
+                    <label class="wide">
+                      OCR 文本
+                      <textarea id="target-texts" rows="2"></textarea>
+                    </label>
+                    <label class="wide">
+                      备注
+                      <textarea id="target-note" rows="2"></textarea>
+                    </label>
+                  </div>
+                  <div class="target-actions">
+                    <button id="bind-selected-target" type="button">绑定到当前步骤</button>
+                    <button id="unbind-step-target" type="button">解除当前步骤绑定</button>
+                    <button id="delete-target" type="button" class="danger">删除未使用目标</button>
+                  </div>
+                </div>
               </section>
             </div>
           </section>

@@ -403,7 +403,7 @@ fn validate_expected_window(
     expected: Option<&ExpectedWindowInput>,
 ) -> Result<(), String> {
     let Some(expected) = expected else {
-        return Ok(());
+        return Err("expected window identity is required for background dispatch".to_string());
     };
     let current = window_for_hwnd(hwnd)?;
     compare_expected_window(&current, expected)
@@ -1120,6 +1120,12 @@ mod tests {
             elevated: Some(true),
         };
         assert!(compare_expected_window(&fake_window(), &expected).is_ok());
+    }
+
+    #[test]
+    fn rejects_missing_expected_window_identity() {
+        let error = validate_expected_window(42, None).unwrap_err();
+        assert!(error.contains("expected window identity is required"));
     }
 
     #[test]

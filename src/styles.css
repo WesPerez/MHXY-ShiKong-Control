@@ -564,6 +564,10 @@ h3 {
   background: #1b2b2c;
 }
 
+.compact-row.bound:not(.active) {
+  border-color: #426752;
+}
+
 .workspace-path {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -806,9 +810,33 @@ label {
   line-height: 1.45;
 }
 
+.target-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 8px;
+}
+
 .target-row {
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
+}
+
+.target-row em {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 24px;
+  border: 1px solid #30383d;
+  border-radius: 5px;
+  color: #93a0a8;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.target-row.active em,
+.target-row.bound em {
+  border-color: rgba(100, 195, 180, 0.42);
+  color: #cbeee8;
 }
 
 .target-row img,
@@ -825,6 +853,23 @@ label {
   object-fit: cover;
   font-size: 11px;
   font-style: normal;
+}
+
+.target-editor {
+  display: grid;
+  gap: 9px;
+  border-top: 1px solid #2a3034;
+  padding-top: 10px;
+}
+
+.target-editor[hidden] {
+  display: none;
+}
+
+.target-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .danger {
@@ -1038,6 +1083,8 @@ progress::-webkit-progress-value {
   .form-grid,
   .inline-fields,
   .param-grid,
+  .target-filters,
+  .target-actions,
   .capture-actions,
   .library-actions,
   .run-actions {

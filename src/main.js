@@ -7,6 +7,7 @@ const WORKSPACE_SCHEMA_VERSION = 4;
 const DEFAULT_IMAGE_THRESHOLD = 0.86;
 const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 const targetBackedStepTypes = new Set(["image_click", "wait_image", "detect_page", "click", "ocr_assert"]);
+const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
 
 const stepTypes = [
   ["detect_page", "检测页面"],
@@ -150,6 +151,9 @@ const state = {
   workspace: createSeedWorkspace(),
   workspacePath: "",
   selectedStepId: null,
+  selectedTargetId: "",
+  targetSearch: "",
+  targetKindFilter: "all",
   saveTimer: null,
   sessions: {},
   sessionSerial: 0,
@@ -361,11 +365,10 @@ function normalizeWorkspace(value) {
   const activeWorkflowId = workflows.some((item) => item.id === source.activeWorkflowId)
     ? source.activeWorkflowId
     : workflows[0]?.id || null;
-  const targetSource = Array.isArray(source.targets)
-    ? source.targets
-    : Array.isArray(source.assets)
-      ? source.assets
-      : [];
+  const targetSource = [
+    ...(Array.isArray(source.assets) ? source.assets : []),
+    ...(Array.isArray(source.targets) ? source.targets : []),
+  ];
   const targets = targetSource.length
     ? mergeTargetCatalog(targetSource.map(normalizeTarget), workflows)
     : createTargetCatalogFromWorkflows(workflows);
@@ -727,6 +730,7 @@ function renderWorkflowList() {
       renderWorkflowList();
       renderSteps();
       renderStepEditor();
+      renderTargets();
       setStatus(`已选择任务：${item.name}`);
     });
     list.append(button);
@@ -859,8 +863,11 @@ function renderSteps() {
     `;
     row.addEventListener("click", () => {
       state.selectedStepId = item.id;
+      const boundTarget = targetForStep(item);
+      if (boundTarget) state.selectedTargetId = boundTarget.id;
       renderSteps();
       renderStepEditor();
+      renderTargets();
     });
     list.append(row);
   });
@@ -891,6 +898,7 @@ function addStep() {
   markDirty("draft");
   renderSteps();
   renderStepEditor();
+  renderTargets();
   appendLog("info", `添加步骤：${item.name}`);
 }
 
@@ -913,6 +921,7 @@ function deleteSelectedStep() {
   markDirty("draft");
   renderSteps();
   renderStepEditor();
+  renderTargets();
   appendLog("info", `删除步骤：${removed.name}`);
 }
 
@@ -992,10 +1001,12 @@ function bindStepParamEditor() {
     const target = state.workspace.targets.find((item) => item.id === event.target.value);
     if (!target) {
       updateSelectedStepFromParams((item) => {
-        item.targetId = "";
+        unbindStepTarget(item);
       });
+      renderTargets();
       return;
     }
+    state.selectedTargetId = target.id;
     updateSelectedStepFromParams((item) => {
       bindTargetToStep(item, target, { preserveClick: item.type === "click" });
     });
@@ -1035,8 +1046,9 @@ function bindStepParamEditor() {
   $("#param-image-target").addEventListener("input", (event) => {
     updateSelectedStepFromParams((item) => {
       item.target = event.target.value.trim();
-      if (item.targetId && item.targetId !== item.target) item.targetId = "";
+      if (item.targetId && item.targetId !== item.target) unbindStepTarget(item);
     });
+    renderTargets();
   });
   $("#param-delay-ms").addEventListener("input", (event) => {
     updateSelectedStepFromParams((item) => {
@@ -1073,6 +1085,76 @@ function bindStepParamEditor() {
       if (ms != null) item.command = commandWithValues(item.command, { interval: `${ms}ms` });
     });
   });
+}
+
+function bindTargetEditor() {
+  $("#target-search").addEventListener("input", (event) => {
+    state.targetSearch = event.target.value;
+    renderTargets({ preserveEditor: true });
+  });
+  $("#target-kind-filter").addEventListener("change", (event) => {
+    state.targetKindFilter = event.target.value;
+    renderTargets({ preserveEditor: true });
+  });
+  $("#target-name").addEventListener("input", (event) => {
+    updateSelectedTarget((target) => {
+      target.name = event.target.value.trim() || target.id;
+    });
+  });
+  $("#target-kind").addEventListener("change", (event) => {
+    updateSelectedTarget((target) => {
+      target.kind = event.target.value || "unknown";
+    });
+  });
+  $("#target-threshold").addEventListener("input", (event) => {
+    updateSelectedTarget(
+      (target) => {
+        target.match = {
+          ...(target.match || {}),
+          threshold: normalizedThreshold(event.target.value, target.match?.threshold ?? DEFAULT_IMAGE_THRESHOLD),
+        };
+      },
+      { sync: { threshold: true } },
+    );
+  });
+  $("#target-click-button").addEventListener("change", (event) => {
+    updateSelectedTarget(
+      (target) => {
+        target.click = {
+          ...(target.click || {}),
+          button: normalizedTargetButton(event.target.value),
+        };
+      },
+      { sync: { clickButton: true } },
+    );
+  });
+  $("#target-click-point").addEventListener("change", (event) => {
+    updateSelectedTarget(
+      (target) => {
+        target.click = {
+          ...(target.click || {}),
+          point: event.target.value || "center",
+        };
+      },
+      { sync: { clickPoint: true } },
+    );
+  });
+  $("#target-texts").addEventListener("input", (event) => {
+    updateSelectedTarget((target) => {
+      target.texts = event.target.value
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    });
+  });
+  $("#target-note").addEventListener("input", (event) => {
+    updateSelectedTarget((target) => {
+      target.note = event.target.value;
+    });
+  });
+  $("#bind-selected-target").addEventListener("click", bindSelectedTargetToStep);
+  $("#unbind-step-target").addEventListener("click", unbindCurrentStepTarget);
+  $("#delete-target").addEventListener("click", deleteSelectedTarget);
 }
 
 function updateClickPointFromParams() {
@@ -1122,10 +1204,11 @@ function bindStepEditor() {
     const item = selectedStep();
     if (!item) return;
     item[field] = coerce(event.target.value);
-    if (field === "target" && item.targetId && item.targetId !== item.target) item.targetId = "";
+    if (field === "target" && item.targetId && item.targetId !== item.target) unbindStepTarget(item);
     markDirty("draft");
     renderSteps();
     if (["target", "command"].includes(field)) renderStepParamPanel(item);
+    if (field === "target") renderTargets();
   };
   $("#step-name").addEventListener("input", update("name"));
   $("#step-target").addEventListener("input", update("target"));
@@ -1253,6 +1336,211 @@ function stepTargetId(item) {
 function targetForStep(item) {
   const id = stepTargetId(item);
   return id ? state.workspace.targets.find((target) => target.id === id) || null : null;
+}
+
+function unbindStepTarget(item, options = {}) {
+  if (!item) return "";
+  const previousId = stepTargetId(item);
+  item.targetId = "";
+  delete item.assetId;
+  if (options.clearTarget || (previousId && item.target?.trim() === previousId)) {
+    item.target = "";
+  }
+  return previousId;
+}
+
+function targetUsages(targetId) {
+  if (!targetId) return [];
+  const usages = [];
+  for (const workflow of state.workspace.workflows || []) {
+    for (const [stepIndex, item] of (workflow.steps || []).entries()) {
+      if (stepTargetId(item) !== targetId) continue;
+      usages.push({
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        stepId: item.id,
+        stepName: item.name,
+        stepIndex,
+      });
+    }
+  }
+  return usages;
+}
+
+function selectedManagedTarget() {
+  return state.selectedTargetId
+    ? state.workspace.targets.find((target) => target.id === state.selectedTargetId) || null
+    : null;
+}
+
+function visibleTargets() {
+  const query = state.targetSearch.trim().toLowerCase();
+  return state.workspace.targets.filter((target) => {
+    if (state.targetKindFilter !== "all" && target.kind !== state.targetKindFilter) return false;
+    if (!query) return true;
+    return targetSearchText(target).includes(query);
+  });
+}
+
+function targetSearchText(target) {
+  return [
+    target.id,
+    target.name,
+    target.kind,
+    target.note,
+    target.texts?.join(" "),
+    target.source?.display,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function ensureSelectedTarget() {
+  if (selectedManagedTarget()) return selectedManagedTarget();
+  const bound = targetForStep(selectedStep());
+  state.selectedTargetId = bound?.id || state.workspace.targets[0]?.id || "";
+  return selectedManagedTarget();
+}
+
+function fillTargetKindSelects() {
+  for (const selector of ["#target-kind-filter", "#target-kind"]) {
+    const select = $(selector);
+    if (!select) continue;
+    const current = select.value || (selector === "#target-kind-filter" ? "all" : "image");
+    const actualKinds = state.workspace.targets.map((target) => target.kind || "unknown");
+    const kindOptions = [...new Set([...targetKindOptions, ...actualKinds])];
+    const options = selector === "#target-kind-filter" ? ["all", ...kindOptions] : kindOptions;
+    select.replaceChildren(
+      ...options.map((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value === "all" ? "全部类型" : value;
+        return option;
+      }),
+    );
+    select.value = options.includes(current) ? current : options[0];
+  }
+}
+
+function renderTargetEditor() {
+  const target = ensureSelectedTarget();
+  $("#target-editor-empty").hidden = Boolean(target);
+  $("#target-editor").hidden = !target;
+  if (!target) return;
+
+  $("#target-name").value = target.name || "";
+  $("#target-kind").value = [...$("#target-kind").options].some((option) => option.value === target.kind)
+    ? target.kind
+    : "unknown";
+  $("#target-threshold").value = String(target.match?.threshold ?? DEFAULT_IMAGE_THRESHOLD);
+  $("#target-click-button").value = target.click?.button || "left";
+  $("#target-click-point").value = target.click?.point || "center";
+  $("#target-texts").value = (target.texts || []).join("\n");
+  $("#target-note").value = target.note || "";
+
+  const usages = targetUsages(target.id);
+  const usageText = usages.length
+    ? `${usages.length} 处使用 · ${usages.slice(0, 3).map((item) => `${item.workflowName}/${item.stepName}`).join("，")}${usages.length > 3 ? "…" : ""}`
+    : "0 处使用";
+  $("#target-usage").textContent = usageText;
+  $("#bind-selected-target").disabled = !selectedStep();
+  $("#unbind-step-target").disabled = !stepTargetId(selectedStep());
+  $("#delete-target").disabled = usages.length > 0;
+  $("#delete-target").title = usages.length > 0 ? "目标仍被步骤使用，先解除绑定后再删除" : "删除当前未使用目标";
+}
+
+function updateSelectedTarget(mutator, options = {}) {
+  const target = selectedManagedTarget();
+  if (!target) return;
+  mutator(target);
+  target.updatedAt = new Date().toISOString();
+  syncTargetDefaultsToBoundSteps(target, options.sync || {});
+  markDirty("target");
+  renderTargets({ preserveEditor: true });
+  renderStepEditor();
+}
+
+function syncTargetDefaultsToBoundSteps(target, options = {}) {
+  const updates = {};
+  if (options.threshold) updates.threshold = normalizedThreshold(target.match?.threshold, DEFAULT_IMAGE_THRESHOLD);
+  if (options.clickButton) updates.button = target.click?.button || "left";
+  if (options.clickPoint) updates.point = target.click?.point || "center";
+  if (!Object.keys(updates).length) return;
+  for (const workflow of state.workspace.workflows || []) {
+    for (const item of workflow.steps || []) {
+      if (stepTargetId(item) !== target.id) continue;
+      if (options.threshold && ["image_click", "wait_image", "detect_page"].includes(item.type)) {
+        item.command = commandWithValues(item.command, { threshold: updates.threshold });
+      }
+      if (options.clickButton && ["image_click", "click"].includes(item.type)) {
+        item.command = commandWithValues(item.command, { button: updates.button });
+      }
+      if (options.clickPoint && item.type === "image_click") {
+        item.command = commandWithValues(item.command, { point: updates.point });
+      }
+    }
+  }
+}
+
+function bindSelectedTargetToStep() {
+  const target = selectedManagedTarget();
+  if (!target) {
+    setStatus("需要先选择目标");
+    return;
+  }
+  if (!selectedStep()) {
+    setStatus("需要先选择步骤");
+    return;
+  }
+  bindTargetToSelectedStep(target, { preserveClick: true });
+  markDirty("target");
+  renderTargets();
+  renderSteps();
+  renderStepEditor();
+  setStatus(`已绑定目标：${target.name}`);
+}
+
+function unbindCurrentStepTarget() {
+  const item = selectedStep();
+  const targetId = stepTargetId(item);
+  if (!item || !targetId) {
+    setStatus("当前步骤没有绑定目标");
+    return;
+  }
+  const previous = targetForStep(item);
+  unbindStepTarget(item);
+  markDirty("target");
+  renderTargets();
+  renderSteps();
+  renderStepEditor();
+  setStatus(`已解除步骤目标：${previous?.name || targetId}`);
+}
+
+function deleteSelectedTarget() {
+  const target = selectedManagedTarget();
+  if (!target) {
+    setStatus("需要先选择目标");
+    return;
+  }
+  const usages = targetUsages(target.id);
+  if (usages.length) {
+    appendLog("warn", `目标仍被 ${usages.length} 个步骤使用，拒绝删除：${target.name}`);
+    setStatus("目标仍在使用，先解除绑定");
+    renderTargetEditor();
+    return;
+  }
+  const index = state.workspace.targets.findIndex((item) => item.id === target.id);
+  state.workspace.targets = state.workspace.targets.filter((item) => item.id !== target.id);
+  state.selectedTargetId =
+    state.workspace.targets[Math.min(index, state.workspace.targets.length - 1)]?.id ||
+    state.workspace.targets[0]?.id ||
+    "";
+  markDirty("target");
+  renderTargets();
+  renderStepEditor();
+  appendLog("info", `删除未使用目标：${target.name}`);
+  setStatus(`已删除目标：${target.name}`);
 }
 
 function targetCommandDefaults(target, command = "") {
@@ -1751,6 +2039,7 @@ async function targetFromRoi() {
     note: "由预览框选生成",
   });
   const savedTarget = saveTargetForSelectedStep(targetItem);
+  state.selectedTargetId = savedTarget.id;
   bindTargetToSelectedStep(savedTarget, { preserveClick: true });
   markDirty("target");
   renderTargets();
@@ -1793,6 +2082,7 @@ async function handlePasteImage(event) {
     note: "由 Ctrl+V 粘贴创建",
   });
   const savedTarget = saveTargetForSelectedStep(targetItem);
+  state.selectedTargetId = savedTarget.id;
   bindTargetToSelectedStep(savedTarget);
   markDirty("target");
   renderTargets();
@@ -1842,7 +2132,8 @@ function bindTargetToStep(item, targetItem, options = {}) {
 function saveTargetForSelectedStep(incomingTarget) {
   const item = selectedStep();
   const existing = item ? targetForStep(item) : null;
-  if (!existing) {
+  const existingUsages = existing ? targetUsages(existing.id) : [];
+  if (!existing || existingUsages.length > 1) {
     state.workspace.targets.unshift(incomingTarget);
     return incomingTarget;
   }
@@ -1863,8 +2154,15 @@ function saveTargetForSelectedStep(incomingTarget) {
   return existing;
 }
 
-function renderTargets() {
-  $("#target-count").textContent = String(state.workspace.targets.length);
+function renderTargets(options = {}) {
+  fillTargetKindSelects();
+  $("#target-search").value = state.targetSearch;
+  $("#target-kind-filter").value = state.targetKindFilter;
+  const filteredTargets = visibleTargets();
+  $("#target-count").textContent =
+    filteredTargets.length === state.workspace.targets.length
+      ? String(state.workspace.targets.length)
+      : `${filteredTargets.length}/${state.workspace.targets.length}`;
   const list = $("#target-list");
   list.replaceChildren();
   if (!state.workspace.targets.length) {
@@ -1872,33 +2170,50 @@ function renderTargets() {
     empty.className = "empty-block compact";
     empty.textContent = "暂无识别目标";
     list.append(empty);
+    state.selectedTargetId = "";
+    renderTargetEditor();
     return;
   }
-  const selectedTargetId = stepTargetId(selectedStep());
-  for (const targetItem of state.workspace.targets) {
+  ensureSelectedTarget();
+  if (!filteredTargets.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-block compact";
+    empty.textContent = "没有符合筛选条件的目标";
+    list.append(empty);
+    if (!options.preserveEditor) renderTargetEditor();
+    return;
+  }
+  const boundTargetId = stepTargetId(selectedStep());
+  for (const targetItem of filteredTargets) {
     const row = document.createElement("button");
     row.type = "button";
-    row.className = `compact-row target-row${targetItem.id === selectedTargetId ? " active" : ""}`;
+    row.className = "compact-row target-row";
+    row.classList.toggle("active", targetItem.id === state.selectedTargetId);
+    row.classList.toggle("bound", targetItem.id === boundTargetId);
     const thumb = targetItem.dataUrl ? `<img src="${targetItem.dataUrl}" alt="${escapeHtml(targetItem.name)}" />` : "<i>ROI</i>";
     const threshold = targetItem.match?.threshold ?? DEFAULT_IMAGE_THRESHOLD;
     const click = `${targetItem.click?.button || "left"}@${targetItem.click?.point || "center"}`;
+    const usages = targetUsages(targetItem.id).length;
     row.innerHTML = `
       ${thumb}
       <span>
         <strong>${escapeHtml(targetItem.name)}</strong>
-        <small>${escapeHtml(targetItem.kind)} · ${targetItem.width || "-"}x${targetItem.height || "-"} · t=${escapeHtml(threshold)} · ${escapeHtml(click)}</small>
+        <small>${escapeHtml(targetItem.kind)} · ${targetItem.width || "-"}x${targetItem.height || "-"} · t=${escapeHtml(threshold)} · ${escapeHtml(click)} · ${usages} 处</small>
       </span>
+      <em>${targetItem.id === boundTargetId ? "已绑定" : "选择"}</em>
     `;
     row.addEventListener("click", () => {
-      bindTargetToSelectedStep(targetItem, { preserveClick: true });
-      markDirty("target");
+      state.selectedTargetId = targetItem.id;
       renderTargets();
-      renderSteps();
-      renderStepEditor();
-      setStatus(`已绑定目标：${targetItem.name}`);
+      setStatus(`已选择目标：${targetItem.name}`);
+    });
+    row.addEventListener("dblclick", () => {
+      state.selectedTargetId = targetItem.id;
+      bindSelectedTargetToStep();
     });
     list.append(row);
   }
+  if (!options.preserveEditor) renderTargetEditor();
 }
 
 function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
@@ -2124,7 +2439,7 @@ async function runSession(session, workflows) {
       if (session.cancelRequested) break;
       session.currentStep += 1;
       if (session.mode === "background") {
-        const result = await executeBackendStep(session, item).catch((error) => ({
+        const result = await executeBackgroundStepWithRetries(session, item).catch((error) => ({
           status: "error",
           action: "backend",
           detail: String(error),
@@ -2176,6 +2491,48 @@ async function runSession(session, workflows) {
     session.status === "done" ? "info" : "warn",
     `${modeLabel(session.mode)} ${session.status}：${session.display}`,
   );
+}
+
+async function executeBackgroundStepWithRetries(session, item) {
+  const retries = Math.max(0, Math.floor(Number.isFinite(Number(item.retry)) ? Number(item.retry) : 0));
+  const attempts = retries + 1;
+  let result = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    result = await executeBackgroundStep(session, item);
+    if (attempts > 1) {
+      result = {
+        ...result,
+        detail: `${result.detail} (attempt ${attempt}/${attempts})`,
+      };
+    }
+    if (!shouldRetryBackgroundStep(item, result) || attempt === attempts) return result;
+    await sleep(backgroundRetryDelay(item));
+  }
+  return result;
+}
+
+async function executeBackgroundStep(session, item) {
+  if (item.type === "delay") {
+    const ms = dryRunDelay(item);
+    await sleep(ms);
+    return {
+      status: "ok",
+      action: "delay",
+      detail: `waited ${ms}ms`,
+      inputSent: false,
+      matched: false,
+    };
+  }
+  return executeBackendStep(session, item);
+}
+
+function shouldRetryBackgroundStep(item, result) {
+  if (result.status !== "below_threshold") return false;
+  return item.onFail === "retry" || ["wait_image", "detect_page", "image_click"].includes(item.type);
+}
+
+function backgroundRetryDelay(item) {
+  return durationMsFromText(commandValue(item.command, "interval")) ?? 300;
 }
 
 async function executeBackendStep(session, item) {
@@ -2416,6 +2773,7 @@ window.addEventListener("paste", handlePasteImage);
 bindWorkflowInputs();
 bindStepEditor();
 bindStepParamEditor();
+bindTargetEditor();
 appendLog("info", "本地任务模型初始化中");
 await setupCloseToTray();
 await loadWorkspace();

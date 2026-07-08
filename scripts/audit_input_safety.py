@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 
-DEFAULT_INCLUDE = ["src-tauri/src", "src", "scripts"]
+DEFAULT_INCLUDE = ["index.html", "src-tauri/src", "src", "scripts"]
 FORBIDDEN_TOKENS = [
     "SendInput",
     "SetCursorPos",
@@ -54,6 +54,20 @@ TARGET_TOKENS = [
     "targetDataUrl",
     "normalizeTarget",
     "targetForStep",
+    "targetUsages",
+    "deleteSelectedTarget",
+    "unbindStepTarget",
+]
+TARGET_CRUD_TOKENS = [
+    "target-search",
+    "target-kind-filter",
+    "target-editor",
+    "selectedTargetId",
+    "bindTargetEditor",
+    "renderTargetEditor",
+    "targetUsages",
+    "deleteSelectedTarget",
+    "unbindCurrentStepTarget",
 ]
 
 
@@ -70,10 +84,15 @@ def main() -> int:
     focus = scan_tokens(files, FOCUS_TOKENS)
     identity = scan_tokens(files, IDENTITY_TOKENS)
     targets = scan_tokens(files, TARGET_TOKENS)
+    target_crud = scan_tokens(files, TARGET_CRUD_TOKENS)
     identity_required = bool(hwnd)
     identity_seen = {hit["token"] for hit in identity}
     identity_missing = [
         token for token in IDENTITY_TOKENS if identity_required and token not in identity_seen
+    ]
+    target_crud_seen = {hit["token"] for hit in target_crud}
+    target_crud_missing = [
+        token for token in TARGET_CRUD_TOKENS if token not in target_crud_seen
     ]
     report = {
         "version": 1,
@@ -86,7 +105,9 @@ def main() -> int:
         "identityCheckRequired": identity_required,
         "identityCheckMissing": identity_missing,
         "targetLibraryEvidence": targets,
-        "passed": not forbidden and not focus and not identity_missing,
+        "targetCrudEvidence": target_crud,
+        "targetCrudMissing": target_crud_missing,
+        "passed": not forbidden and not focus and not identity_missing and not target_crud_missing,
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
             "Focus-affecting APIs indicate foreground-control risk. "
@@ -104,6 +125,8 @@ def main() -> int:
         print(f"identityCheckEvidence={len(identity)}")
         print(f"identityCheckMissing={len(identity_missing)}")
         print(f"targetLibraryEvidence={len(targets)}")
+        print(f"targetCrudEvidence={len(target_crud)}")
+        print(f"targetCrudMissing={len(target_crud_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
@@ -113,6 +136,9 @@ def main() -> int:
         if identity_missing:
             for token in identity_missing:
                 print(f"MISSING_IDENTITY {token}")
+        if target_crud_missing:
+            for token in target_crud_missing:
+                print(f"MISSING_TARGET_CRUD {token}")
     return 0 if report["passed"] else 2
 
 
@@ -123,6 +149,10 @@ def iter_source_files(project_root: Path):
     for include in DEFAULT_INCLUDE:
         root = project_root / include
         if not root.exists():
+            continue
+        if root.is_file():
+            if root.suffix.lower() in suffixes and root.resolve() != self_path:
+                yield root
             continue
         for path in root.rglob("*"):
             if not path.is_file() or path.suffix.lower() not in suffixes:
