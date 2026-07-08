@@ -5,11 +5,11 @@ import "./styles.css";
 const TARGET_TITLE = "梦幻西游：时空";
 
 const stepDefaults = {
-  detect_page: { name: "检测页面", timeoutMs: 3000, retry: 2, onFail: "stop" },
-  image_click: { name: "图片点击", timeoutMs: 2500, retry: 1, onFail: "retry" },
-  mouse_move: { name: "鼠标移动", timeoutMs: 1000, retry: 0, onFail: "skip" },
-  hotkey: { name: "快捷键", timeoutMs: 1200, retry: 0, onFail: "stop" },
-  restore: { name: "恢复状态", timeoutMs: 5000, retry: 1, onFail: "stop" },
+  detect_page: { name: "检测页面", timeoutMs: 3000, retry: 2, onFail: "stop", onSuccess: "next" },
+  image_click: { name: "图片点击", timeoutMs: 2500, retry: 1, onFail: "retry", onSuccess: "next" },
+  mouse_move: { name: "鼠标移动", timeoutMs: 1000, retry: 0, onFail: "skip", onSuccess: "next" },
+  hotkey: { name: "快捷键", timeoutMs: 1200, retry: 0, onFail: "stop", onSuccess: "next" },
+  restore: { name: "恢复状态", timeoutMs: 5000, retry: 1, onFail: "stop", onSuccess: "next" },
 };
 
 const state = {
@@ -23,11 +23,17 @@ const state = {
   roiSelection: null,
   roiDragStart: null,
   workflow: {
+    schemaVersion: 1,
     id: "local-draft",
     name: "新任务",
     description: "",
     initialCheck: "detect_page",
     restorePolicy: "none",
+    targetPolicy: {
+      titleNeedle: TARGET_TITLE,
+      inputMode: "hwnd-message",
+      concurrency: "per-window-exclusive",
+    },
     steps: [],
   },
   selectedStepId: null,
@@ -447,9 +453,11 @@ function createStep(type) {
     name: defaults.name,
     type,
     target: "",
+    expect: "",
     timeoutMs: defaults.timeoutMs,
     retry: defaults.retry,
     onFail: defaults.onFail,
+    onSuccess: defaults.onSuccess,
   };
 }
 
@@ -474,7 +482,7 @@ function renderSteps() {
     row.innerHTML = `
       <span>${String(index + 1).padStart(2, "0")}</span>
       <strong>${escapeHtml(step.name || step.type)}</strong>
-      <small>${escapeHtml(step.type)} · ${escapeHtml(step.target || "target: none")}</small>
+      <small>${escapeHtml(step.type)} · ${escapeHtml(step.target || step.expect || "target: none")}</small>
     `;
     row.addEventListener("click", () => {
       state.selectedStepId = step.id;
@@ -497,9 +505,11 @@ function renderStepEditor() {
   $("#step-name").value = step.name || "";
   $("#step-type").value = step.type;
   $("#step-target").value = step.target || "";
+  $("#step-expect").value = step.expect || "";
   $("#step-timeout").value = String(step.timeoutMs ?? 0);
   $("#step-retry").value = String(step.retry ?? 0);
   $("#step-on-fail").value = step.onFail || "stop";
+  $("#step-on-success").value = step.onSuccess || "next";
 }
 
 function bindStepEditor() {
@@ -513,9 +523,11 @@ function bindStepEditor() {
   $("#step-name").addEventListener("input", update("name"));
   $("#step-type").addEventListener("change", update("type"));
   $("#step-target").addEventListener("input", update("target"));
+  $("#step-expect").addEventListener("input", update("expect"));
   $("#step-timeout").addEventListener("input", update("timeoutMs", (value) => Number(value) || 0));
   $("#step-retry").addEventListener("input", update("retry", (value) => Number(value) || 0));
   $("#step-on-fail").addEventListener("change", update("onFail"));
+  $("#step-on-success").addEventListener("change", update("onSuccess"));
 }
 
 function moveSelectedStep(direction) {
@@ -569,19 +581,27 @@ function importWorkflow() {
 function normalizeWorkflow(value) {
   const steps = Array.isArray(value?.steps) ? value.steps : [];
   return {
+    schemaVersion: Number(value?.schemaVersion || 1),
     id: String(value?.id || randomId("task")),
     name: String(value?.name || "未命名任务"),
     description: String(value?.description || ""),
     initialCheck: String(value?.initialCheck || ""),
     restorePolicy: String(value?.restorePolicy || "none"),
+    targetPolicy: {
+      titleNeedle: String(value?.targetPolicy?.titleNeedle || TARGET_TITLE),
+      inputMode: String(value?.targetPolicy?.inputMode || "hwnd-message"),
+      concurrency: String(value?.targetPolicy?.concurrency || "per-window-exclusive"),
+    },
     steps: steps.map((step) => ({
       id: String(step?.id || randomId("step")),
       name: String(step?.name || stepDefaults[step?.type]?.name || "步骤"),
       type: String(step?.type || "detect_page"),
       target: String(step?.target || ""),
+      expect: String(step?.expect || ""),
       timeoutMs: Number(step?.timeoutMs ?? 3000),
       retry: Number(step?.retry ?? 0),
       onFail: String(step?.onFail || "stop"),
+      onSuccess: String(step?.onSuccess || "next"),
     })),
   };
 }
@@ -593,6 +613,9 @@ function validateWorkflow() {
   for (const [index, step] of state.workflow.steps.entries()) {
     if (!step.name.trim()) issues.push(`第 ${index + 1} 步名称为空`);
     if (!step.type.trim()) issues.push(`第 ${index + 1} 步类型为空`);
+    if (step.type === "detect_page" && !step.target.trim() && !step.expect.trim()) {
+      issues.push(`第 ${index + 1} 步需要目标或成功确认`);
+    }
     if (step.timeoutMs < 0) issues.push(`第 ${index + 1} 步超时不能为负数`);
     if (step.retry < 0) issues.push(`第 ${index + 1} 步重试不能为负数`);
   }

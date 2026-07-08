@@ -163,6 +163,10 @@
                 目标
                 <input id="step-target" type="text" />
               </label>
+              <label>
+                成功确认
+                <input id="step-expect" type="text" />
+              </label>
               <div class="inline-fields">
                 <label>
                   超时 ms
@@ -180,6 +184,14 @@
                   <option value="retry">retry</option>
                   <option value="skip">skip</option>
                   <option value="restore">restore</option>
+                </select>
+              </label>
+              <label>
+                成功后
+                <select id="step-on-success">
+                  <option value="next">next</option>
+                  <option value="finish">finish</option>
+                  <option value="branch">branch</option>
                 </select>
               </label>
               <div class="step-actions">
