@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="时空任务编排器：面向窗口捕获、画面检测和步骤编排的本地控制台"
+      content="时空任务编排器：面向多窗口、识别目标和流程步骤的本地宏编排台"
     />
     <title>时空任务编排器</title>
   </head>
@@ -23,6 +23,7 @@
           <button id="launch-game-client" type="button">启动客户端</button>
           <button id="select-game-windows" type="button">选择全部</button>
           <button id="restart-admin" type="button">管理员重启</button>
+          <button id="save-workspace" type="button">保存工作区</button>
           <span id="launch-status" class="meta"></span>
         </div>
       </header>
@@ -40,6 +41,18 @@
             <div id="window-list" class="window-list"></div>
           </section>
 
+          <section class="panel assignment-panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Assign</p>
+                <h2>窗口分配</h2>
+              </div>
+              <span id="assignment-count" class="count">0</span>
+            </div>
+            <button id="assign-selected" type="button">把当前任务分配给已选窗口</button>
+            <div id="assignment-list" class="compact-list"></div>
+          </section>
+
           <section class="panel capture-panel">
             <div class="panel-title">
               <div>
@@ -51,6 +64,7 @@
             <div class="capture-actions">
               <button id="capture-preview" type="button">刷新预览</button>
               <button id="save-snapshot" type="button">保存截图</button>
+              <button id="asset-from-roi" type="button">ROI 存为目标</button>
               <input id="offline-image-path" type="text" placeholder="离线截图路径" />
               <button id="load-offline-image" type="button">载入离线图</button>
             </div>
@@ -58,6 +72,26 @@
         </aside>
 
         <section class="workbench">
+          <section class="library-panel panel">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">Library</p>
+                <h2>任务库</h2>
+              </div>
+              <span id="workflow-count" class="count">0</span>
+            </div>
+            <div class="library-actions">
+              <button id="new-workflow" type="button">新建</button>
+              <button id="duplicate-workflow" type="button">复制</button>
+              <button id="delete-workflow" type="button" class="danger">删除</button>
+            </div>
+            <div id="workflow-list" class="workflow-list"></div>
+            <div class="workspace-path">
+              <span id="workspace-state" class="state-pill">loading</span>
+              <p id="workspace-path">工作区未载入</p>
+            </div>
+          </section>
+
           <section class="preview-panel panel">
             <div class="panel-title">
               <div>
@@ -73,65 +107,24 @@
             </div>
             <div class="preview-footer">
               <span id="roi-meta" class="meta">ROI: none</span>
-              <span class="meta">后台输入路径保留，当前仅编排定义</span>
+              <span class="meta">当前执行为 dry-run，不发送游戏输入</span>
             </div>
-          </section>
-
-          <section class="workflow-panel panel">
-            <div class="panel-title">
-              <div>
-                <p class="eyebrow">Definition</p>
-                <h2>任务定义</h2>
-              </div>
-              <span id="task-model-state" class="state-pill">draft</span>
-            </div>
-            <div class="form-grid">
-              <label>
-                名称
-                <input id="flow-name" type="text" />
-              </label>
-              <label>
-                恢复策略
-                <select id="restore-policy">
-                  <option value="none">none</option>
-                  <option value="restore">restore</option>
-                  <option value="restart">restart</option>
-                </select>
-              </label>
-              <label class="wide">
-                初始检查
-                <input id="initial-check" type="text" />
-              </label>
-              <label class="wide">
-                备注
-                <textarea id="flow-description" rows="3"></textarea>
-              </label>
-            </div>
-            <div class="workflow-actions">
-              <button id="validate-workflow" type="button">校验定义</button>
-              <button id="export-workflow" type="button">导出 JSON</button>
-              <button id="import-workflow" type="button">载入 JSON</button>
-            </div>
-            <textarea id="workflow-json" spellcheck="false"></textarea>
           </section>
 
           <section class="step-panel panel">
             <div class="panel-title">
               <div>
-                <p class="eyebrow">Steps</p>
-                <h2>步骤编排</h2>
+                <p class="eyebrow">Timeline</p>
+                <h2 id="active-workflow-title">步骤编排</h2>
               </div>
               <span id="step-count" class="count">0</span>
             </div>
             <div class="step-toolbar">
-              <select id="new-step-type">
-                <option value="detect_page">detect_page</option>
-                <option value="image_click">image_click</option>
-                <option value="mouse_move">mouse_move</option>
-                <option value="hotkey">hotkey</option>
-                <option value="restore">restore</option>
-              </select>
+              <select id="new-step-type"></select>
               <button id="add-step" type="button">添加步骤</button>
+              <button id="move-step-up" type="button">上移</button>
+              <button id="move-step-down" type="button">下移</button>
+              <button id="delete-step" type="button" class="danger">删除</button>
             </div>
             <div id="step-list" class="step-list"></div>
           </section>
@@ -140,65 +133,118 @@
             <div class="panel-title">
               <div>
                 <p class="eyebrow">Inspector</p>
-                <h2>步骤属性</h2>
+                <h2>任务与步骤属性</h2>
               </div>
+              <span id="task-model-state" class="state-pill">draft</span>
             </div>
-            <div id="step-editor-empty" class="empty-block">未选择步骤</div>
-            <div id="step-editor" class="step-editor" hidden>
-              <label>
-                名称
-                <input id="step-name" type="text" />
-              </label>
-              <label>
-                类型
-                <select id="step-type">
-                  <option value="detect_page">detect_page</option>
-                  <option value="image_click">image_click</option>
-                  <option value="mouse_move">mouse_move</option>
-                  <option value="hotkey">hotkey</option>
-                  <option value="restore">restore</option>
-                </select>
-              </label>
-              <label>
-                目标
-                <input id="step-target" type="text" />
-              </label>
-              <label>
-                成功确认
-                <input id="step-expect" type="text" />
-              </label>
-              <div class="inline-fields">
-                <label>
-                  超时 ms
-                  <input id="step-timeout" type="number" min="0" step="100" />
-                </label>
-                <label>
-                  重试
-                  <input id="step-retry" type="number" min="0" max="20" />
-                </label>
-              </div>
-              <label>
-                失败处理
-                <select id="step-on-fail">
-                  <option value="stop">stop</option>
-                  <option value="retry">retry</option>
-                  <option value="skip">skip</option>
-                  <option value="restore">restore</option>
-                </select>
-              </label>
-              <label>
-                成功后
-                <select id="step-on-success">
-                  <option value="next">next</option>
-                  <option value="finish">finish</option>
-                  <option value="branch">branch</option>
-                </select>
-              </label>
-              <div class="step-actions">
-                <button id="move-step-up" type="button">上移</button>
-                <button id="move-step-down" type="button">下移</button>
-                <button id="delete-step" type="button" class="danger">删除</button>
-              </div>
+
+            <div class="inspector-scroll">
+              <section class="subsection">
+                <h3>任务</h3>
+                <div class="form-grid">
+                  <label>
+                    名称
+                    <input id="workflow-name" type="text" />
+                  </label>
+                  <label>
+                    分类
+                    <input id="workflow-category" type="text" />
+                  </label>
+                  <label class="wide">
+                    初始检查
+                    <input id="workflow-initial-check" type="text" />
+                  </label>
+                  <label>
+                    恢复策略
+                    <select id="workflow-restore-policy">
+                      <option value="none">none</option>
+                      <option value="restore_home">restore_home</option>
+                      <option value="restart_flow">restart_flow</option>
+                    </select>
+                  </label>
+                  <label>
+                    窗口策略
+                    <select id="workflow-concurrency">
+                      <option value="per-window-exclusive">per-window-exclusive</option>
+                      <option value="serial-all">serial-all</option>
+                    </select>
+                  </label>
+                  <label class="wide">
+                    备注
+                    <textarea id="workflow-description" rows="3"></textarea>
+                  </label>
+                </div>
+              </section>
+
+              <section class="subsection">
+                <h3>步骤</h3>
+                <div id="step-editor-empty" class="empty-block">未选择步骤</div>
+                <div id="step-editor" class="step-editor" hidden>
+                  <label>
+                    名称
+                    <input id="step-name" type="text" />
+                  </label>
+                  <label>
+                    类型
+                    <select id="step-type"></select>
+                  </label>
+                  <label>
+                    目标
+                    <input id="step-target" type="text" />
+                  </label>
+                  <label>
+                    动作参数
+                    <input id="step-command" type="text" />
+                  </label>
+                  <label>
+                    成功确认
+                    <input id="step-expect" type="text" />
+                  </label>
+                  <div class="inline-fields">
+                    <label>
+                      超时 ms
+                      <input id="step-timeout" type="number" min="0" step="100" />
+                    </label>
+                    <label>
+                      重试
+                      <input id="step-retry" type="number" min="0" max="20" />
+                    </label>
+                  </div>
+                  <div class="inline-fields">
+                    <label>
+                      失败处理
+                      <select id="step-on-fail">
+                        <option value="stop">stop</option>
+                        <option value="retry">retry</option>
+                        <option value="skip">skip</option>
+                        <option value="restore">restore</option>
+                        <option value="branch">branch</option>
+                      </select>
+                    </label>
+                    <label>
+                      成功后
+                      <select id="step-on-success">
+                        <option value="next">next</option>
+                        <option value="finish">finish</option>
+                        <option value="branch">branch</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    说明
+                    <textarea id="step-notes" rows="3"></textarea>
+                  </label>
+                </div>
+              </section>
+
+              <section class="subsection">
+                <div class="section-row">
+                  <h3>识别目标</h3>
+                  <span id="asset-count" class="count">0</span>
+                </div>
+                <p class="hint">可直接 Ctrl+V 粘贴图片到当前步骤，或把预览 ROI 存为目标。</p>
+                <div id="asset-list" class="compact-list"></div>
+              </section>
             </div>
           </section>
 
@@ -206,11 +252,21 @@
             <div class="panel-title">
               <div>
                 <p class="eyebrow">Runbook</p>
-                <h2>运行记录</h2>
+                <h2>运行队列</h2>
               </div>
               <span id="run-state" class="state-pill">idle</span>
             </div>
+            <div class="run-actions">
+              <button id="validate-workflow" type="button">校验当前任务</button>
+              <button id="validate-all-workflows" type="button">校验全部样例</button>
+              <button id="dry-run-selected" type="button">Dry-run 已选窗口</button>
+              <button id="stop-dry-run" type="button" class="danger">停止 dry-run</button>
+              <button id="export-workspace" type="button">导出工作区 JSON</button>
+              <button id="import-workspace" type="button">载入工作区 JSON</button>
+            </div>
+            <textarea id="workspace-json" spellcheck="false"></textarea>
             <div id="run-summary" class="run-summary">等待定义</div>
+            <div id="session-lanes" class="session-lanes"></div>
             <div id="run-log" class="run-log"></div>
           </section>
         </section>

@@ -1,18 +1,18 @@
 # 时空任务编排模型
 
-本文档记录当前重构方向：先做通用任务编排器，不急着搬 Maa 的具体任务。
+本文档记录当前重构方向：先把宏任务做成可保存、可分配、可 dry-run 的工作区模型，再逐步接入图片识别、OCR 和后台 hwnd 输入执行器。
 
 ## 结论
 
-用户提出的方向是对的：任务不应该写成一串彼此复制的图片点击脚本，而应该抽象成“任务定义 + 步骤定义 + 识别目标 + 失败恢复”的通用模型。
+用户提出的方向是对的：任务不应该写成一串彼此复制的图片点击脚本，而应该抽象成“任务库 + 步骤定义 + 识别目标 + 窗口分配 + 运行会话”。
 
-但需要补强三点：
+当前阶段已经落到 schema v2：
 
-1. 任务应更像状态机/工作流，而不是线性图片链。
-2. 图片、OCR、颜色、窗口控件等“识别目标”要从步骤里抽出来复用。
-3. 每个步骤都要有明确的前置条件、成功确认、失败策略和恢复策略。
-
-这能避免回到旧模式：每个任务独立写一遍，每一步绑定一张图，多个任务明明共享页面/按钮却互不复用。
+1. 一个工作区可以保存多个 `Workflow`。
+2. 每个窗口 hwnd 可以分配不同任务。
+3. 每个 hwnd 的 dry-run 会话独立，且同 hwnd 互斥。
+4. `Asset` 先承接粘贴图片和 ROI 目标，后续升级成完整 `Target` 识别库。
+5. 真实输入执行器暂不内置，避免在模型未稳定前重新引入风险。
 
 ## 参考模式
 
@@ -36,80 +36,149 @@
 - Robot Framework User Guide: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html
 - XState states and transitions: https://stately.ai/docs/states
 
-## 当前一阶段模型
-
-当前前端先实现可编辑的草稿模型，不内置任何实际任务：
+## 工作区 schema v2
 
 ```json
 {
-  "schemaVersion": 1,
-  "id": "local-draft",
-  "name": "新任务",
-  "description": "",
-  "initialCheck": "detect_page",
-  "restorePolicy": "none",
-  "targetPolicy": {
-    "titleNeedle": "梦幻西游：时空",
-    "inputMode": "hwnd-message",
-    "concurrency": "per-window-exclusive"
-  },
-  "steps": [
-    {
-      "id": "step-...",
-      "name": "检测页面",
-      "type": "detect_page",
-      "target": "page.home",
-      "expect": "page.home.ready",
-      "timeoutMs": 3000,
-      "retry": 2,
-      "onFail": "restore",
-      "onSuccess": "next"
+  "schemaVersion": 2,
+  "activeWorkflowId": "wf-daily-welfare",
+  "workflows": [],
+  "assignments": {
+    "123456": {
+      "workflowId": "wf-daily-welfare",
+      "hwnd": 123456,
+      "title": "梦幻西游：时空",
+      "processId": 1000,
+      "display": "梦幻西游：时空 #1",
+      "assignedAt": "2026-07-09T00:00:00.000Z"
     }
-  ]
+  },
+  "assets": [],
+  "runHistory": []
 }
 ```
 
 字段含义：
 
-- `schemaVersion`: 后续任务格式升级时保留迁移空间。
-- `initialCheck`: 执行任务前先确认当前页面或状态。
-- `restorePolicy`: 页面不对或步骤失败时如何回到初始界面。
-- `targetPolicy.inputMode`: 默认使用 hwnd 后台消息，不移动真实鼠标，不抢真实键盘焦点。
-- `targetPolicy.concurrency`: 同一 hwnd 同时只允许一个任务，不同 hwnd 可以独立运行。
-- `step.type`: 当前支持 `detect_page`、`image_click`、`mouse_move`、`hotkey`、`restore`。
-- `step.target`: 动作目标，例如页面、按钮、图片、快捷键或坐标目标的逻辑 id。
-- `step.expect`: 成功确认，避免“点了就算完成”。
-- `step.onFail`: `stop`、`retry`、`skip`、`restore`。
-- `step.onSuccess`: `next`、`finish`、`branch`。
+- `workflows`: 用户创建和导入的任务库。
+- `assignments`: 窗口 hwnd 到任务的分配表。
+- `assets`: 粘贴图片、ROI、后续模板图等识别资产。
+- `runHistory`: dry-run 或真实运行的最近结果摘要。
 
-## 下一阶段建议
+当前保存位置是 Tauri AppData 下的 `workspace.json`。第一阶段不用 SQLite，是为了让格式可读、易迁移、好调试；等任务历史、资产索引、运行日志变多后再迁移数据库。
 
-后续补任务前，先补两个库：
-
-1. `targets` 识别目标库：页面、按钮、图标、文字、颜色区域、快捷键目标。
-2. `restore` 恢复库：从未知页面回到初始界面的通用流程。
-
-建议形态：
+## Workflow
 
 ```json
 {
-  "targets": {
-    "page.home.ready": {
-      "kind": "image_or_ocr",
-      "roi": [0, 0, 1280, 720],
-      "templates": ["home/ready.png"],
-      "texts": ["长安", "任务"]
-    },
-    "button.confirm": {
-      "kind": "image",
-      "templates": ["common/confirm.png"],
-      "click": "center"
-    }
-  }
+  "schemaVersion": 2,
+  "id": "wf-daily-welfare",
+  "name": "每日福利领取",
+  "category": "日常",
+  "description": "从主界面进入活动与福利页，领取可见奖励后恢复首页。",
+  "tags": ["日常", "示例"],
+  "initialCheck": "page.home.ready",
+  "restorePolicy": "restore_home",
+  "targetPolicy": {
+    "titleNeedle": "梦幻西游：时空",
+    "inputMode": "hwnd-message",
+    "concurrency": "per-window-exclusive"
+  },
+  "steps": []
+}
+```
+
+关键策略：
+
+- `targetPolicy.inputMode` 固定表达“目标设计是 hwnd 后台消息”，但当前阶段 dry-run 不发送输入。
+- `targetPolicy.concurrency=per-window-exclusive` 表示同 hwnd 互斥，不同 hwnd 可并行。
+- `restorePolicy` 后续会引用共享恢复流程。
+
+## Step
+
+```json
+{
+  "id": "daily-04",
+  "type": "image_click",
+  "name": "进入福利页",
+  "target": "button.welfare",
+  "command": "button=left; point=center",
+  "expect": "welfare.visible",
+  "timeoutMs": 2600,
+  "retry": 1,
+  "onFail": "retry",
+  "onSuccess": "next",
+  "enabled": true,
+  "assetId": "",
+  "notes": ""
+}
+```
+
+当前前端支持的步骤类型：
+
+- `detect_page`: 检测页面或状态。
+- `wait_image`: 等待图像出现。
+- `image_click`: 图像识别后点击。
+- `ocr_assert`: OCR 文本确认。
+- `click`: 后台点击动作的模型占位。
+- `hotkey`: 快捷键动作的模型占位。
+- `delay`: 延迟等待。
+- `condition`: 条件判断。
+- `retry_until`: 重试直到成功。
+- `paste_image`: 编辑器里通过 Ctrl+V 创建并绑定图片资产。
+- `snapshot`: 截图记录占位。
+- `restore`: 恢复到稳定页面。
+
+`branch` 目前仍是枚举占位，后续需要补 `targetStepId` 和 guard 表达式，才能成为完整状态机。
+
+## Asset 与 Target
+
+当前 `assets` 先接两类内容：
+
+- `clipboard-image`: 用户 Ctrl+V 粘贴的图片，直接保存为 data URL。
+- `roi`: 用户从预览图框选的区域，保存 ROI 坐标和来源窗口。
+
+后续应升级为 `targets`：
+
+```json
+{
+  "id": "button.confirm",
+  "name": "确认按钮",
+  "kind": "image_or_ocr",
+  "roi": [0, 0, 1280, 720],
+  "templates": ["common/confirm.png"],
+  "texts": ["确定", "确认"],
+  "threshold": 0.86,
+  "click": "center"
 }
 ```
 
 这样多个任务可以引用同一个 `button.confirm`、`page.home.ready`，而不是每个任务复制一份图片和点击逻辑。
+
+## 样例任务
+
+首次启动生成 5 个样例任务，每个任务 10 步以上：
+
+- `每日福利领取`
+- `组队活动准备`
+- `藏宝图处理`
+- `帮派签到`
+- `秘境材料准备`
+
+这些样例覆盖 hotkey、图像等待、图像点击、OCR 确认、后台点击、延迟、条件、重试、粘贴图片、截图记录、恢复状态。它们用于验证模型覆盖面和 UI 操作流，不代表已经可以真实接管游戏。
+
+## 运行策略
+
+当前实现的是 dry-run：
+
+- 用户把任务分配给已选窗口。
+- 点击 dry-run 后，每个窗口生成独立 `RunSession`。
+- 同一个 hwnd 如果已有运行会话，会拒绝第二个 dry-run，保持互斥。
+- 不同 hwnd 的会话并行推进，各自记录步骤进度和日志。
+- dry-run 结束后写入 `runHistory`，并保存工作区。
+- dry-run 不截图、不点击、不发快捷键、不启动客户端、不请求管理员重启。
+
+后续真实执行层必须在每一步执行前重新校验 hwnd、标题、pid 和窗口尺寸，发现漂移就安全失败并记录日志。
 
 ## 输入安全原则
 
@@ -117,7 +186,8 @@
 
 - 不调用 `SendInput`、`SetCursorPos`、`mouse_event`、`keybd_event`。
 - 不为了任务执行调用 `SetForegroundWindow` 或 `BringWindowToTop`。
-- 鼠标、键盘、文本输入都走目标 hwnd 的 `PostMessageW`。
+- 当前 dry-run 不发送任何游戏输入。
+- 后续鼠标、键盘、文本输入都只能走目标 hwnd 的后台消息。
 - 同一个 hwnd 只能运行一个任务；不同 hwnd 可以并行。
 - 所有任务报告必须记录 hwnd、初始窗口身份、最终窗口身份、截图来源和失败原因。
 

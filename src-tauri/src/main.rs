@@ -8,6 +8,7 @@ use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{capture_client_rgb, current_process_elevated, list_windows, RgbFrame};
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -84,6 +85,21 @@ struct GameLaunchStatus {
     message: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkflowWorkspace {
+    path: String,
+    existed: bool,
+    data: Value,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkflowWorkspaceSave {
+    saved_path: String,
+    bytes: usize,
+}
+
 #[tauri::command]
 fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, String> {
     list_windows(&title_needle)
@@ -119,6 +135,40 @@ fn game_launch_status() -> Result<GameLaunchStatus, String> {
     let project = project_root()?;
     let config = read_game_launch_config(&project)?;
     Ok(build_game_launch_status(&project, &config))
+}
+
+#[tauri::command]
+fn load_workflow_workspace(app: tauri::AppHandle) -> Result<WorkflowWorkspace, String> {
+    let path = workflow_workspace_path(&app)?;
+    let existed = path.is_file();
+    let data = if existed {
+        let text = fs::read_to_string(&path).map_err(|err| format!("{}: {err}", path.display()))?;
+        serde_json::from_str(&text).map_err(|err| format!("{}: {err}", path.display()))?
+    } else {
+        default_workflow_workspace()
+    };
+    Ok(WorkflowWorkspace {
+        path: path.display().to_string(),
+        existed,
+        data,
+    })
+}
+
+#[tauri::command]
+fn save_workflow_workspace(
+    app: tauri::AppHandle,
+    workspace: Value,
+) -> Result<WorkflowWorkspaceSave, String> {
+    let path = workflow_workspace_path(&app)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| format!("{}: {err}", parent.display()))?;
+    }
+    let text = serde_json::to_string_pretty(&workspace).map_err(|err| err.to_string())?;
+    fs::write(&path, text.as_bytes()).map_err(|err| format!("{}: {err}", path.display()))?;
+    Ok(WorkflowWorkspaceSave {
+        saved_path: path.display().to_string(),
+        bytes: text.len(),
+    })
 }
 
 #[tauri::command]
@@ -188,6 +238,23 @@ fn project_root() -> Result<PathBuf, String> {
         .parent()
         .map(Path::to_path_buf)
         .ok_or_else(|| "failed to resolve MHXY-ShiKong-Control project root".to_string())
+}
+
+fn workflow_workspace_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let mut dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
+    dir.push("workspace.json");
+    Ok(dir)
+}
+
+fn default_workflow_workspace() -> Value {
+    json!({
+        "schemaVersion": 2,
+        "activeWorkflowId": null,
+        "workflows": [],
+        "assignments": {},
+        "assets": [],
+        "runHistory": []
+    })
 }
 
 fn launch_configured_game_client() -> Result<GameLaunchResult, String> {
@@ -411,6 +478,8 @@ fn main() {
             restart_as_admin,
             launch_game_client,
             game_launch_status,
+            load_workflow_workspace,
+            save_workflow_workspace,
             capture_window_preview,
             save_window_snapshot,
             import_preview_image
