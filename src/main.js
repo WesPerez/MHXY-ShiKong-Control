@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
@@ -33,6 +34,18 @@ const state = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+const appWindow = getCurrentWindow();
+
+async function setupCloseToTray() {
+  try {
+    await appWindow.onCloseRequested(async (event) => {
+      event.preventDefault();
+      await appWindow.hide();
+    });
+  } catch (error) {
+    appendLog("warn", `关闭到托盘监听注册失败：${error}`);
+  }
+}
 
 function setStatus(message) {
   $("#status").textContent = message;
@@ -642,6 +655,7 @@ syncWorkflowForm();
 renderSteps();
 renderStepEditor();
 appendLog("info", "本地任务模型已初始化");
+await setupCloseToTray();
 await refreshPrivilege();
 await refreshGameLaunchStatus();
 await refreshWindows();
