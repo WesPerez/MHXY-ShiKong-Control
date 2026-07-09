@@ -80,6 +80,17 @@ button:hover {
   background: #2a3136;
 }
 
+button.primary {
+  border-color: rgba(100, 195, 180, 0.64);
+  background: #173331;
+  color: #d8fbf4;
+}
+
+button.primary:hover {
+  border-color: #8de0d2;
+  background: #1d403d;
+}
+
 button:active {
   transform: translateY(1px);
 }
@@ -621,6 +632,69 @@ h3 {
   overflow: auto;
 }
 
+.blueprint-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.blueprint-card {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-height: 74px;
+  border-color: #303a3e;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 56%),
+    #13191c;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.blueprint-card:hover {
+  border-color: #596970;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent 56%),
+    #182023;
+}
+
+.blueprint-card.active {
+  border-color: rgba(100, 195, 180, 0.72);
+  background:
+    linear-gradient(135deg, rgba(100, 195, 180, 0.16), transparent 58%),
+    #112022;
+}
+
+.blueprint-card span,
+.blueprint-card small,
+.blueprint-card strong {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blueprint-card span {
+  color: #64c3b4;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.blueprint-card strong {
+  color: #f5ecdc;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.blueprint-card small {
+  color: #93a0a8;
+  font-size: 11px;
+}
+
 .blueprint-chip {
   display: inline-grid;
   align-items: center;
@@ -690,6 +764,10 @@ h3 {
 
 .wizard-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#create-exercise-suite {
+  grid-column: 1 / -1;
 }
 
 .queue-action-grid {
@@ -1673,6 +1751,7 @@ progress::-webkit-progress-value {
   .target-actions,
   .capture-actions,
   .library-actions,
+  .blueprint-gallery,
   .queue-item-timing,
   .wizard-actions,
   .queue-action-grid,

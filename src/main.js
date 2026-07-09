@@ -316,7 +316,127 @@ const workflowBlueprints = [
       { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
     ],
   },
+  {
+    id: "mail-claim",
+    label: "邮件领取",
+    category: "日常",
+    defaultPrefix: "邮件领取",
+    description: "打开邮件/系统消息，识别可领取附件，确认领取并记录结果。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开消息入口", target: "ALT+M", command: "mode=hwnd-key", expect: "mail.panel.open" },
+      { type: "wait_image", name: "等待邮件列表", target: "page.mail.ready", command: "threshold=0.84", expect: "visible" },
+      { type: "ocr_assert", name: "确认邮件标题", target: "邮件", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "condition", name: "检查是否有未读附件", target: "state.mail_attachment", command: "guard=true", expect: "continue" },
+      { type: "wait_image", name: "查找附件图标", target: "icon.mail_attachment", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "选择附件邮件", target: "icon.mail_attachment", command: "button=left; point=center", expect: "mail.detail.open" },
+      { type: "image_click", name: "领取附件", target: "button.claim_attachment", command: "button=left; point=center", expect: "reward.popup" },
+      { type: "image_click", name: "确认领取", target: "button.confirm", command: "button=left; point=center", expect: "popup.closed" },
+      { type: "retry_until", name: "等待附件状态刷新", target: "state.mail_attachment_claimed", command: "interval=700ms", expect: "true", timeoutMs: 6000, retry: 3 },
+      { type: "snapshot", name: "记录邮件结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "pet-care",
+    label: "宠物照料",
+    category: "宠物",
+    defaultPrefix: "宠物照料",
+    description: "打开宠物界面，检查状态、喂养或使用道具，并确认反馈。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开宠物界面", target: "ALT+P", command: "mode=hwnd-key", expect: "pet.panel.open" },
+      { type: "wait_image", name: "等待宠物面板", target: "page.pet.ready", command: "threshold=0.84", expect: "visible" },
+      { type: "ocr_assert", name: "确认宠物标题", target: "宠物", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "condition", name: "判断是否需要喂养", target: "state.pet_needs_food", command: "guard=true", expect: "continue" },
+      { type: "wait_image", name: "查找喂养按钮", target: "button.pet_feed", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "点击喂养", target: "button.pet_feed", command: "button=left; point=center", expect: "bag.item.pick" },
+      { type: "wait_image", name: "等待口粮物品", target: "item.pet_food", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "选择口粮", target: "item.pet_food", command: "button=left; point=center", expect: "item.selected" },
+      { type: "image_click", name: "确认使用", target: "button.confirm", command: "button=left; point=center", expect: "pet.feed.done" },
+      { type: "ocr_assert", name: "确认宠物状态", target: "气血", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "snapshot", name: "记录宠物结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "stall-search",
+    label: "摊位搜索",
+    category: "交易",
+    defaultPrefix: "摊位搜索",
+    description: "打开摊位/摆摊界面，输入搜索词，仅采集和确认结果，不默认购买。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开交易入口", target: "ALT+S", command: "mode=hwnd-key", expect: "market.panel.open" },
+      { type: "wait_image", name: "等待摊位界面", target: "page.stall.ready", command: "threshold=0.84", expect: "visible" },
+      { type: "ocr_assert", name: "确认交易标题", target: "摊位", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "image_click", name: "点击搜索框", target: "input.stall_search", command: "button=left; point=center", expect: "input.focused" },
+      { type: "text_input", name: "输入搜索词", target: "搜索关键词", command: "mode=hwnd-char", expect: "text.sent" },
+      { type: "image_click", name: "执行搜索", target: "button.search", command: "button=left; point=center", expect: "search.sent" },
+      { type: "retry_until", name: "等待搜索结果", target: "list.search_result.ready", command: "interval=800ms", expect: "ready=true", timeoutMs: 8000, retry: 4 },
+      { type: "ocr_assert", name: "确认结果文字", target: "价格", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "condition", name: "默认不购买", target: "state.purchase_allowed", command: "guard=false", expect: "manual_review" },
+      { type: "snapshot", name: "记录搜索结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "quest-chain",
+    label: "任务链检查",
+    category: "任务",
+    defaultPrefix: "任务链检查",
+    description: "打开任务面板，定位当前任务、识别目标按钮，适合串成多窗口状态检查。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开任务面板", target: "ALT+Q", command: "mode=hwnd-key", expect: "quest.panel.open" },
+      { type: "wait_image", name: "等待任务列表", target: "page.quest.ready", command: "threshold=0.84", expect: "visible" },
+      { type: "ocr_assert", name: "确认任务标题", target: "任务", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "wait_image", name: "查找当前任务", target: "item.current_quest", command: "threshold=0.84", expect: "visible" },
+      { type: "image_click", name: "选择当前任务", target: "item.current_quest", command: "button=left; point=center", expect: "quest.detail.open" },
+      { type: "ocr_assert", name: "确认任务说明", target: "目标", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "condition", name: "判断是否可自动寻路", target: "state.quest_auto_path", command: "guard=true", expect: "continue" },
+      { type: "image_click", name: "点击自动寻路", target: "button.auto_path", command: "button=left; point=center", expect: "path.started" },
+      { type: "retry_until", name: "等待寻路状态", target: "state.pathing", command: "interval=1000ms", expect: "true", timeoutMs: 9000, retry: 5 },
+      { type: "snapshot", name: "记录任务状态", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "material-prep",
+    label: "材料整理",
+    category: "背包",
+    defaultPrefix: "材料整理",
+    description: "检查背包材料、仓库入口和确认弹窗，适合做副本/生活技能前置准备。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开背包", target: "ALT+E", command: "mode=hwnd-key", expect: "bag.open" },
+      { type: "wait_image", name: "等待背包界面", target: "page.bag.ready", command: "threshold=0.85", expect: "visible" },
+      { type: "ocr_assert", name: "确认背包标题", target: "包裹", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "condition", name: "检查背包空间", target: "state.bag_space", command: "guard=>2", expect: "continue" },
+      { type: "wait_image", name: "查找目标材料", target: "item.target_material", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "选择目标材料", target: "item.target_material", command: "button=left; point=center", expect: "item.selected" },
+      { type: "image_click", name: "移动到整理区", target: "button.sort_material", command: "button=left; point=center", expect: "sort.accepted" },
+      { type: "delay", name: "等待整理反馈", target: "900ms", command: "reason=server_response", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认整理结果", target: "整理", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "snapshot", name: "记录材料状态", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
 ];
+
+const exerciseSuiteBlueprintIds = [
+  "home-vitality",
+  "daily-reward",
+  "bag-item-use",
+  "team-prep",
+  "guild-checkin",
+  "mail-claim",
+  "pet-care",
+  "stall-search",
+  "quest-chain",
+  "material-prep",
+];
+const exerciseSuiteQueuePattern = [2, 5, 7, 3, 9, 4, 6, 8, 1, 10];
 
 const state = {
   windows: [],
@@ -471,6 +591,77 @@ function createSampleWorkflows() {
       step("realm-12", "snapshot", "记录准备状态", "window.client", "dry-run log only", "snapshot.recorded"),
       step("realm-13", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
     ]),
+    workflow("wf-mail-claim", "邮件领取", "日常", "识别系统邮件附件、领取并记录结果。", [
+      step("mail-01", "detect_page", "确认主界面", "page.home.ready", "match=image_or_ocr", "home.visible"),
+      step("mail-02", "hotkey", "打开消息入口", "ALT+M", "mode=hwnd-key", "mail.panel.open"),
+      step("mail-03", "wait_image", "等待邮件列表", "page.mail.ready", "threshold=0.84", "visible"),
+      step("mail-04", "ocr_assert", "确认邮件标题", "邮件", "lang=zh; roi=top", "text_found"),
+      step("mail-05", "condition", "检查未领附件", "state.mail_attachment", "guard=true", "continue"),
+      step("mail-06", "wait_image", "查找附件图标", "icon.mail_attachment", "threshold=0.86", "visible"),
+      step("mail-07", "image_click", "选择附件邮件", "icon.mail_attachment", "button=left; point=center", "mail.detail.open"),
+      step("mail-08", "image_click", "领取附件", "button.claim_attachment", "button=left; point=center", "reward.popup"),
+      step("mail-09", "image_click", "确认领取", "button.confirm", "button=left; point=center", "popup.closed"),
+      step("mail-10", "retry_until", "等待附件状态刷新", "state.mail_attachment_claimed", "interval=700ms", "true", 6000, 3),
+      step("mail-11", "snapshot", "记录邮件结果", "window.client", "dry-run log only", "snapshot.recorded"),
+      step("mail-12", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+    ]),
+    workflow("wf-pet-care", "宠物照料", "宠物", "打开宠物界面，检查状态并执行喂养确认。", [
+      step("pet-01", "detect_page", "确认主界面", "page.home.ready", "match=image_or_ocr", "home.visible"),
+      step("pet-02", "hotkey", "打开宠物界面", "ALT+P", "mode=hwnd-key", "pet.panel.open"),
+      step("pet-03", "wait_image", "等待宠物面板", "page.pet.ready", "threshold=0.84", "visible"),
+      step("pet-04", "ocr_assert", "确认宠物标题", "宠物", "lang=zh; roi=top", "text_found"),
+      step("pet-05", "condition", "判断是否需要喂养", "state.pet_needs_food", "guard=true", "continue"),
+      step("pet-06", "wait_image", "查找喂养按钮", "button.pet_feed", "threshold=0.86", "visible"),
+      step("pet-07", "image_click", "点击喂养", "button.pet_feed", "button=left; point=center", "bag.item.pick"),
+      step("pet-08", "wait_image", "等待口粮物品", "item.pet_food", "threshold=0.86", "visible"),
+      step("pet-09", "image_click", "选择口粮", "item.pet_food", "button=left; point=center", "item.selected"),
+      step("pet-10", "image_click", "确认使用", "button.confirm", "button=left; point=center", "pet.feed.done"),
+      step("pet-11", "ocr_assert", "确认宠物状态", "气血", "lang=zh; roi=panel", "text_found"),
+      step("pet-12", "snapshot", "记录宠物结果", "window.client", "dry-run log only", "snapshot.recorded"),
+      step("pet-13", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+    ]),
+    workflow("wf-stall-search", "摊位搜索", "交易", "输入搜索词并采集摊位结果，默认不购买。", [
+      step("stall-01", "detect_page", "确认主界面", "page.home.ready", "match=image_or_ocr", "home.visible"),
+      step("stall-02", "hotkey", "打开交易入口", "ALT+S", "mode=hwnd-key", "market.panel.open"),
+      step("stall-03", "wait_image", "等待摊位界面", "page.stall.ready", "threshold=0.84", "visible"),
+      step("stall-04", "ocr_assert", "确认交易标题", "摊位", "lang=zh; roi=top", "text_found"),
+      step("stall-05", "image_click", "点击搜索框", "input.stall_search", "button=left; point=center", "input.focused"),
+      step("stall-06", "text_input", "输入搜索词", "搜索关键词", "mode=hwnd-char", "text.sent"),
+      step("stall-07", "image_click", "执行搜索", "button.search", "button=left; point=center", "search.sent"),
+      step("stall-08", "retry_until", "等待搜索结果", "list.search_result.ready", "interval=800ms", "ready=true", 8000, 4),
+      step("stall-09", "ocr_assert", "确认结果文字", "价格", "lang=zh; roi=panel", "text_found"),
+      step("stall-10", "condition", "默认不购买", "state.purchase_allowed", "guard=false", "manual_review"),
+      step("stall-11", "snapshot", "记录搜索结果", "window.client", "dry-run log only", "snapshot.recorded"),
+      step("stall-12", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+    ]),
+    workflow("wf-quest-chain", "任务链检查", "任务", "定位当前任务、识别说明并尝试自动寻路。", [
+      step("quest-01", "detect_page", "确认主界面", "page.home.ready", "match=image_or_ocr", "home.visible"),
+      step("quest-02", "hotkey", "打开任务面板", "ALT+Q", "mode=hwnd-key", "quest.panel.open"),
+      step("quest-03", "wait_image", "等待任务列表", "page.quest.ready", "threshold=0.84", "visible"),
+      step("quest-04", "ocr_assert", "确认任务标题", "任务", "lang=zh; roi=top", "text_found"),
+      step("quest-05", "wait_image", "查找当前任务", "item.current_quest", "threshold=0.84", "visible"),
+      step("quest-06", "image_click", "选择当前任务", "item.current_quest", "button=left; point=center", "quest.detail.open"),
+      step("quest-07", "ocr_assert", "确认任务说明", "目标", "lang=zh; roi=panel", "text_found"),
+      step("quest-08", "condition", "判断是否可自动寻路", "state.quest_auto_path", "guard=true", "continue"),
+      step("quest-09", "image_click", "点击自动寻路", "button.auto_path", "button=left; point=center", "path.started"),
+      step("quest-10", "retry_until", "等待寻路状态", "state.pathing", "interval=1000ms", "true", 9000, 5),
+      step("quest-11", "snapshot", "记录任务状态", "window.client", "dry-run log only", "snapshot.recorded"),
+      step("quest-12", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+    ]),
+    workflow("wf-material-prep", "材料整理", "背包", "检查背包材料、整理按钮和状态反馈。", [
+      step("material-01", "detect_page", "确认主界面", "page.home.ready", "match=image_or_ocr", "home.visible"),
+      step("material-02", "hotkey", "打开背包", "ALT+E", "mode=hwnd-key", "bag.open"),
+      step("material-03", "wait_image", "等待背包界面", "page.bag.ready", "threshold=0.85", "visible"),
+      step("material-04", "ocr_assert", "确认背包标题", "包裹", "lang=zh; roi=top", "text_found"),
+      step("material-05", "condition", "检查背包空间", "state.bag_space", "guard=>2", "continue"),
+      step("material-06", "wait_image", "查找目标材料", "item.target_material", "threshold=0.86", "visible"),
+      step("material-07", "image_click", "选择目标材料", "item.target_material", "button=left; point=center", "item.selected"),
+      step("material-08", "image_click", "移动到整理区", "button.sort_material", "button=left; point=center", "sort.accepted"),
+      step("material-09", "delay", "等待整理反馈", "900ms", "reason=server_response", "time.elapsed"),
+      step("material-10", "ocr_assert", "确认整理结果", "整理", "lang=zh; roi=panel", "text_found"),
+      step("material-11", "snapshot", "记录材料状态", "window.client", "dry-run log only", "snapshot.recorded"),
+      step("material-12", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+    ]),
   ];
 }
 
@@ -528,7 +719,7 @@ async function loadWorkspace() {
     if (!state.workspace.workflows.length) {
       state.workspace = createSeedWorkspace();
       await saveWorkspaceNow();
-      appendLog("info", "首次启动已写入 5 个示例任务");
+      appendLog("info", `首次启动已写入 ${state.workspace.workflows.length} 个示例任务`);
     }
     $("#workspace-state").textContent = result.existed ? "loaded" : "seeded";
     $("#workspace-state").classList.add("ok");
@@ -1073,6 +1264,7 @@ function setText(selector, value) {
 function renderAll() {
   fillWorkflowBlueprintSelect($("#workflow-blueprint-select"));
   renderBlueprintPreview();
+  renderBlueprintGallery();
   renderQueueWorkflowPicker();
   renderWorkflowList();
   renderWorkflowForm();
@@ -1230,6 +1422,57 @@ function importSampleWorkflowPack() {
     `导入示例包：${samples.map((item) => `${item.name}(${item.steps.length}步)`).join(" / ")}`,
   );
   return samples;
+}
+
+function createExerciseSuite() {
+  const workflows = exerciseSuiteBlueprintIds.map((blueprintId) => {
+    const blueprint = workflowBlueprintById(blueprintId);
+    return createWorkflowFromBlueprint(blueprint, 1, `演练 ${blueprint.defaultPrefix || blueprint.label}`);
+  });
+  state.workspace.workflows.unshift(...workflows);
+  state.workspace.activeWorkflowId = workflows[0]?.id || state.workspace.activeWorkflowId;
+  state.selectedStepId = workflows[0]?.steps[0]?.id || null;
+  selectFirstUnboundCapturedStep(workflows[0]?.steps || []);
+
+  const targets = selectedEditableWindows();
+  const timing = queueTimingOptions();
+  const staggerMs = normalizedNonNegativeInteger(timing.staggerMs) ?? 0;
+  const gapMs = normalizedNonNegativeInteger(timing.gapMs) ?? 0;
+  const queueSizes = [];
+  for (const [targetIndex, target] of targets.entries()) {
+    const assignment = ensureAssignment(target);
+    const queueSize = Math.min(
+      workflows.length,
+      exerciseSuiteQueuePattern[targetIndex % exerciseSuiteQueuePattern.length],
+    );
+    queueSizes.push(queueSize);
+    for (let workflowIndex = 0; workflowIndex < queueSize; workflowIndex += 1) {
+      const workflow = workflows[(targetIndex + workflowIndex) % workflows.length];
+      assignment.queue.push(
+        queueItemForWorkflow(workflow.id, assignment.queue.length + 1, {
+          startDelayMs: workflowIndex === 0 ? targetIndex * staggerMs : 0,
+          afterDelayMs: gapMs,
+        }),
+      );
+    }
+    assignment.queue = renumberQueue(assignment.queue);
+    assignment.updatedAt = new Date().toISOString();
+  }
+
+  markDirty(targets.length ? "exercise suite queued" : "exercise suite");
+  renderAll();
+  const summary = `${workflows.length} 个任务 · 每个 ${workflows.map((item) => item.steps.length).join("/")} 步`;
+  if (targets.length) {
+    setStatus(`已生成演练套件并分配到 ${targets.length} 个窗口队列`);
+    appendLog(
+      "info",
+      `演练套件：${summary}；窗口队列长度 ${queueSizes.join(" / ")}；等待 ${staggerMs}ms/${gapMs}ms`,
+    );
+  } else {
+    setStatus("已生成演练套件；选择窗口后可追加或复制队列");
+    appendLog("info", `演练套件：${summary}；未选择窗口，暂未分配队列`);
+  }
+  return workflows;
 }
 
 function newWorkflow() {
@@ -1439,6 +1682,37 @@ function renderBlueprintPreview() {
     track.append(more);
   }
   preview.append(summary, track);
+}
+
+function renderBlueprintGallery() {
+  const gallery = $("#blueprint-gallery");
+  const select = $("#workflow-blueprint-select");
+  if (!gallery || !select) return;
+  const activeId = workflowBlueprintById(select.value)?.id || workflowBlueprints[0]?.id || "";
+  gallery.replaceChildren(
+    ...workflowBlueprints.map((blueprint) => {
+      const counts = blueprint.steps.reduce((sum, step) => {
+        sum[step.type] = (sum[step.type] || 0) + 1;
+        return sum;
+      }, {});
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "blueprint-card";
+      button.classList.toggle("active", blueprint.id === activeId);
+      button.innerHTML = `
+        <span>${escapeHtml(blueprint.category)}</span>
+        <strong>${escapeHtml(blueprint.label)}</strong>
+        <small>${blueprint.steps.length} 步 · 热键 ${counts.hotkey || 0} · 识图 ${counts.image_click || 0} · OCR ${counts.ocr_assert || 0}</small>
+      `;
+      button.addEventListener("click", () => {
+        select.value = blueprint.id;
+        syncWorkflowBlueprintDefaults({ force: true });
+        renderBlueprintPreview();
+        renderBlueprintGallery();
+      });
+      return button;
+    }),
+  );
 }
 
 function renderQueueWorkflowPicker() {
@@ -4588,9 +4862,11 @@ $("#clear-selected-queues").addEventListener("click", clearSelectedQueues);
 $("#workflow-blueprint-select").addEventListener("change", () => {
   syncWorkflowBlueprintDefaults({ force: true });
   renderBlueprintPreview();
+  renderBlueprintGallery();
 });
 $("#create-workflow-from-blueprint").addEventListener("click", () => createWorkflowBatch());
 $("#create-and-assign-blueprint").addEventListener("click", () => createWorkflowBatch({ assignToSelected: true }));
+$("#create-exercise-suite").addEventListener("click", createExerciseSuite);
 $("#new-workflow").addEventListener("click", newWorkflow);
 $("#import-sample-pack").addEventListener("click", importSampleWorkflowPack);
 $("#duplicate-workflow").addEventListener("click", duplicateWorkflow);
