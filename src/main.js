@@ -1369,15 +1369,19 @@ function readinessBucketSummary(items = []) {
     missingCoords: 0,
     missingOcrTexts: 0,
     roiWarnings: 0,
+    plannedSemantics: 0,
+    restorePlans: 0,
   };
   for (const item of items) {
     if (item.severity === "issue") buckets.issues += 1;
     if (item.severity === "warning") buckets.warnings += 1;
     const message = String(item.message || "");
     if (item.kind === "缺素材" || /Ctrl\+V 图片|图像步骤/.test(message)) buckets.missingAssets += 1;
-    if (item.kind === "坐标" || /后台点击需要/.test(message)) buckets.missingCoords += 1;
+    if (item.kind === "坐标" || /后台(?:点击|双击)需要/.test(message)) buckets.missingCoords += 1;
     if (item.kind === "OCR" || /OCR 需要目标文本/.test(message)) buckets.missingOcrTexts += 1;
     if (/未限定 ROI/.test(message)) buckets.roiWarnings += 1;
+    if (isPlannedSemanticMessage(message)) buckets.plannedSemantics += 1;
+    if (isRestorePlanMessage(message)) buckets.restorePlans += 1;
   }
   return buckets;
 }
@@ -1388,7 +1392,17 @@ function readinessDetailText(summary) {
   if (summary.missingCoords) details.push(`缺坐标 ${summary.missingCoords}`);
   if (summary.missingOcrTexts) details.push(`OCR ${summary.missingOcrTexts}`);
   if (summary.roiWarnings) details.push(`ROI 提醒 ${summary.roiWarnings}`);
+  if (summary.plannedSemantics) details.push(`计划态 ${summary.plannedSemantics}`);
+  if (summary.restorePlans) details.push(`恢复计划 ${summary.restorePlans}`);
   return details.join(" · ");
+}
+
+function isPlannedSemanticMessage(message) {
+  return /计划态|不会改变真实执行路径|不会执行真实条件分支|不会自动执行恢复/.test(String(message || ""));
+}
+
+function isRestorePlanMessage(message) {
+  return /restore|恢复/.test(String(message || "")) && isPlannedSemanticMessage(message);
 }
 
 function workflowReadinessSummary(workflow, validation = null) {
@@ -1398,7 +1412,9 @@ function workflowReadinessSummary(workflow, validation = null) {
   const label =
     level === "blocked"
       ? `需采样 ${summary.issues}`
-      : level === "warning"
+      : summary.plannedSemantics
+        ? `输入就绪 · 计划态 ${summary.plannedSemantics}`
+        : level === "warning"
         ? `可执行 · ${summary.warnings} 提醒`
         : "后台就绪";
   return {
@@ -1437,6 +1453,8 @@ function queueReadinessSummary(assignment) {
   if (disabledCount) details.push(`停用 ${disabledCount}`);
   if (validation.issues.length) details.push(`校验阻塞 ${validation.issues.length}`);
   if (validation.warnings.length) details.push(`校验提醒 ${validation.warnings.length}`);
+  const plannedWarningCount = validation.warnings.filter(isPlannedSemanticMessage).length;
+  if (plannedWarningCount) details.push(`计划态 ${plannedWarningCount}`);
   if (!queue.length) details.push("暂无任务");
   if (queue.length && !workflows.length && !missingWorkflowCount) details.push("没有启用任务");
   return {
@@ -2028,17 +2046,26 @@ function renderSteps(validationOverride = null) {
       : stepMessages.warnings.length
         ? `提醒 ${stepMessages.warnings.length}`
         : "";
+    const semanticBadges = [];
+    if (plannedOnlyStepTypes.has(item.type)) {
+      semanticBadges.push(`<em class="step-badge planned" title="此步骤当前只记录计划语义，不改变真实执行路径">计划态</em>`);
+    }
+    if (item.onFail === "restore") {
+      semanticBadges.push(`<em class="step-badge planned" title="restore 失败处理当前不会自动执行恢复序列">恢复计划</em>`);
+    }
     row.type = "button";
     row.className = "step-row";
     row.classList.toggle("active", item.id === state.selectedStepId);
     row.classList.toggle("disabled", item.enabled === false);
     row.classList.toggle("has-issue", stepMessages.issues.length > 0);
     row.classList.toggle("has-warning", !stepMessages.issues.length && stepMessages.warnings.length > 0);
+    row.classList.toggle("planned-only", plannedOnlyStepTypes.has(item.type) || item.onFail === "restore");
     row.innerHTML = `
       <span>${String(index + 1).padStart(2, "0")}</span>
       <strong>${escapeHtml(item.name || stepLabels[item.type] || item.type)}</strong>
       <small>${item.enabled === false ? "停用 · " : ""}${escapeHtml(stepLabels[item.type] || item.type)} · ${escapeHtml(item.target || "target: none")}</small>
       ${badgeText ? `<em class="step-badge ${badgeClass}" title="${escapeHtml([...stepMessages.issues, ...stepMessages.warnings].join(" / "))}">${badgeText}</em>` : ""}
+      ${semanticBadges.join("")}
     `;
     row.addEventListener("click", () => {
       state.selectedStepId = item.id;
@@ -2079,12 +2106,14 @@ function renderWorkflowCompletion(workflow = activeWorkflow(), validation = null
   nextButton.disabled = completion.items.length === 0;
   title.textContent = issueCount
     ? "仍需采样 / 配置"
-    : warningCount
+    : readiness.plannedSemantics
+      ? "输入链路就绪 / 流程仍是计划态"
+      : warningCount
       ? "可后台执行（有建议）"
       : "后台真实执行就绪";
   summary.textContent = completion.items.length
     ? `${completion.items.length} 项待处理 · 阻塞 ${issueCount} · 提醒 ${warningCount}${detail ? ` · ${detail}` : ""}`
-    : `${workflow.name} 可直接进入后台执行队列`;
+    : `${workflow.name} 输入链路可进入后台队列`;
   if (!completion.items.length) {
     const ready = document.createElement("div");
     ready.className = "empty-block compact";
@@ -2168,17 +2197,19 @@ function workflowCompletionItem(message, severity, workflow) {
 }
 
 function isSpecificCompletionGap(message) {
-  return /Ctrl\+V 图片|OCR 需要目标文本|文本输入需要|后台点击需要|绑定的识别目标已不存在|匹配阈值|鼠标键|重试间隔|延迟步骤/.test(
+  return /Ctrl\+V 图片|OCR 需要目标文本|文本输入需要|后台(?:点击|双击)需要|绑定的识别目标已不存在|匹配阈值|鼠标键|重试间隔|延迟步骤|计划态|不会自动执行恢复/.test(
     message,
   );
 }
 
 function completionKindForMessage(message) {
+  if (isRestorePlanMessage(message)) return "恢复";
+  if (isPlannedSemanticMessage(message)) return "流程";
   if (message.includes("文本输入")) return "文本";
   if (message.includes("Ctrl+V 图片")) return "缺素材";
   if (message.includes("OCR 需要目标文本")) return "OCR";
   if (message.includes("未限定 ROI")) return "ROI";
-  if (message.includes("后台点击需要")) return "坐标";
+  if (/后台(?:点击|双击)需要/.test(message)) return "坐标";
   if (message.includes("识别目标已不存在") || message.includes("缺少目标")) return "目标";
   if (message.includes("快捷键")) return "热键";
   if (message.includes("阈值")) return "阈值";
@@ -2189,11 +2220,13 @@ function completionKindForMessage(message) {
 }
 
 function completionActionForMessage(message) {
+  if (isRestorePlanMessage(message)) return "配恢复";
+  if (isPlannedSemanticMessage(message)) return "看计划";
   if (message.includes("文本输入")) return "填文本";
   if (message.includes("Ctrl+V 图片")) return "粘贴图";
   if (message.includes("OCR 需要目标文本")) return "填文本";
   if (message.includes("未限定 ROI")) return "设 ROI";
-  if (message.includes("后台点击需要")) return "填坐标";
+  if (/后台(?:点击|双击)需要/.test(message)) return "填坐标";
   if (message.includes("识别目标已不存在") || message.includes("缺少目标")) return "绑目标";
   if (message.includes("快捷键")) return "改热键";
   if (message.includes("阈值")) return "改阈值";
@@ -4554,8 +4587,11 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
       mode === "background" ? addIssue(message, item) : addWarning(message, item);
     }
   }
+  if (item.onFail === "restore") {
+    addWarning(`${prefix} 失败处理 restore 当前是计划态；不会自动执行恢复序列，失败仍会停止队列`, item);
+  }
   if (plannedOnlyStepTypes.has(item.type)) {
-    addWarning(`${prefix} ${stepLabels[item.type] || item.type} 当前只记录计划态，不会执行真实条件分支或恢复动作`, item);
+    addWarning(`${prefix} ${stepLabels[item.type] || item.type} 当前只记录计划态，不会改变真实执行路径`, item);
   }
 }
 

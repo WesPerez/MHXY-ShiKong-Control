@@ -26,6 +26,7 @@
 - 已有后台动作：`hotkey`、`text_input`、`click`、`double_click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
 - 已知缺口：真实 `condition`、`loop`、`task_jump`、显式恢复流程、后端事件流和管理员环境下的双击 live 验收尚未完成。
 - 当前安全语义：`unsupported` 和 `error` 强制停止；识图/OCR/缺素材类失败在重试耗尽后默认停止，只有 `onFail=skip` 才继续。
+- 当前 readiness 已显式标记 `condition`、`restore` 和 `onFail=restore` 为计划态/恢复计划，避免把输入链路就绪误报成真实控制流完成。
 
 ## 数据方案
 

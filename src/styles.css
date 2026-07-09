@@ -1431,6 +1431,10 @@ h3 {
   border-color: #6b5a2d;
 }
 
+.step-row.planned-only:not(.has-issue) {
+  border-color: #54616b;
+}
+
 .step-badge {
   grid-row: 1 / 3;
   display: grid;
@@ -1455,6 +1459,12 @@ h3 {
   border-color: #6b5a2d;
   background: #2d2818;
   color: #dec56f;
+}
+
+.step-badge.planned {
+  border-color: #54616b;
+  background: #1b2428;
+  color: #aebbc2;
 }
 
 .step-validation-detail {

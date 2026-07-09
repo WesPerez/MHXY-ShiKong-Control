@@ -410,9 +410,10 @@
                       </label>
                     </div>
                     <p class="hint" data-step-types="ocr_assert">OCR 会截图识别目标文字，不发送鼠标或键盘输入。</p>
+                    <p class="hint" data-step-types="condition">条件当前是计划态说明，不会改变真实执行路径；后续 schema v7 会接入分支目标。</p>
                     <p class="hint" data-step-types="double_click">双击会向目标 hwnd 投递后台鼠标双击消息，不移动真实鼠标。</p>
                     <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
-                    <p class="hint" data-step-types="snapshot restore">此类型当前没有可直接投递的后台输入；会保留在任务编排和日志中。</p>
+                    <p class="hint" data-step-types="snapshot restore">此类型当前没有可直接投递的后台输入；restore 不会自动恢复失败步骤。</p>
                   </section>
                   <label>
                     成功确认
@@ -435,7 +436,7 @@
                         <option value="stop">stop</option>
                         <option value="retry">retry</option>
                         <option value="skip">skip</option>
-                        <option value="restore">restore</option>
+                        <option value="restore">restore（计划态）</option>
                       </select>
                     </label>
                   </div>
