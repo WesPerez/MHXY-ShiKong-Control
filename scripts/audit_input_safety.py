@@ -47,6 +47,34 @@ IDENTITY_TOKENS = [
     "window_for_hwnd",
     "expectedWindow",
     "windowIdentity",
+    "expected_window: Option<&ExpectedWindowInput>",
+    "validate_expected_window(hwnd, expected_window)?",
+]
+IDENTITY_REQUIRED_TOKENS = [
+    "current_window_identity",
+    "currentWindowIdentityForRun",
+    "validate_expected_window_argument",
+    "expected window identity must include hwnd",
+    "hwnd argument",
+    "requiredBackgroundWindowIdentityIssue",
+    "窗口身份不完整",
+]
+IMAGE_CLICK_RECHECK_TOKENS = [
+    "validate_expected_window(hwnd, expected_window)?;",
+]
+IMAGE_CLICK_RECHECK_PATTERNS = [
+    (
+        "image_click dispatch passes expected_window",
+        '"image_click"=>dispatch_image_step(hwnd,&step,true,expected_window)',
+    ),
+    (
+        "template image_click revalidates before click",
+        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,center,button)?;",
+    ),
+    (
+        "roi image_click revalidates before click",
+        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,point.clone(),button)?;",
+    ),
 ]
 TARGET_TOKENS = [
     "targets",
@@ -110,6 +138,15 @@ PASTE_AUTO_STEP_TOKENS = [
     "insertStepAt",
     "bindTargetToStep(destination.step",
 ]
+CLIPBOARD_FALLBACK_TOKENS = [
+    "import_clipboard_image",
+    "read_clipboard_rgb_frame",
+    "CF_DIBV5",
+    "CF_DIB",
+    "dib_to_rgb_frame",
+    "后端剪贴板图片导入失败",
+    "由 Ctrl+V 后端剪贴板导入创建",
+]
 RUNNER_SEMANTIC_TOKENS = [
     "backgroundStepDelay",
     "executeRetryUntilStep",
@@ -141,6 +178,11 @@ WORKFLOW_BLUEPRINT_TOKENS = [
     "ensureTargetsForSteps(workflow.steps",
     "selectFirstUnboundCapturedStep",
     ".workflow-wizard",
+]
+WORKFLOW_DUPLICATE_TARGET_TOKENS = [
+    "cloneWorkflowTargetForDuplicate",
+    "targetIdMap",
+    "已克隆",
 ]
 BATCH_QUEUE_TOKENS = [
     "batch-queue-panel",
@@ -178,6 +220,18 @@ UI_STABILITY_TOKENS = [
     ".state-pill.running",
     ".session-lane.failed",
 ]
+RUN_REPORT_TOKENS = [
+    "MAX_SESSION_STEP_RESULTS",
+    "current_window_identity",
+    "recordSessionStepResult",
+    "attachEndedWindowIdentity",
+    "runHistoryEntryFromSession",
+    "endedWindowIdentity",
+    "endedWindowIdentityError",
+    "stepResults",
+    "renderRunHistory",
+    ".session-lane.history",
+]
 
 
 def main() -> int:
@@ -192,22 +246,44 @@ def main() -> int:
     hwnd = scan_tokens(files, HWND_TOKENS)
     focus = scan_tokens(files, FOCUS_TOKENS)
     identity = scan_tokens(files, IDENTITY_TOKENS)
+    identity_required_guard = scan_tokens(files, IDENTITY_REQUIRED_TOKENS)
+    image_click_recheck = scan_tokens(files, IMAGE_CLICK_RECHECK_TOKENS)
+    image_click_recheck_patterns = scan_collapsed_patterns(files, IMAGE_CLICK_RECHECK_PATTERNS)
     targets = scan_tokens(files, TARGET_TOKENS)
     target_crud = scan_tokens(files, TARGET_CRUD_TOKENS)
     target_filter_ui = scan_tokens(files, TARGET_FILTER_UI_TOKENS)
     step_edit = scan_tokens(files, STEP_EDIT_TOKENS)
     step_validation = scan_tokens(files, STEP_VALIDATION_TOKENS)
     paste_auto_step = scan_tokens(files, PASTE_AUTO_STEP_TOKENS)
+    clipboard_fallback = scan_tokens(files, CLIPBOARD_FALLBACK_TOKENS)
     runner_semantics = scan_tokens(files, RUNNER_SEMANTIC_TOKENS)
     completion_board = scan_tokens(files, COMPLETION_BOARD_TOKENS)
     workflow_blueprint = scan_tokens(files, WORKFLOW_BLUEPRINT_TOKENS)
+    workflow_duplicate_target = scan_tokens(files, WORKFLOW_DUPLICATE_TARGET_TOKENS)
     batch_queue = scan_tokens(files, BATCH_QUEUE_TOKENS)
     ocr_contract = scan_tokens(files, OCR_CONTRACT_TOKENS)
     ui_stability = scan_tokens(files, UI_STABILITY_TOKENS)
+    run_report = scan_tokens(files, RUN_REPORT_TOKENS)
     identity_required = bool(hwnd)
     identity_seen = {hit["token"] for hit in identity}
     identity_missing = [
         token for token in IDENTITY_TOKENS if identity_required and token not in identity_seen
+    ]
+    identity_required_guard_seen = {hit["token"] for hit in identity_required_guard}
+    identity_required_guard_missing = [
+        token
+        for token in IDENTITY_REQUIRED_TOKENS
+        if identity_required and token not in identity_required_guard_seen
+    ]
+    image_click_recheck_seen = {hit["token"] for hit in image_click_recheck}
+    image_click_recheck_missing = [
+        token for token in IMAGE_CLICK_RECHECK_TOKENS if token not in image_click_recheck_seen
+    ]
+    image_click_recheck_pattern_seen = {hit["token"] for hit in image_click_recheck_patterns}
+    image_click_recheck_pattern_missing = [
+        token
+        for token, _pattern in IMAGE_CLICK_RECHECK_PATTERNS
+        if token not in image_click_recheck_pattern_seen
     ]
     target_crud_seen = {hit["token"] for hit in target_crud}
     target_crud_missing = [
@@ -229,6 +305,10 @@ def main() -> int:
     paste_auto_step_missing = [
         token for token in PASTE_AUTO_STEP_TOKENS if token not in paste_auto_step_seen
     ]
+    clipboard_fallback_seen = {hit["token"] for hit in clipboard_fallback}
+    clipboard_fallback_missing = [
+        token for token in CLIPBOARD_FALLBACK_TOKENS if token not in clipboard_fallback_seen
+    ]
     runner_semantics_seen = {hit["token"] for hit in runner_semantics}
     runner_semantics_missing = [
         token for token in RUNNER_SEMANTIC_TOKENS if token not in runner_semantics_seen
@@ -240,6 +320,12 @@ def main() -> int:
     workflow_blueprint_seen = {hit["token"] for hit in workflow_blueprint}
     workflow_blueprint_missing = [
         token for token in WORKFLOW_BLUEPRINT_TOKENS if token not in workflow_blueprint_seen
+    ]
+    workflow_duplicate_target_seen = {hit["token"] for hit in workflow_duplicate_target}
+    workflow_duplicate_target_missing = [
+        token
+        for token in WORKFLOW_DUPLICATE_TARGET_TOKENS
+        if token not in workflow_duplicate_target_seen
     ]
     batch_queue_seen = {hit["token"] for hit in batch_queue}
     batch_queue_missing = [
@@ -253,6 +339,10 @@ def main() -> int:
     ui_stability_missing = [
         token for token in UI_STABILITY_TOKENS if token not in ui_stability_seen
     ]
+    run_report_seen = {hit["token"] for hit in run_report}
+    run_report_missing = [
+        token for token in RUN_REPORT_TOKENS if token not in run_report_seen
+    ]
     report = {
         "version": 1,
         "projectRoot": str(project_root),
@@ -263,6 +353,12 @@ def main() -> int:
         "identityCheckEvidence": identity,
         "identityCheckRequired": identity_required,
         "identityCheckMissing": identity_missing,
+        "identityRequiredGuardEvidence": identity_required_guard,
+        "identityRequiredGuardMissing": identity_required_guard_missing,
+        "imageClickRecheckEvidence": image_click_recheck,
+        "imageClickRecheckMissing": image_click_recheck_missing,
+        "imageClickRecheckPatternEvidence": image_click_recheck_patterns,
+        "imageClickRecheckPatternMissing": image_click_recheck_pattern_missing,
         "targetLibraryEvidence": targets,
         "targetCrudEvidence": target_crud,
         "targetCrudMissing": target_crud_missing,
@@ -274,40 +370,54 @@ def main() -> int:
         "stepValidationMissing": step_validation_missing,
         "pasteAutoStepEvidence": paste_auto_step,
         "pasteAutoStepMissing": paste_auto_step_missing,
+        "clipboardFallbackEvidence": clipboard_fallback,
+        "clipboardFallbackMissing": clipboard_fallback_missing,
         "runnerSemanticEvidence": runner_semantics,
         "runnerSemanticMissing": runner_semantics_missing,
         "completionBoardEvidence": completion_board,
         "completionBoardMissing": completion_board_missing,
         "workflowBlueprintEvidence": workflow_blueprint,
         "workflowBlueprintMissing": workflow_blueprint_missing,
+        "workflowDuplicateTargetEvidence": workflow_duplicate_target,
+        "workflowDuplicateTargetMissing": workflow_duplicate_target_missing,
         "batchQueueEvidence": batch_queue,
         "batchQueueMissing": batch_queue_missing,
         "ocrContractEvidence": ocr_contract,
         "ocrContractMissing": ocr_contract_missing,
         "uiStabilityEvidence": ui_stability,
         "uiStabilityMissing": ui_stability_missing,
+        "runReportEvidence": run_report,
+        "runReportMissing": run_report_missing,
         "passed": (
             not forbidden
             and not focus
             and not identity_missing
+            and not identity_required_guard_missing
+            and not image_click_recheck_missing
+            and not image_click_recheck_pattern_missing
             and not target_crud_missing
             and not target_filter_ui_missing
             and not step_edit_missing
             and not step_validation_missing
             and not paste_auto_step_missing
+            and not clipboard_fallback_missing
             and not runner_semantics_missing
             and not completion_board_missing
             and not workflow_blueprint_missing
+            and not workflow_duplicate_target_missing
             and not batch_queue_missing
             and not ocr_contract_missing
             and not ui_stability_missing
+            and not run_report_missing
         ),
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
             "Focus-affecting APIs indicate foreground-control risk. "
             "hwndInputEvidence may be empty when this build has no runtime input dispatcher. "
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
-            "Step editing, validation badge, paste-to-step, runner semantic, workflow blueprint, batch queue, and UI stability tokens catch visible UI or modeled-step regressions."
+            "expectedWindow.hwnd must be required and checked before dispatch. "
+            "image_click must recheck expectedWindow after matching and before posting a click. "
+            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, workflow blueprint, independent workflow duplicate targets, batch queue, run report, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -319,6 +429,12 @@ def main() -> int:
         print(f"focusAffectingEvidence={len(focus)}")
         print(f"identityCheckEvidence={len(identity)}")
         print(f"identityCheckMissing={len(identity_missing)}")
+        print(f"identityRequiredGuardEvidence={len(identity_required_guard)}")
+        print(f"identityRequiredGuardMissing={len(identity_required_guard_missing)}")
+        print(f"imageClickRecheckEvidence={len(image_click_recheck)}")
+        print(f"imageClickRecheckMissing={len(image_click_recheck_missing)}")
+        print(f"imageClickRecheckPatternEvidence={len(image_click_recheck_patterns)}")
+        print(f"imageClickRecheckPatternMissing={len(image_click_recheck_pattern_missing)}")
         print(f"targetLibraryEvidence={len(targets)}")
         print(f"targetCrudEvidence={len(target_crud)}")
         print(f"targetCrudMissing={len(target_crud_missing)}")
@@ -330,18 +446,24 @@ def main() -> int:
         print(f"stepValidationMissing={len(step_validation_missing)}")
         print(f"pasteAutoStepEvidence={len(paste_auto_step)}")
         print(f"pasteAutoStepMissing={len(paste_auto_step_missing)}")
+        print(f"clipboardFallbackEvidence={len(clipboard_fallback)}")
+        print(f"clipboardFallbackMissing={len(clipboard_fallback_missing)}")
         print(f"runnerSemanticEvidence={len(runner_semantics)}")
         print(f"runnerSemanticMissing={len(runner_semantics_missing)}")
         print(f"completionBoardEvidence={len(completion_board)}")
         print(f"completionBoardMissing={len(completion_board_missing)}")
         print(f"workflowBlueprintEvidence={len(workflow_blueprint)}")
         print(f"workflowBlueprintMissing={len(workflow_blueprint_missing)}")
+        print(f"workflowDuplicateTargetEvidence={len(workflow_duplicate_target)}")
+        print(f"workflowDuplicateTargetMissing={len(workflow_duplicate_target_missing)}")
         print(f"batchQueueEvidence={len(batch_queue)}")
         print(f"batchQueueMissing={len(batch_queue_missing)}")
         print(f"ocrContractEvidence={len(ocr_contract)}")
         print(f"ocrContractMissing={len(ocr_contract_missing)}")
         print(f"uiStabilityEvidence={len(ui_stability)}")
         print(f"uiStabilityMissing={len(ui_stability_missing)}")
+        print(f"runReportEvidence={len(run_report)}")
+        print(f"runReportMissing={len(run_report_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
@@ -351,6 +473,15 @@ def main() -> int:
         if identity_missing:
             for token in identity_missing:
                 print(f"MISSING_IDENTITY {token}")
+        if image_click_recheck_missing:
+            for token in image_click_recheck_missing:
+                print(f"MISSING_IMAGE_CLICK_RECHECK {token}")
+        if image_click_recheck_pattern_missing:
+            for token in image_click_recheck_pattern_missing:
+                print(f"MISSING_IMAGE_CLICK_RECHECK_PATTERN {token}")
+        if clipboard_fallback_missing:
+            for token in clipboard_fallback_missing:
+                print(f"MISSING_CLIPBOARD_FALLBACK {token}")
         if target_crud_missing:
             for token in target_crud_missing:
                 print(f"MISSING_TARGET_CRUD {token}")
@@ -375,6 +506,9 @@ def main() -> int:
         if workflow_blueprint_missing:
             for token in workflow_blueprint_missing:
                 print(f"MISSING_WORKFLOW_BLUEPRINT {token}")
+        if workflow_duplicate_target_missing:
+            for token in workflow_duplicate_target_missing:
+                print(f"MISSING_WORKFLOW_DUPLICATE_TARGET {token}")
         if batch_queue_missing:
             for token in batch_queue_missing:
                 print(f"MISSING_BATCH_QUEUE {token}")
@@ -384,6 +518,9 @@ def main() -> int:
         if ui_stability_missing:
             for token in ui_stability_missing:
                 print(f"MISSING_UI_STABILITY {token}")
+        if run_report_missing:
+            for token in run_report_missing:
+                print(f"MISSING_RUN_REPORT {token}")
     return 0 if report["passed"] else 2
 
 
@@ -427,6 +564,29 @@ def scan_tokens(paths: list[Path], tokens: list[str]) -> list[dict[str, object]]
                             "text": line.strip()[:240],
                         }
                     )
+    return hits
+
+
+def scan_collapsed_patterns(
+    paths: list[Path], patterns: list[tuple[str, str]]
+) -> list[dict[str, object]]:
+    hits: list[dict[str, object]] = []
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        collapsed = "".join(text.split())
+        for token, pattern in patterns:
+            if pattern in collapsed:
+                hits.append(
+                    {
+                        "path": str(path),
+                        "line": 0,
+                        "token": token,
+                        "text": pattern[:240],
+                    }
+                )
     return hits
 
 

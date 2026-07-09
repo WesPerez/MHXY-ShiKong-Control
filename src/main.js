@@ -3,10 +3,11 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
-const WORKSPACE_SCHEMA_VERSION = 4;
+const WORKSPACE_SCHEMA_VERSION = 5;
 const DEFAULT_IMAGE_THRESHOLD = 0.86;
 const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 const MAX_LOG_ROWS = 500;
+const MAX_SESSION_STEP_RESULTS = 300;
 const targetBackedStepTypes = new Set(["image_click", "wait_image", "detect_page", "click", "ocr_assert"]);
 const capturedImageStepTypes = new Set(["image_click", "wait_image", "detect_page"]);
 const stepFailActions = new Set(["stop", "retry", "skip", "restore"]);
@@ -1073,17 +1074,81 @@ function newWorkflow() {
 function duplicateWorkflow() {
   const source = activeWorkflow();
   if (!source) return;
+  const now = new Date().toISOString();
+  const targetIdMap = new Map();
+  const clonedTargets = [];
+  const cloneTargetId = (oldTargetId, sourceStep) => {
+    if (!oldTargetId) return "";
+    if (targetIdMap.has(oldTargetId)) return targetIdMap.get(oldTargetId);
+    const existing = state.workspace.targets.find((target) => target.id === oldTargetId);
+    const cloned = cloneWorkflowTargetForDuplicate(existing, oldTargetId, sourceStep, source.name, now);
+    targetIdMap.set(oldTargetId, cloned.id);
+    clonedTargets.push(cloned);
+    return cloned.id;
+  };
   const copy = normalizeWorkflow(JSON.parse(JSON.stringify(source)));
   copy.id = randomId("wf");
   copy.name = `${source.name} 副本`;
-  copy.createdAt = new Date().toISOString();
+  copy.createdAt = now;
   copy.updatedAt = copy.createdAt;
-  copy.steps = copy.steps.map((item) => ({ ...item, id: randomId("step") }));
+  copy.steps = source.steps.map((sourceStep) => {
+    const item = normalizeStep({
+      ...JSON.parse(JSON.stringify(sourceStep)),
+      id: randomId("step"),
+    });
+    const oldTargetId = stepTargetId(sourceStep);
+    const newTargetId = cloneTargetId(oldTargetId, sourceStep);
+    if (newTargetId) {
+      item.targetId = newTargetId;
+      delete item.assetId;
+      const sourceTargetText = String(sourceStep.target || "").trim();
+      const oldExplicitTarget = String(sourceStep.targetId || sourceStep.assetId || "").trim();
+      if (!sourceTargetText || sourceTargetText === oldTargetId || sourceTargetText === oldExplicitTarget) {
+        item.target = newTargetId;
+      } else {
+        item.target = String(sourceStep.target || "");
+      }
+    }
+    return item;
+  });
+  state.workspace.targets.unshift(...clonedTargets);
   state.workspace.workflows.unshift(copy);
   state.workspace.activeWorkflowId = copy.id;
   state.selectedStepId = copy.steps[0]?.id || null;
   markDirty("draft");
   renderAll();
+  appendLog("info", `复制任务：${copy.name}，已克隆 ${clonedTargets.length} 个识别目标`);
+}
+
+function cloneWorkflowTargetForDuplicate(existingTarget, oldTargetId, sourceStep, sourceWorkflowName, timestamp) {
+  const base = existingTarget
+    ? JSON.parse(JSON.stringify(existingTarget))
+    : {
+        id: oldTargetId,
+        name: friendlyTargetName(oldTargetId),
+        kind: targetKindForStep(sourceStep),
+        match: {
+          threshold: defaultThresholdForStep(sourceStep) || DEFAULT_IMAGE_THRESHOLD,
+          scope: commandValue(sourceStep.command, "roi") || "window",
+        },
+        click: {
+          button: normalizedButton(sourceStep.command),
+          point: commandValue(sourceStep.command, "point") || "center",
+        },
+        texts: sourceStep.type === "ocr_assert" ? [sourceStep.target] : [],
+        note: "由复制任务补建的目标占位",
+      };
+  const originalNote = String(base.note || "").trim();
+  return normalizeTarget({
+    ...base,
+    id: randomId("target"),
+    name: `${base.name || friendlyTargetName(oldTargetId)} 副本`,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    note: [originalNote, `由复制任务从“${sourceWorkflowName}”克隆，编辑不会影响原任务`]
+      .filter(Boolean)
+      .join("\n"),
+  });
 }
 
 function deleteWorkflow() {
@@ -2928,12 +2993,32 @@ async function cropPreviewRoiDataUrl(roi) {
 async function handlePasteImage(event) {
   if (isEditablePasteTarget(event.target)) return;
   const item = [...(event.clipboardData?.items || [])].find((entry) => entry.type.startsWith("image/"));
-  if (!item) return;
-  event.preventDefault();
-  const file = item.getAsFile();
-  if (!file) return;
-  const dataUrl = await readBlobAsDataUrl(file);
-  const size = await imageSize(dataUrl).catch(() => ({ width: 0, height: 0 }));
+  let dataUrl = "";
+  let size = { width: 0, height: 0 };
+  let note = "由 Ctrl+V 粘贴创建";
+  if (item) {
+    event.preventDefault();
+    const file = item.getAsFile();
+    if (!file) return;
+    dataUrl = await readBlobAsDataUrl(file);
+    size = await imageSize(dataUrl).catch(() => ({ width: 0, height: 0 }));
+  } else {
+    let imported = null;
+    try {
+      imported = await invoke("import_clipboard_image");
+    } catch (error) {
+      const message = String(error);
+      if (!message.includes("剪贴板里没有图片")) {
+        appendLog("warn", `后端剪贴板图片导入失败：${message}`);
+      }
+      return;
+    }
+    event.preventDefault();
+    dataUrl = imported.dataUrl || "";
+    size = { width: imported.width || 0, height: imported.height || 0 };
+    note = "由 Ctrl+V 后端剪贴板导入创建";
+  }
+  if (!dataUrl) return;
   const targetItem = normalizeTarget({
     id: randomId("target"),
     name: `粘贴图片 ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`,
@@ -2944,7 +3029,7 @@ async function handlePasteImage(event) {
     click: { button: "left", point: "center" },
     width: size.width,
     height: size.height,
-    note: "由 Ctrl+V 粘贴创建",
+    note,
   });
   const destination = ensureCapturedTargetStep(targetItem);
   if (!destination.step) {
@@ -3324,14 +3409,14 @@ function validateAllWorkflows() {
 }
 
 function dryRunSelected() {
-  runSelected("dry");
+  void runSelected("dry");
 }
 
 function backgroundRunSelected() {
-  runSelected("background");
+  void runSelected("background");
 }
 
-function runSelected(mode) {
+async function runSelected(mode) {
   const targets = selectedWindows();
   if (!targets.length) {
     setStatus("需要先选择窗口");
@@ -3374,7 +3459,7 @@ function runSelected(mode) {
     if (validation.warnings.length) {
       appendLog("warn", `${target.display} 队列提醒：${validation.warnings.join("；")}`);
     }
-    if (startRunForWindow(target, workflows, mode, source)) launched += 1;
+    if (await startRunForWindow(target, workflows, mode, source)) launched += 1;
   }
   setStatus(launched ? `已启动 ${launched} 个窗口队列` : "没有启动任何窗口队列");
 }
@@ -3396,13 +3481,15 @@ function validateWorkflowQueue(workflows, mode = "definition") {
   return { issues, warnings, firstBlockingWorkflow, firstBlockingValidation };
 }
 
-function startRunForWindow(target, workflows, mode, source) {
+async function startRunForWindow(target, workflows, mode, source) {
   const key = String(target.hwnd);
   const running = state.sessions[key]?.status === "running";
   if (running) {
     appendLog("warn", `${target.display} 已有运行中的会话，同 hwnd 保持互斥`);
     return false;
   }
+  const windowIdentity = await currentWindowIdentityForRun(target, mode);
+  if (!windowIdentity) return false;
   const workflowCopies = JSON.parse(JSON.stringify(workflows));
   const enabledStepTotal = workflowCopies.reduce(
     (sum, workflow) => sum + workflow.steps.filter((item) => item.enabled !== false).length,
@@ -3418,7 +3505,7 @@ function startRunForWindow(target, workflows, mode, source) {
     source,
     hwnd: target.hwnd,
     display: target.display,
-    windowIdentity: windowIdentityForTarget(target),
+    windowIdentity,
     workflowIds: workflowCopies.map((workflow) => workflow.id),
     workflowNames: workflowCopies.map((workflow) => workflow.name),
     workflowId: workflowCopies[0]?.id || "",
@@ -3429,6 +3516,12 @@ function startRunForWindow(target, workflows, mode, source) {
     totalSteps: enabledStepTotal,
     startedAt: new Date().toISOString(),
     logs: [],
+    stepResults: [],
+    failureReason: "",
+    failedWorkflowName: "",
+    failedStepName: "",
+    endedWindowIdentity: null,
+    endedWindowIdentityError: "",
     cancelRequested: false,
   };
   state.sessions[key] = session;
@@ -3447,8 +3540,10 @@ async function runSession(session, workflows) {
     for (const item of steps) {
       if (session.cancelRequested) break;
       session.currentStep += 1;
+      const stepStartedAt = new Date();
+      let result = null;
       if (session.mode === "background") {
-        const result = await executeBackgroundStepWithRetries(session, item).catch((error) => ({
+        result = await executeBackgroundStepWithRetries(session, item).catch((error) => ({
           status: "error",
           action: "backend",
           detail: String(error),
@@ -3459,22 +3554,84 @@ async function runSession(session, workflows) {
         if (shouldStopAfterResult(item, result)) {
           session.cancelRequested = true;
           session.status = "failed";
-          break;
+          session.failureReason = result.detail || `${result.status}/${result.action}`;
+          session.failedWorkflowName = workflow.name;
+          session.failedStepName = item.name || stepLabels[item.type] || item.type;
         }
       } else {
-        session.logs.unshift(
-          `${String(session.currentStep).padStart(2, "0")} ${workflow.name} / ${item.name} [${item.type}]`,
-        );
+        result = {
+          status: "observed",
+          action: "dry_run",
+          detail: "observation run only; no backend screenshot or input was invoked",
+          inputSent: false,
+          matched: false,
+        };
+        session.logs.unshift(formatStepLog(session.currentStep - 1, workflow, item, result));
         await sleep(dryRunDelay(item));
       }
+      recordSessionStepResult(session, workflow, item, result, stepStartedAt, new Date());
       renderSessions();
+      if (session.status === "failed") break;
     }
   }
   if (session.status !== "failed") {
     session.status = session.cancelRequested ? "stopped" : "done";
+    if (session.status === "stopped" && !session.failureReason) session.failureReason = "user requested stop";
   }
   session.endedAt = new Date().toISOString();
-  state.workspace.runHistory.unshift({
+  session.durationMs = Math.max(0, Date.parse(session.endedAt) - Date.parse(session.startedAt));
+  await attachEndedWindowIdentity(session);
+  state.workspace.runHistory.unshift(runHistoryEntryFromSession(session));
+  state.workspace.runHistory = state.workspace.runHistory.slice(0, 80);
+  markDirty("run logged");
+  renderSessions();
+  const stillRunning = Object.values(state.sessions).some((item) => item.status === "running");
+  setRunState(stillRunning ? "running" : "idle");
+  appendLog(
+    session.status === "done" ? "info" : "warn",
+    `${modeLabel(session.mode)} ${session.status}：${session.display}`,
+  );
+}
+
+function recordSessionStepResult(session, workflow, item, result, startedAt, endedAt) {
+  const record = {
+    order: session.currentStep,
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    stepId: item.id,
+    stepName: item.name || stepLabels[item.type] || item.type,
+    stepType: item.type,
+    status: result?.status || "unknown",
+    action: result?.action || "",
+    detail: result?.detail || "",
+    inputSent: Boolean(result?.inputSent),
+    matched: Boolean(result?.matched),
+    x: result?.x ?? null,
+    y: result?.y ?? null,
+    score: result?.score ?? null,
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+    durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()),
+  };
+  session.stepResults.push(record);
+  if (session.stepResults.length > MAX_SESSION_STEP_RESULTS) {
+    session.stepResults.splice(0, session.stepResults.length - MAX_SESSION_STEP_RESULTS);
+  }
+}
+
+async function attachEndedWindowIdentity(session) {
+  try {
+    const current = await invoke("current_window_identity", { hwnd: Number(session.hwnd) });
+    session.endedWindowIdentity = windowIdentityForTarget(current);
+    session.endedWindowIdentityError = "";
+  } catch (error) {
+    session.endedWindowIdentity = null;
+    session.endedWindowIdentityError = String(error);
+  }
+}
+
+function runHistoryEntryFromSession(session) {
+  return {
     id: session.id,
     mode: session.mode,
     source: session.source,
@@ -3487,19 +3644,18 @@ async function runSession(session, workflows) {
     queueLength: session.workflowIds.length,
     status: session.status,
     totalSteps: session.totalSteps,
+    completedSteps: session.currentStep,
+    durationMs: session.durationMs || 0,
+    failureReason: session.failureReason || "",
+    failedWorkflowName: session.failedWorkflowName || "",
+    failedStepName: session.failedStepName || "",
     windowIdentity: session.windowIdentity,
+    endedWindowIdentity: session.endedWindowIdentity,
+    endedWindowIdentityError: session.endedWindowIdentityError || "",
+    stepResults: session.stepResults.slice(-MAX_SESSION_STEP_RESULTS),
     startedAt: session.startedAt,
     endedAt: session.endedAt,
-  });
-  state.workspace.runHistory = state.workspace.runHistory.slice(0, 80);
-  markDirty("run logged");
-  renderSessions();
-  const stillRunning = Object.values(state.sessions).some((item) => item.status === "running");
-  setRunState(stillRunning ? "running" : "idle");
-  appendLog(
-    session.status === "done" ? "info" : "warn",
-    `${modeLabel(session.mode)} ${session.status}：${session.display}`,
-  );
+  };
 }
 
 async function executeBackgroundStepWithRetries(session, item) {
@@ -3617,6 +3773,47 @@ function windowIdentityForTarget(target) {
   };
 }
 
+async function currentWindowIdentityForRun(target, mode) {
+  const expected = windowIdentityForTarget(target);
+  const expectedIssue = requiredBackgroundWindowIdentityIssue(expected);
+  if (expectedIssue) {
+    appendLog("warn", `${target.display} 窗口身份不完整：${expectedIssue}；请刷新窗口列表后再运行`);
+    return null;
+  }
+  if (mode !== "background") return expected;
+  let current = null;
+  try {
+    current = normalizeWindowIdentity(
+      await invoke("current_window_identity", {
+        hwnd: Number(target.hwnd),
+      }),
+    );
+  } catch (error) {
+    appendLog("warn", `${target.display} 后端窗口身份复核失败：${error}`);
+    return null;
+  }
+  const currentIssue = requiredBackgroundWindowIdentityIssue(current);
+  if (currentIssue) {
+    appendLog("warn", `${target.display} 后端窗口身份不完整：${currentIssue}；请刷新窗口列表后再运行`);
+    return null;
+  }
+  const mismatch = windowIdentityMismatchReason(expected, current);
+  if (mismatch) {
+    appendLog("warn", `${target.display} 后端窗口身份已变化：${mismatch}；请刷新窗口列表后再运行`);
+    return null;
+  }
+  return current;
+}
+
+function requiredBackgroundWindowIdentityIssue(identity) {
+  const value = normalizeWindowIdentity(identity);
+  if (!value.hwnd) return "缺少 hwnd";
+  if (!value.title) return "缺少窗口标题";
+  if (!value.processId) return "缺少进程 PID";
+  if (!value.clientWidth || !value.clientHeight) return "缺少客户区尺寸";
+  return "";
+}
+
 function windowIdentityMismatchReason(expected, actual) {
   const left = normalizeWindowIdentity(expected);
   const right = normalizeWindowIdentity(actual);
@@ -3723,7 +3920,6 @@ function renderSessions() {
     empty.className = "empty-block compact";
     empty.textContent = "暂无运行会话";
     lanes.append(empty);
-    return;
   }
   for (const session of sessions) {
     const lane = document.createElement("div");
@@ -3743,6 +3939,49 @@ function renderSessions() {
     }
     lanes.append(lane);
   }
+  renderRunHistory(lanes);
+}
+
+function renderRunHistory(container) {
+  const records = state.workspace.runHistory.slice(0, 5);
+  if (!records.length) return;
+  const header = document.createElement("div");
+  header.className = "run-history-title";
+  header.textContent = "最近运行报告";
+  container.append(header);
+  for (const record of records) {
+    const lane = document.createElement("div");
+    const status = record.status || "unknown";
+    const lastStep = Array.isArray(record.stepResults) ? record.stepResults.at(-1) : null;
+    const failed = record.failedStepName || (status === "failed" ? lastStep?.stepName : "");
+    lane.className = `session-lane history ${status}`;
+    lane.innerHTML = `
+      <div>
+        <strong>${escapeHtml(record.display || record.hwnd)}</strong>
+        <span>${escapeHtml(modeLabel(record.mode))} · ${escapeHtml(record.workflowName || `${record.queueLength || 0} 个任务`)} · ${escapeHtml(status)}</span>
+      </div>
+      <small>${escapeHtml(record.completedSteps ?? record.stepResults?.length ?? 0)}/${escapeHtml(record.totalSteps || 0)} 步 · ${escapeHtml(durationLabel(record.durationMs))} · ${escapeHtml(record.endedAt || "")}</small>
+      <small>${escapeHtml(failed ? `失败点：${failed}` : lastStep ? `末步：${lastStep.stepName} ${lastStep.status}/${lastStep.action}` : "无步骤明细")}</small>
+    `;
+    if (record.failureReason) {
+      const reason = document.createElement("small");
+      reason.textContent = record.failureReason;
+      lane.append(reason);
+    }
+    if (record.endedWindowIdentityError) {
+      const identity = document.createElement("small");
+      identity.textContent = `结束窗口身份读取失败：${record.endedWindowIdentityError}`;
+      lane.append(identity);
+    }
+    container.append(lane);
+  }
+}
+
+function durationLabel(ms) {
+  const value = Math.max(0, Number(ms) || 0);
+  if (value < 1000) return `${value}ms`;
+  if (value < 60_000) return `${(value / 1000).toFixed(1)}s`;
+  return `${Math.floor(value / 60_000)}m ${Math.round((value % 60_000) / 1000)}s`;
 }
 
 function exportWorkspace() {

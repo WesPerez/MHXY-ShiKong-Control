@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     env, fs,
+    io::Cursor,
     path::{Path, PathBuf},
     process::Command,
     time::{SystemTime, UNIX_EPOCH},
@@ -188,7 +189,7 @@ struct TemplateMatch {
     score: f32,
 }
 
-const WORKSPACE_SCHEMA_VERSION: u32 = 4;
+const WORKSPACE_SCHEMA_VERSION: u32 = 5;
 const DEFAULT_IMAGE_THRESHOLD: f32 = 0.86;
 const MAX_TEMPLATE_DATA_URL_CHARS: usize = 5 * 1024 * 1024;
 const MAX_TEMPLATE_BYTES: usize = 4 * 1024 * 1024;
@@ -199,6 +200,11 @@ const WINDOW_CLIENT_SIZE_TOLERANCE: u32 = 2;
 #[tauri::command]
 fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, String> {
     list_windows(&title_needle)
+}
+
+#[tauri::command]
+fn current_window_identity(hwnd: isize) -> Result<platform::AppWindow, String> {
+    window_for_hwnd(hwnd)
 }
 
 #[tauri::command]
@@ -273,13 +279,14 @@ fn execute_workflow_step(
     step: WorkflowStepInput,
     expected_window: Option<ExpectedWindowInput>,
 ) -> Result<StepDispatchResult, String> {
-    validate_expected_window(hwnd, expected_window.as_ref())?;
+    let expected_window = expected_window.as_ref();
+    validate_expected_window(hwnd, expected_window)?;
     let step_type = step.step_type.trim().to_ascii_lowercase();
     let mut result = match step_type.as_str() {
         "hotkey" => dispatch_hotkey_step(hwnd, &step),
         "click" => dispatch_click_step(hwnd, &step),
-        "image_click" => dispatch_image_step(hwnd, &step, true),
-        "wait_image" | "detect_page" => dispatch_image_step(hwnd, &step, false),
+        "image_click" => dispatch_image_step(hwnd, &step, true, expected_window),
+        "wait_image" | "detect_page" => dispatch_image_step(hwnd, &step, false, None),
         "snapshot" => {
             let frame = capture_client_rgb(hwnd)?;
             Ok(step_result(
@@ -374,6 +381,20 @@ fn import_preview_image(
     })
 }
 
+#[tauri::command]
+fn import_clipboard_image() -> Result<ImportedPreviewImage, String> {
+    let frame = read_clipboard_rgb_frame()?;
+    let png = encode_png(&frame)?;
+    Ok(ImportedPreviewImage {
+        width: frame.width,
+        height: frame.height,
+        data_url: format!(
+            "data:image/png;base64,{}",
+            general_purpose::STANDARD.encode(png)
+        ),
+    })
+}
+
 fn project_root() -> Result<PathBuf, String> {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manifest
@@ -406,8 +427,25 @@ fn validate_expected_window(
     let Some(expected) = expected else {
         return Err("expected window identity is required for background dispatch".to_string());
     };
+    validate_expected_window_argument(hwnd, expected)?;
     let current = window_for_hwnd(hwnd)?;
     compare_expected_window(&current, expected)
+}
+
+fn validate_expected_window_argument(
+    hwnd: isize,
+    expected: &ExpectedWindowInput,
+) -> Result<(), String> {
+    let expected_hwnd = expected.hwnd.filter(|value| *value != 0).ok_or_else(|| {
+        "expected window identity must include hwnd for background dispatch".to_string()
+    })?;
+    if expected_hwnd != hwnd {
+        return Err(format!(
+            "target window identity mismatch: hwnd argument {} does not match expectedWindow.hwnd {}",
+            hwnd, expected_hwnd
+        ));
+    }
+    Ok(())
 }
 
 fn compare_expected_window(
@@ -523,6 +561,7 @@ fn dispatch_image_step(
     hwnd: isize,
     step: &WorkflowStepInput,
     execute_click: bool,
+    expected_window: Option<&ExpectedWindowInput>,
 ) -> Result<StepDispatchResult, String> {
     let button = command_value(&step.command, "button").unwrap_or("left");
     let threshold = image_threshold(step)?;
@@ -563,6 +602,7 @@ fn dispatch_image_step(
         output.x = Some(center.x);
         output.y = Some(center.y);
         if execute_click && matched.score >= threshold {
+            validate_expected_window(hwnd, expected_window)?;
             let result = post_mouse_click(hwnd, center, button)?;
             output.input_sent = true;
             output.detail = format!("{}; {}", output.detail, result.detail);
@@ -572,6 +612,7 @@ fn dispatch_image_step(
 
     if let Some(point) = point_from_step(step) {
         if execute_click {
+            validate_expected_window(hwnd, expected_window)?;
             let result = post_mouse_click(hwnd, point.clone(), button)?;
             let mut output = step_result_with_input(
                 hwnd,
@@ -1116,6 +1157,98 @@ fn scaled_roi(roi: Option<RoiRect>, width: u32, height: u32) -> Option<RoiRect> 
     (w > 0 && h > 0).then_some(RoiRect { x, y, w, h })
 }
 
+#[cfg(windows)]
+fn read_clipboard_rgb_frame() -> Result<RgbFrame, String> {
+    use std::{slice, thread, time::Duration};
+    use windows::Win32::{
+        Foundation::HGLOBAL,
+        System::{
+            DataExchange::{GetClipboardData, IsClipboardFormatAvailable, OpenClipboard},
+            Memory::{GlobalLock, GlobalSize, GlobalUnlock},
+            Ole::{CF_DIB, CF_DIBV5},
+        },
+    };
+
+    const ATTEMPTS: usize = 12;
+    const RETRY_DELAY: Duration = Duration::from_millis(25);
+
+    let mut last_error = None;
+    for attempt in 0..ATTEMPTS {
+        match unsafe { OpenClipboard(None) } {
+            Ok(()) => {
+                let _guard = ClipboardGuard;
+                let format = if unsafe { IsClipboardFormatAvailable(u32::from(CF_DIBV5.0)) }.is_ok()
+                {
+                    u32::from(CF_DIBV5.0)
+                } else if unsafe { IsClipboardFormatAvailable(u32::from(CF_DIB.0)) }.is_ok() {
+                    u32::from(CF_DIB.0)
+                } else {
+                    return Err("剪贴板里没有图片；用截图工具复制后再按 Ctrl+V。".to_string());
+                };
+                let handle = unsafe { GetClipboardData(format) }
+                    .map_err(|err| format!("cannot read clipboard image: {err}"))?;
+                let hglobal = HGLOBAL(handle.0);
+                let size = unsafe { GlobalSize(hglobal) };
+                if size == 0 {
+                    return Err("clipboard image data is empty".to_string());
+                }
+                let ptr = unsafe { GlobalLock(hglobal) };
+                if ptr.is_null() {
+                    return Err("cannot lock clipboard image data".to_string());
+                }
+                let bytes = unsafe { slice::from_raw_parts(ptr.cast::<u8>(), size) }.to_vec();
+                unsafe {
+                    let _ = GlobalUnlock(hglobal);
+                }
+                return dib_to_rgb_frame(&bytes);
+            }
+            Err(err) => {
+                last_error = Some(err);
+                if attempt + 1 < ATTEMPTS {
+                    thread::sleep(RETRY_DELAY);
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "cannot open clipboard: {}",
+        last_error
+            .map(|err| err.to_string())
+            .unwrap_or_else(|| "unknown error".to_string())
+    ))
+}
+
+#[cfg(windows)]
+struct ClipboardGuard;
+
+#[cfg(windows)]
+impl Drop for ClipboardGuard {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = windows::Win32::System::DataExchange::CloseClipboard();
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn read_clipboard_rgb_frame() -> Result<RgbFrame, String> {
+    Err("clipboard image import is only implemented on Windows".to_string())
+}
+
+fn dib_to_rgb_frame(dib: &[u8]) -> Result<RgbFrame, String> {
+    let decoder = image::codecs::bmp::BmpDecoder::new_without_file_header(Cursor::new(dib))
+        .map_err(|err| format!("cannot decode clipboard image: {err}"))?;
+    let image = image::DynamicImage::from_decoder(decoder)
+        .map_err(|err| format!("cannot decode clipboard image: {err}"))?
+        .to_rgb8();
+    Ok(RgbFrame {
+        width: image.width(),
+        height: image.height(),
+        pixels: image.into_raw(),
+    })
+}
+
 fn load_image_data_url_rgb(data_url: &str) -> Result<RgbFrame, String> {
     let data_url = data_url.trim();
     if data_url.len() > MAX_TEMPLATE_DATA_URL_CHARS {
@@ -1483,6 +1616,49 @@ mod tests {
     }
 
     #[test]
+    fn rejects_missing_expected_window_hwnd() {
+        let expected = ExpectedWindowInput {
+            hwnd: None,
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = validate_expected_window_argument(42, &expected).unwrap_err();
+        assert!(error.contains("must include hwnd"));
+    }
+
+    #[test]
+    fn rejects_expected_window_hwnd_argument_mismatch() {
+        let expected = ExpectedWindowInput {
+            hwnd: Some(43),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
+            process_name: Some("MyGame_x64r".to_string()),
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
+        };
+        let error = validate_expected_window_argument(42, &expected).unwrap_err();
+        assert!(error.contains("hwnd argument 42"));
+    }
+
+    #[test]
+    fn image_click_requires_identity_recheck_before_point_click() {
+        let mut step = image_step("x=10;y=20;button=left");
+        step.roi = Some(RoiRect {
+            x: 10,
+            y: 20,
+            w: 4,
+            h: 4,
+        });
+        let error = dispatch_image_step(42, &step, true, None).unwrap_err();
+        assert!(error.contains("expected window identity is required"));
+    }
+
+    #[test]
     fn rejects_changed_expected_window_identity() {
         let expected = ExpectedWindowInput {
             hwnd: Some(42),
@@ -1671,6 +1847,33 @@ mod tests {
     }
 
     #[test]
+    fn dib_to_rgb_frame_decodes_clipboard_bmp_rows() {
+        let mut dib = Vec::new();
+        dib.extend_from_slice(&40u32.to_le_bytes());
+        dib.extend_from_slice(&2i32.to_le_bytes());
+        dib.extend_from_slice(&2i32.to_le_bytes());
+        dib.extend_from_slice(&1u16.to_le_bytes());
+        dib.extend_from_slice(&24u16.to_le_bytes());
+        dib.extend_from_slice(&0u32.to_le_bytes());
+        dib.extend_from_slice(&16u32.to_le_bytes());
+        dib.extend_from_slice(&0i32.to_le_bytes());
+        dib.extend_from_slice(&0i32.to_le_bytes());
+        dib.extend_from_slice(&0u32.to_le_bytes());
+        dib.extend_from_slice(&0u32.to_le_bytes());
+        dib.extend_from_slice(&[30, 20, 10, 60, 50, 40, 0, 0]);
+        dib.extend_from_slice(&[90, 80, 70, 120, 110, 100, 0, 0]);
+
+        let frame = dib_to_rgb_frame(&dib).unwrap();
+
+        assert_eq!(frame.width, 2);
+        assert_eq!(frame.height, 2);
+        assert_eq!(
+            frame.pixels,
+            vec![70, 80, 90, 100, 110, 120, 10, 20, 30, 40, 50, 60]
+        );
+    }
+
+    #[test]
     fn roi_center_uses_checked_addition() {
         assert_eq!(
             RoiRect {
@@ -1804,10 +2007,12 @@ fn main() {
             game_launch_status,
             load_workflow_workspace,
             save_workflow_workspace,
+            current_window_identity,
             execute_workflow_step,
             capture_window_preview,
             save_window_snapshot,
-            import_preview_image
+            import_preview_image,
+            import_clipboard_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running shikong workflow app");
