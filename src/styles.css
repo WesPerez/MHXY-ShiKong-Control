@@ -1841,6 +1841,12 @@ label {
   font-size: 12px;
 }
 
+.session-lane .history-detail {
+  color: #b7c0c7;
+  line-height: 1.45;
+  white-space: normal;
+}
+
 progress {
   width: 100%;
   height: 8px;

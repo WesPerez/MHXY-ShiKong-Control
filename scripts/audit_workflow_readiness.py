@@ -90,6 +90,16 @@ def extract_array(source: str, name: str) -> str:
     return source[start : find_matching(source, start, "[", "]") + 1]
 
 
+def extract_object(source: str, name: str) -> str:
+    marker = re.search(rf"\b(?:const|let|var)\s+{re.escape(name)}\s*=\s*", source)
+    if not marker:
+        raise ValueError(f"missing {name}")
+    start = source.find("{", marker.end())
+    if start < 0:
+        raise ValueError(f"{name} is not an object")
+    return source[start : find_matching(source, start, "{", "}") + 1]
+
+
 def extract_function_body(source: str, name: str) -> str:
     marker = re.search(rf"\bfunction\s+{re.escape(name)}\s*\([^)]*\)\s*\{{", source)
     if not marker:
@@ -169,6 +179,13 @@ def object_fields(text: str) -> dict[str, str]:
     return fields
 
 
+def int_field(fields: dict[str, object], key: str) -> int:
+    try:
+        return int(float(str(fields.get(key, 0) or 0)))
+    except ValueError:
+        return 0
+
+
 def string_literals(text: str) -> list[str]:
     return [js_unquote(item) for item in re.findall(r"\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*'", text)]
 
@@ -221,6 +238,22 @@ def parse_step_types(source: str) -> set[str]:
     return set(re.findall(r"\[\s*\"([^\"]+)\"", array_text))
 
 
+def parse_step_defaults(source: str) -> dict[str, dict[str, str]]:
+    defaults: dict[str, dict[str, str]] = {}
+    object_text = extract_object(source, "stepDefaults")
+    index = 0
+    while index < len(object_text):
+        match = re.search(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\{", object_text[index:])
+        if not match:
+            break
+        key = match.group(1)
+        open_index = index + match.end() - 1
+        close_index = find_matching(object_text, open_index, "{", "}")
+        defaults[key] = object_fields(object_text[open_index : close_index + 1])
+        index = close_index + 1
+    return defaults
+
+
 def parse_blueprints(source: str) -> list[dict[str, object]]:
     blueprints = []
     for chunk in split_top_level_objects(extract_array(source, "workflowBlueprints")):
@@ -235,7 +268,7 @@ def parse_blueprints(source: str) -> list[dict[str, object]]:
     return blueprints
 
 
-def parse_sample_workflows(source: str) -> list[dict[str, object]]:
+def parse_sample_workflows(source: str, step_defaults: dict[str, dict[str, str]]) -> list[dict[str, object]]:
     body = extract_function_body(source, "createSampleWorkflows")
     workflows: list[dict[str, object]] = []
     current: dict[str, object] | None = None
@@ -254,14 +287,20 @@ def parse_sample_workflows(source: str) -> list[dict[str, object]]:
             index = open_index + 1
             continue
         if match.group(1) == "step" and current is not None and len(args) >= 6:
-            current["steps"].append(
-                {
-                    "id": js_unquote(args[0]),
-                    "type": js_unquote(args[1]),
-                    "target": js_unquote(args[3]),
-                    "command": js_unquote(args[4]),
-                },
-            )
+            step_data = {
+                "id": js_unquote(args[0]),
+                "type": js_unquote(args[1]),
+                "target": js_unquote(args[3]),
+                "command": js_unquote(args[4]),
+                "expect": js_unquote(args[5]),
+            }
+            if len(args) >= 9:
+                step_data["onFail"] = js_unquote(args[8])
+            else:
+                step_data["onFail"] = step_defaults.get(step_data["type"], {}).get("onFail", "stop")
+            if len(args) >= 10:
+                step_data.update(object_fields(args[9]))
+            current["steps"].append(step_data)
         index = close_index + 1
     return workflows
 
@@ -310,9 +349,10 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
 
     target_backed_step_types = extract_set_values(source, "targetBackedStepTypes")
     step_types = parse_step_types(source)
+    step_defaults = parse_step_defaults(source)
     bindings = parse_bindings(source)
     blueprints = parse_blueprints(source)
-    sample_workflows = parse_sample_workflows(source)
+    sample_workflows = parse_sample_workflows(source, step_defaults)
     exercise_ids = string_literals(extract_array(source, "exerciseSuiteBlueprintIds"))
 
     counts.update(
@@ -394,6 +434,59 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
     duplicate_samples = sorted({item for item in sample_ids if sample_ids.count(item) > 1})
     if duplicate_samples:
         failures.append(f"duplicate sample workflow ids: {', '.join(duplicate_samples)}")
+
+    sample_task_jumps = 0
+    sample_recovery_sources = 0
+    sample_condition_branches = 0
+    sample_success_jumps = 0
+    sample_backward_limited_jumps = 0
+    for workflow in sample_workflows:
+        workflow_id = str(workflow.get("id", ""))
+        steps = list(workflow.get("steps", []))
+        step_ids = [str(step.get("id", "")) for step in steps]
+        step_id_set = set(step_ids)
+        step_index = {step_id: index for index, step_id in enumerate(step_ids)}
+        has_restore_step = any(step.get("type") == "restore" for step in steps)
+        for index, step in enumerate(steps):
+            step_type = str(step.get("type", ""))
+            target_step_id = str(step.get("targetStepId", "") or "")
+            else_step_id = str(step.get("elseTargetStepId", "") or "")
+            jump_workflow_id = str(step.get("jumpWorkflowId", "") or "")
+            max_iterations = int_field(step, "maxIterations")
+            if step_type == "task_jump" and jump_workflow_id in sample_ids:
+                sample_task_jumps += 1
+            if step.get("onFail") == "restore" and (
+                str(step.get("recoveryStepId", "") or "") in step_id_set or has_restore_step
+            ):
+                sample_recovery_sources += 1
+            if step_type == "condition" and target_step_id in step_id_set and else_step_id in step_id_set:
+                sample_condition_branches += 1
+            if step_type != "condition" and target_step_id in step_id_set:
+                sample_success_jumps += 1
+            if target_step_id in step_index and step_index[target_step_id] <= index and max_iterations > 0:
+                sample_backward_limited_jumps += 1
+            if jump_workflow_id == workflow_id and max_iterations > 0:
+                sample_backward_limited_jumps += 1
+
+    counts.update(
+        {
+            "sampleTaskJumps": sample_task_jumps,
+            "sampleRecoverySources": sample_recovery_sources,
+            "sampleConditionBranches": sample_condition_branches,
+            "sampleSuccessJumps": sample_success_jumps,
+            "sampleBackwardLimitedJumps": sample_backward_limited_jumps,
+        },
+    )
+    if sample_task_jumps < 1:
+        failures.append("sample workflows must include at least one task_jump with a valid target workflow")
+    if sample_recovery_sources < 1:
+        failures.append("sample workflows must include at least one onFail=restore source with a recovery entry")
+    if sample_condition_branches < 1:
+        failures.append("sample workflows must include at least one condition with valid true and false branches")
+    if sample_success_jumps < 1:
+        failures.append("sample workflows must include at least one non-condition success targetStepId jump")
+    if sample_backward_limited_jumps < 1:
+        failures.append("sample workflows must include at least one backward jump protected by maxIterations")
 
     all_target_references: list[str] = []
     all_step_types: set[str] = set()

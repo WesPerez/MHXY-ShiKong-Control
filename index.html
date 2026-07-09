@@ -409,7 +409,7 @@
                         <select id="param-control-workflow-jump"></select>
                       </label>
                       <label>
-                        后向/任务跳转上限
+                        循环/任务跳转上限
                         <input id="param-control-max-iterations" type="number" min="0" step="1" />
                       </label>
                     </div>
@@ -436,11 +436,11 @@
                       </label>
                     </div>
                     <p class="hint" data-step-types="ocr_assert">OCR 会截图识别目标文字，不发送鼠标或键盘输入。</p>
-                    <p class="hint" data-step-types="condition">条件会按 guard 在同一任务内跳转；后向跳转必须设置最大循环次数。</p>
-                    <p class="hint" data-step-types="task_jump">任务跳转会在当前 hwnd 会话内切到目标任务，不改写持久化窗口队列。</p>
+                    <p class="hint" data-step-types="condition">条件会按 guard 在同一任务内跳转；后向跳转必须设置最大循环次数，False 跳转只对 condition 生效。</p>
+                    <p class="hint" data-step-types="task_jump">任务跳转会结束当前任务余下步骤，并把目标任务插入本次 hwnd 会话的下一项；不改写持久化窗口队列。跳回当前任务必须设置最大循环次数。</p>
                     <p class="hint" data-step-types="double_click">双击会向目标 hwnd 投递后台鼠标双击消息，不移动真实鼠标。</p>
                     <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
-                    <p class="hint" data-step-types="snapshot restore">此类型当前不发送鼠标键盘输入；失败恢复需要在失败步骤上配置 restore 和恢复入口。</p>
+                    <p class="hint" data-step-types="snapshot restore">此类型当前不发送鼠标键盘输入；失败恢复只会在失败步骤同时配置 onFail=restore 和恢复入口时生效。</p>
                   </section>
                   <label>
                     成功确认

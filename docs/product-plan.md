@@ -107,7 +107,9 @@ schema v7 继续使用结构化 JSON + 原子写入：
 
 ```powershell
 node --check src\main.js
+npm run test:control-flow
 npm run audit:input-safety
+npm run audit:control-flow-schema
 npm run audit:workflow-readiness
 npm run audit:queue-readiness
 npm run build

@@ -76,6 +76,7 @@
 ```powershell
 python scripts\audit_input_safety.py --json
 python scripts\audit_control_flow_schema.py --json
+npm run test:control-flow
 python scripts\audit_workflow_readiness.py --json
 python scripts\audit_queue_readiness.py --json
 ```
@@ -86,6 +87,7 @@ python scripts\audit_queue_readiness.py --json
 cd E:\Project\Common\MHXY-ShiKong-Control
 npm install
 npm run build
+npm run test:control-flow
 npm run audit:input-safety
 npm run audit:control-flow-schema
 npm run audit:workflow-readiness

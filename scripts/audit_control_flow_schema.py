@@ -103,6 +103,7 @@ def audit(project_root: Path) -> dict[str, object]:
 
     paths = {
         "main": project_root / "src/main.js",
+        "core": project_root / "src/control-flow-core.js",
         "html": project_root / "index.html",
         "rust": project_root / "src-tauri/src/main.rs",
         "package": project_root / "package.json",
@@ -117,6 +118,7 @@ def audit(project_root: Path) -> dict[str, object]:
         return {"passed": False, "failures": failures, "warnings": warnings, "counts": counts}
 
     main = read_text(paths["main"])
+    core = read_text(paths["core"])
     html = read_text(paths["html"])
     rust = read_text(paths["rust"])
     package = json.loads(read_text(paths["package"]))
@@ -142,6 +144,7 @@ def audit(project_root: Path) -> dict[str, object]:
     require_contains(main, CONTROL_FLOW_STEP_FIELDS, failures, "src/main.js")
     require_contains(main, CONTROL_FLOW_WORKFLOW_FIELDS, failures, "src/main.js")
     require_contains(main, ["maxIterations"], failures, "src/main.js")
+    require_contains(main, ["sanitizeStepControlFlowForType", "item.type !== \"condition\"", "plannedOnlyStepTypes.has(item.type)"], failures, "src/main.js")
 
     try:
         normalize_body = function_body(main, "normalizeStep")
@@ -190,6 +193,17 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append(str(error))
 
     require_contains(main, ["MAX_CONTROL_FLOW_STEPS", "MAX_CONTROL_FLOW_TRANSITIONS", "MAX_WORKFLOW_JUMPS"], failures, "src/main.js")
+    require_contains(
+        main,
+        [
+            "from \"./control-flow-core.js\"",
+            "controlFlowDecisionForStepCore",
+            "insertWorkflowJumpIntoRunPlanCore",
+            "recoveryDecisionForFailedStepCore",
+        ],
+        failures,
+        "src/main.js",
+    )
     try:
         run_session_body = function_body(main, "runSession")
         require_contains(
@@ -202,12 +216,12 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append(str(error))
 
     try:
-        jump_insert_body = function_body(main, "insertWorkflowJumpIntoRunPlan")
+        jump_insert_body = function_body(core, "insertWorkflowJumpIntoRunPlan")
         require_contains(
             jump_insert_body,
-            ["MAX_WORKFLOW_JUMPS", "queuePlan.splice", "insertedBy: \"task_jump\"", "phase: \"task_jump\""],
+            ["maxWorkflowJumps", "queuePlan.splice", "insertedBy: \"task_jump\"", "phase: \"task_jump\""],
             failures,
-            "insertWorkflowJumpIntoRunPlan",
+            "src/control-flow-core.js insertWorkflowJumpIntoRunPlan",
         )
     except ValueError as error:
         failures.append(str(error))
@@ -265,7 +279,7 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append(str(error))
 
     try:
-        decision_body = function_body(main, "controlFlowDecisionForStep")
+        decision_body = function_body(core, "controlFlowDecisionForStep")
         require_contains(
             decision_body,
             [
@@ -290,40 +304,50 @@ def audit(project_root: Path) -> dict[str, object]:
                 "toWorkflowId",
             ],
             failures,
-            "controlFlowDecisionForStep",
+            "src/control-flow-core.js controlFlowDecisionForStep",
         )
     except ValueError as error:
         failures.append(str(error))
 
     try:
-        recovery_body = function_body(main, "recoveryDecisionForFailedStep")
+        recovery_body = function_body(core, "recoveryDecisionForFailedStep")
         require_contains(
             recovery_body,
             [
-                "isRecoverableFailureResult",
+                "backgroundFailureStatuses.has",
                 "recoveryStepId",
                 "failure restore",
                 "originalFailureReason",
                 "recoveryContext",
             ],
             failures,
-            "recoveryDecisionForFailedStep",
+            "src/control-flow-core.js recoveryDecisionForFailedStep",
         )
     except ValueError as error:
         failures.append(str(error))
 
     try:
-        transition_body = function_body(main, "recordControlFlowTransition")
+        transition_body = function_body(core, "recordControlFlowTransition")
         require_contains(
             transition_body,
             [
                 "controlFlowTransitionSerial",
                 "controlFlowTransitions",
-                "MAX_CONTROL_FLOW_TRANSITIONS",
+                "maxControlFlowTransitions",
                 "new Date().toISOString()",
             ],
             failures,
-            "recordControlFlowTransition",
+            "src/control-flow-core.js recordControlFlowTransition",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+    try:
+        transition_wrapper_body = function_body(main, "recordControlFlowTransition")
+        require_contains(
+            transition_wrapper_body,
+            ["recordControlFlowTransitionCore", "MAX_CONTROL_FLOW_TRANSITIONS"],
+            failures,
+            "src/main.js recordControlFlowTransition wrapper",
         )
     except ValueError as error:
         failures.append(str(error))
@@ -335,12 +359,23 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append(str(error))
 
     try:
-        guard_body = function_body(main, "evaluateConditionGuard")
+        history_summary_body = function_body(main, "historyTransitionSummary")
+        require_contains(
+            history_summary_body,
+            ["controlFlowTransitions", "queueEvents", "phase === \"task_jump\"", "formatHistoryTransition"],
+            failures,
+            "historyTransitionSummary",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        guard_body = function_body(core, "evaluateConditionGuard")
         require_contains(
             guard_body,
             ["last.matched", "status", "action", "supported", "compareNumbers", "unsupported"],
             failures,
-            "evaluateConditionGuard",
+            "src/control-flow-core.js evaluateConditionGuard",
         )
     except ValueError as error:
         failures.append(str(error))
@@ -362,6 +397,8 @@ def audit(project_root: Path) -> dict[str, object]:
     scripts = package.get("scripts", {})
     if scripts.get("audit:control-flow-schema") != "python scripts/audit_control_flow_schema.py":
         failures.append("package.json missing audit:control-flow-schema script")
+    if scripts.get("test:control-flow") != "node scripts/test_control_flow_core.mjs":
+        failures.append("package.json missing test:control-flow script")
 
     counts.update({"controlFlowFields": len(CONTROL_FLOW_FIELDS), "uiControls": len(ui_ids)})
     return {"passed": not failures, "failures": failures, "warnings": warnings, "counts": counts}
