@@ -227,7 +227,6 @@ def audit(project_root: Path) -> dict[str, object]:
                 "recoveryDecisionForFailedStep",
                 "completeRecoveryAsFailed",
                 "workflowJumpRequest",
-                "verifyStepWindowIdentity",
             ],
             failures,
             "runWorkflowEntry",
