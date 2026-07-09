@@ -816,6 +816,8 @@ h3 {
 
 .queue-overview-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 6px;
   min-width: 0;
   border: 1px solid #30383d;
@@ -824,6 +826,18 @@ h3 {
     linear-gradient(135deg, rgba(100, 195, 180, 0.08), transparent 48%),
     #12171a;
   padding: 8px;
+}
+
+.queue-overview-row.ready {
+  border-color: rgba(72, 133, 100, 0.54);
+}
+
+.queue-overview-row.warning {
+  border-color: rgba(143, 118, 54, 0.7);
+}
+
+.queue-overview-row.blocked {
+  border-color: rgba(143, 78, 62, 0.76);
 }
 
 .queue-overview-row strong,
@@ -850,6 +864,7 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  grid-column: 1 / -1;
   min-width: 0;
 }
 
@@ -896,12 +911,45 @@ h3 {
   gap: 7px;
 }
 
+.queue-window.ready .queue-window-head {
+  border-color: rgba(72, 133, 100, 0.48);
+}
+
+.queue-window.warning .queue-window-head {
+  border-color: rgba(143, 118, 54, 0.72);
+}
+
+.queue-window.blocked .queue-window-head {
+  border-color: rgba(143, 78, 62, 0.76);
+}
+
 .queue-window.running .queue-window-head {
   border-color: #665832;
 }
 
 .queue-window-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   min-height: 50px;
+}
+
+.queue-window-head > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.queue-window-head strong,
+.queue-window-head small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-window-head small {
+  color: #93a0a8;
+  font-size: 11px;
 }
 
 .queue-items {
@@ -923,6 +971,18 @@ h3 {
 
 .queue-item.disabled {
   opacity: 0.58;
+}
+
+.queue-item.ready {
+  border-color: rgba(72, 133, 100, 0.36);
+}
+
+.queue-item.warning {
+  border-color: rgba(143, 118, 54, 0.58);
+}
+
+.queue-item.blocked {
+  border-color: rgba(143, 78, 62, 0.66);
 }
 
 .queue-item-title {
@@ -952,9 +1012,20 @@ h3 {
   font-weight: 800;
 }
 
+.queue-item-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .queue-item-title small {
+  grid-column: 2 / -1;
+  min-width: 0;
+  overflow: hidden;
   color: #93a0a8;
   font-size: 11px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

@@ -491,9 +491,25 @@ const state = {
 };
 
 const $ = (selector) => document.querySelector(selector);
-const appWindow = getCurrentWindow();
+const isTauriRuntime = Boolean(globalThis.__TAURI_INTERNALS__);
+const appWindow = isTauriRuntime ? getCurrentWindow() : null;
+
+function backendUnavailableMessage(command) {
+  return `桌面后端不可用：${command} 需要从 Tauri 应用窗口运行`;
+}
+
+async function invokeBackend(command, args) {
+  if (!isTauriRuntime) {
+    throw new Error(backendUnavailableMessage(command));
+  }
+  return invoke(command, args);
+}
 
 async function setupCloseToTray() {
+  if (!appWindow) {
+    appendLog("warn", "当前是浏览器预览环境，关闭到托盘和后台窗口控制不可用");
+    return;
+  }
   try {
     await appWindow.onCloseRequested(async (event) => {
       event.preventDefault();
@@ -743,7 +759,7 @@ function step(
 
 async function loadWorkspace() {
   try {
-    const result = await invoke("load_workflow_workspace");
+    const result = await invokeBackend("load_workflow_workspace");
     state.workspacePath = result.path;
     state.workspace = normalizeWorkspace(result.data);
     let shouldSave = false;
@@ -1027,7 +1043,7 @@ async function saveWorkspaceNow() {
   state.saveTimer = null;
   try {
     state.workspace.updatedAt = new Date().toISOString();
-    const result = await invoke("save_workflow_workspace", { workspace: state.workspace });
+    const result = await invokeBackend("save_workflow_workspace", { workspace: state.workspace });
     state.workspacePath = result.savedPath;
     $("#workspace-state").textContent = "saved";
     $("#workspace-state").classList.add("ok");
@@ -1212,23 +1228,26 @@ function renderQueueOverview() {
   }
   for (const [hwnd, assignment] of rows.slice(0, 5)) {
     const target = state.windows.find((item) => String(item.hwnd) === String(hwnd));
-    const queue = (assignment.queue || []).map(normalizeQueueItem);
-    const enabled = queue.filter((item) => item.enabled !== false && workflowById(item.workflowId));
-    const stepTotal = enabled.reduce((sum, item) => sum + (workflowById(item.workflowId)?.steps.length || 0), 0);
-    const delayTotal = enabled.reduce((sum, item) => sum + (item.startDelayMs || 0) + (item.afterDelayMs || 0), 0);
+    const readiness = queueReadinessSummary(assignment);
+    const queue = readiness.queue;
+    const enabled = readiness.runnableEntries;
+    const stepTotal = enabled.reduce((sum, entry) => sum + (entry.workflow?.steps.length || 0), 0);
+    const delayTotal = enabled.reduce(
+      (sum, entry) => sum + (entry.item.startDelayMs || 0) + (entry.item.afterDelayMs || 0),
+      0,
+    );
     const row = document.createElement("article");
-    row.className = "queue-overview-row";
+    row.className = `queue-overview-row ${readiness.level}`;
     row.innerHTML = `
       <div>
         <strong>${escapeHtml(target?.display || assignment.display || `hwnd=${hwnd}`)}</strong>
-        <small>${enabled.length}/${queue.length} 项启用 · ${stepTotal} 步 · 等待 ${durationLabel(delayTotal)}</small>
+        <small>${enabled.length}/${queue.length} 项可跑 · ${stepTotal} 步 · 等待 ${durationLabel(delayTotal)} · ${escapeHtml(readiness.detail)}</small>
       </div>
+      <em class="readiness-pill ${readiness.level}" title="${escapeHtml(readiness.firstBlockingMessage || readiness.detail)}">${escapeHtml(readiness.label)}</em>
     `;
     const chips = document.createElement("div");
     chips.className = "queue-overview-chips";
-    for (const item of enabled.slice(0, 4)) {
-      const workflow = workflowById(item.workflowId);
-      if (!workflow) continue;
+    for (const { item, workflow } of enabled.slice(0, 4)) {
       const chip = document.createElement("span");
       chip.textContent = workflow.name;
       chip.title = queueItemSummary(item, workflow);
@@ -1358,6 +1377,56 @@ function workflowReadinessSummary(workflow, validation = null) {
     label,
     detail: readinessDetailText(summary),
     completion,
+  };
+}
+
+function queueReadinessSummary(assignment) {
+  const queue = (assignment?.queue || []).map(normalizeQueueItem);
+  const enabledItems = queue.filter((item) => item.enabled !== false);
+  const runnableEntries = enabledItems
+    .map((item) => ({ item, workflow: workflowById(item.workflowId) }))
+    .filter((entry) => entry.workflow);
+  const workflows = runnableEntries.map((entry) => entry.workflow);
+  const missingWorkflowCount = enabledItems.length - workflows.length;
+  const disabledCount = queue.length - enabledItems.length;
+  const validation = workflows.length
+    ? validateWorkflowQueue(workflows, "background")
+    : { issues: [], warnings: [], firstBlockingWorkflow: null, firstBlockingValidation: null };
+  const issueCount = validation.issues.length + missingWorkflowCount + (queue.length && !workflows.length ? 1 : 0);
+  const warningCount = validation.warnings.length + disabledCount;
+  const level = issueCount ? "blocked" : warningCount ? "warning" : "ready";
+  const label =
+    level === "blocked"
+      ? `阻塞 ${issueCount}`
+      : level === "warning"
+        ? `提醒 ${warningCount}`
+        : "队列就绪";
+  const details = [];
+  if (workflows.length) details.push(`${workflows.length}/${queue.length} 项可跑`);
+  if (missingWorkflowCount) details.push(`丢失任务 ${missingWorkflowCount}`);
+  if (disabledCount) details.push(`停用 ${disabledCount}`);
+  if (validation.issues.length) details.push(`校验阻塞 ${validation.issues.length}`);
+  if (validation.warnings.length) details.push(`校验提醒 ${validation.warnings.length}`);
+  if (!queue.length) details.push("暂无任务");
+  if (queue.length && !workflows.length && !missingWorkflowCount) details.push("没有启用任务");
+  return {
+    queue,
+    enabledItems,
+    runnableEntries,
+    workflows,
+    validation,
+    level,
+    label,
+    issueCount,
+    warningCount,
+    missingWorkflowCount,
+    disabledCount,
+    detail: details.join(" · ") || "后台链路满足基础要求",
+    firstBlockingMessage:
+      validation.issues[0] ||
+      (missingWorkflowCount ? "队列里有已删除或不可用任务" : "") ||
+      validation.warnings[0] ||
+      "",
   };
 }
 
@@ -3189,7 +3258,7 @@ async function applyBuiltinTemplatesToTargets() {
   const keys = [...new Set(candidates.map(({ binding }) => binding.key))];
   if (stateLabel) stateLabel.textContent = `读取 ${keys.length} 个内置模板…`;
   try {
-    const templates = await invoke("load_builtin_target_templates", { keys });
+    const templates = await invokeBackend("load_builtin_target_templates", { keys });
     const byKey = new Map(templates.map((item) => [item.key, item]));
     let applied = 0;
     let missing = 0;
@@ -3227,7 +3296,7 @@ async function hydrateBuiltinTargetTemplates(options = {}) {
   const keys = [...new Set(candidates.map(({ binding }) => binding.key))];
   let templates = [];
   try {
-    templates = await invoke("load_builtin_target_templates", { keys });
+    templates = await invokeBackend("load_builtin_target_templates", { keys });
   } catch (error) {
     appendLog("warn", `内置素材自动接入失败：${error}`);
     return 0;
@@ -3265,7 +3334,7 @@ function commandWithMissingValues(command, defaults) {
 
 async function refreshPrivilege() {
   try {
-    state.privilege = await invoke("privilege_status");
+    state.privilege = await invokeBackend("privilege_status");
     const elevated = state.privilege.currentProcessElevated;
     $("#privilege-state").textContent = elevated ? "管理员" : "普通权限";
     $("#privilege-state").classList.toggle("ok", elevated);
@@ -3283,7 +3352,7 @@ async function refreshGameLaunchStatus() {
   const button = $("#launch-game-client");
   const label = $("#launch-status");
   try {
-    state.launchStatus = await invoke("game_launch_status");
+    state.launchStatus = await invokeBackend("game_launch_status");
     button.disabled = !state.launchStatus.configured;
     button.title = state.launchStatus.message;
     label.textContent = state.launchStatus.configured
@@ -3302,7 +3371,7 @@ async function refreshWindows() {
   setStatus("正在扫描目标窗口...");
   await refreshPrivilege();
   try {
-    state.windows = await invoke("list_game_windows", { titleNeedle: TARGET_TITLE });
+    state.windows = await invokeBackend("list_game_windows", { titleNeedle: TARGET_TITLE });
   } catch (error) {
     state.windows = [];
     setStatus(`窗口扫描失败：${error}`);
@@ -3519,13 +3588,17 @@ function renderAssignments() {
   }
   for (const [hwnd, assignment] of entries) {
     const locked = isQueueLocked(hwnd);
+    const queueReadiness = queueReadinessSummary(assignment);
     const row = document.createElement("div");
-    row.className = "queue-window";
+    row.className = `queue-window ${queueReadiness.level}`;
     row.classList.toggle("running", locked);
     row.innerHTML = `
       <button class="compact-row queue-window-head" type="button">
-        <strong>${escapeHtml(assignment.display || hwnd)}</strong>
-        <span>${assignment.queue.length} 个任务 · hwnd=${escapeHtml(hwnd)}${locked ? " · 运行中锁定" : ""}</span>
+        <span>
+          <strong>${escapeHtml(assignment.display || hwnd)}</strong>
+          <small>${assignment.queue.length} 个任务 · hwnd=${escapeHtml(hwnd)}${locked ? " · 运行中锁定" : ""} · ${escapeHtml(queueReadiness.detail)}</small>
+        </span>
+        <em class="readiness-pill ${queueReadiness.level}" title="${escapeHtml(queueReadiness.firstBlockingMessage || queueReadiness.detail)}">${escapeHtml(queueReadiness.label)}</em>
       </button>
       <div class="queue-items"></div>
     `;
@@ -3543,14 +3616,23 @@ function renderAssignments() {
     const items = row.querySelector(".queue-items");
     assignment.queue.forEach((queueItem, index) => {
       const workflow = workflowById(queueItem.workflowId);
+      const itemReadiness = workflow
+        ? workflowReadinessSummary(workflow)
+        : {
+            level: "blocked",
+            label: "任务丢失",
+            detail: "队列引用的任务已删除",
+          };
+      const itemDetail = itemReadiness.detail || "素材、坐标和 OCR 已满足后台基础要求";
       const itemRow = document.createElement("div");
-      itemRow.className = "queue-item";
+      itemRow.className = `queue-item ${itemReadiness.level}`;
       itemRow.classList.toggle("disabled", queueItem.enabled === false || !workflow);
       itemRow.innerHTML = `
         <button class="queue-item-title" type="button">
           <span>${String(index + 1).padStart(2, "0")}</span>
           <strong>${escapeHtml(workflow?.name || "任务已删除")}</strong>
-          <small>${escapeHtml(queueItemSummary(queueItem, workflow))}</small>
+          <em class="readiness-pill ${itemReadiness.level}" title="${escapeHtml(itemDetail)}">${escapeHtml(itemReadiness.label)}</em>
+          <small>${escapeHtml(queueItemSummary(queueItem, workflow))} · ${escapeHtml(itemDetail)}</small>
         </button>
         <div class="queue-item-timing">
           <label>
@@ -3650,7 +3732,7 @@ function updateQueueItemTiming(hwnd, queueItemId, field, value) {
 
 async function restartAsAdmin() {
   try {
-    await invoke("restart_as_admin");
+    await invokeBackend("restart_as_admin");
     setStatus("已请求管理员权限重启");
   } catch (error) {
     setStatus(`管理员重启失败：${error}`);
@@ -3661,7 +3743,7 @@ async function restartAsAdmin() {
 async function launchGameClient() {
   try {
     await refreshGameLaunchStatus();
-    const result = await invoke("launch_game_client");
+    const result = await invokeBackend("launch_game_client");
     setStatus(`已启动客户端 pid=${result.pid}`);
     appendLog("info", `客户端启动：pid=${result.pid}`);
     window.setTimeout(refreshWindows, 3000);
@@ -3683,7 +3765,7 @@ async function capturePreview() {
 
   updateActiveMeta();
   try {
-    const preview = await invoke("capture_window_preview", { hwnd: Number(target.hwnd) });
+    const preview = await invokeBackend("capture_window_preview", { hwnd: Number(target.hwnd) });
     setPreviewImage(preview.dataUrl, preview.width, preview.height, "window");
     updateActiveMeta(`${target.display} · ${preview.width}x${preview.height} · hwnd=${target.hwnd}`);
     setStatus("窗口预览已刷新");
@@ -3702,7 +3784,7 @@ async function loadOfflineImage() {
   }
   clearRoiSelection();
   try {
-    const preview = await invoke("import_preview_image", { imagePath, saveCopy: false });
+    const preview = await invokeBackend("import_preview_image", { imagePath, saveCopy: false });
     setPreviewImage(preview.dataUrl, preview.width, preview.height, "image");
     updateActiveMeta(`离线图 · ${preview.width}x${preview.height}`);
     setStatus(`已载入离线图：${imagePath}`);
@@ -3750,7 +3832,7 @@ async function saveSnapshot() {
     return;
   }
   try {
-    const result = await invoke("save_window_snapshot", { hwnd: Number(target.hwnd) });
+    const result = await invokeBackend("save_window_snapshot", { hwnd: Number(target.hwnd) });
     setStatus(`已保存截图：${result.savedPath}`);
     appendLog("info", `截图保存：${result.savedPath}`);
   } catch (error) {
@@ -4040,7 +4122,7 @@ async function handlePasteImage(event) {
     if (editableTarget) return;
     let imported = null;
     try {
-      imported = await invoke("import_clipboard_image");
+      imported = await invokeBackend("import_clipboard_image");
     } catch (error) {
       const message = String(error);
       if (!message.includes("剪贴板里没有图片")) {
@@ -4840,7 +4922,7 @@ function withStepTimingDetail(result, preDelayMs, postDelayMs) {
 
 async function attachEndedWindowIdentity(session) {
   try {
-    const current = await invoke("current_window_identity", { hwnd: Number(session.hwnd) });
+    const current = await invokeBackend("current_window_identity", { hwnd: Number(session.hwnd) });
     session.endedWindowIdentity = windowIdentityForTarget(current);
     session.endedWindowIdentityError = "";
   } catch (error) {
@@ -4991,7 +5073,7 @@ function backgroundStepDelay(item) {
 
 async function executeBackendStep(session, item) {
   const payload = backendStepPayload(item);
-  return invoke("execute_workflow_step", {
+  return invokeBackend("execute_workflow_step", {
     hwnd: Number(session.hwnd),
     step: payload,
     expectedWindow: session.windowIdentity || null,
@@ -5021,7 +5103,7 @@ async function currentWindowIdentityForRun(target, mode) {
   let current = null;
   try {
     current = normalizeWindowIdentity(
-      await invoke("current_window_identity", {
+      await invokeBackend("current_window_identity", {
         hwnd: Number(target.hwnd),
       }),
     );

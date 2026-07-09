@@ -15,8 +15,24 @@ const INSTANCE_HOST: &str = "127.0.0.1";
 const INSTANCE_PORT: u16 = 47638;
 const INSTANCE_COMMAND: &[u8] = b"MHXY-ShiKong-Control:show\n";
 const INSTANCE_ACK: &[u8] = b"ok\n";
+const HTTP_INFO_BODY: &str = concat!(
+    "<!doctype html><meta charset=\"utf-8\">",
+    "<title>ShiKong Control</title>",
+    "<body style=\"font-family:system-ui,sans-serif;line-height:1.55;padding:24px\">",
+    "<h1>ShiKong Control is running</h1>",
+    "<p>127.0.0.1:47638 is the internal single-instance wake port, not the app UI.</p>",
+    "<p>Use the desktop window named 时空任务编排器. For browser preview during development, start Vite and open http://127.0.0.1:5173/.</p>",
+    "</body>"
+);
 const LISTENER_IDLE_SLEEP: Duration = Duration::from_millis(30);
 pub const DEFAULT_NOTIFY_TIMEOUT: Duration = Duration::from_millis(250);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ListenerRequest {
+    Wake,
+    BrowserInfo,
+    Ignore,
+}
 
 #[derive(Debug)]
 pub struct SingleInstanceGuard {
@@ -128,9 +144,78 @@ fn handle_connection(mut stream: TcpStream, on_wake: &(dyn Fn() + Send + Sync)) 
         }
     }
 
+    match classify_request(&message) {
+        ListenerRequest::Wake => {
+            let _ = stream.write_all(INSTANCE_ACK);
+            let _ = stream.flush();
+            on_wake();
+        }
+        ListenerRequest::BrowserInfo => {
+            let _ = stream.write_all(&browser_info_response());
+            let _ = stream.flush();
+        }
+        ListenerRequest::Ignore => {}
+    }
+}
+
+fn classify_request(message: &[u8]) -> ListenerRequest {
     if message == INSTANCE_COMMAND {
-        let _ = stream.write_all(INSTANCE_ACK);
-        let _ = stream.flush();
-        on_wake();
+        return ListenerRequest::Wake;
+    }
+
+    if is_http_request_line(message) {
+        return ListenerRequest::BrowserInfo;
+    }
+
+    ListenerRequest::Ignore
+}
+
+fn is_http_request_line(message: &[u8]) -> bool {
+    let methods = [b"GET ".as_slice(), b"HEAD ", b"POST ", b"OPTIONS "];
+    methods.iter().any(|method| {
+        message.starts_with(method) && message.windows(5).any(|part| part == b"HTTP/")
+    })
+}
+
+fn browser_info_response() -> Vec<u8> {
+    let body = HTTP_INFO_BODY.as_bytes();
+    format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        body.len()
+    )
+    .into_bytes()
+    .into_iter()
+    .chain(body.iter().copied())
+    .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{browser_info_response, classify_request, ListenerRequest, INSTANCE_COMMAND};
+
+    #[test]
+    fn classifies_instance_wake_command() {
+        assert_eq!(classify_request(INSTANCE_COMMAND), ListenerRequest::Wake);
+    }
+
+    #[test]
+    fn classifies_browser_http_request_without_wake() {
+        assert_eq!(
+            classify_request(b"GET / HTTP/1.1\r\n"),
+            ListenerRequest::BrowserInfo
+        );
+    }
+
+    #[test]
+    fn ignores_unrecognized_message() {
+        assert_eq!(classify_request(b"hello\n"), ListenerRequest::Ignore);
+    }
+
+    #[test]
+    fn browser_info_response_is_valid_http() {
+        let response = String::from_utf8(browser_info_response()).expect("utf8 response");
+        assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+        assert!(response.contains("Content-Type: text/html; charset=utf-8\r\n"));
+        assert!(response.contains("127.0.0.1:47638 is the internal single-instance wake port"));
     }
 }

@@ -8,6 +8,7 @@
     "build": "vite build",
     "audit:input-safety": "python scripts/audit_input_safety.py",
     "audit:workflow-readiness": "python scripts/audit_workflow_readiness.py",
+    "audit:queue-readiness": "python scripts/audit_queue_readiness.py",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },

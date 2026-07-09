@@ -44,6 +44,7 @@
 - 运行状态 pill 和会话卡片会区分 idle/ready/running/blocked/failed，界面日志保留最近 500 条，适合长时间运行时保持可用。
 - 运行结束会写入 `runHistory` 报告，记录队列计划、错峰等待事件、每步状态、失败点、耗时、启动窗口身份和结束窗口身份，便于排查多窗口长时间运行。
 - `ocr_assert` 会截图、按 ROI 或命名区域裁剪后调用 Windows OCR；识别未命中或系统 OCR/语言包不可用都会明确失败，不会伪装成可识别。
+- `127.0.0.1:47638` 是桌面应用单实例唤醒端口，不是前端页面。浏览器访问它会显示说明页；真实界面在标题为“时空任务编排器”的 Tauri 桌面窗口里。开发浏览器预览请启动 Vite 后访问 `http://127.0.0.1:5173/`。
 
 ## 任务模型
 
@@ -72,6 +73,7 @@
 
 ```powershell
 python scripts\audit_input_safety.py --json
+python scripts\audit_queue_readiness.py --json
 ```
 
 ## 开发命令
@@ -80,6 +82,7 @@ python scripts\audit_input_safety.py --json
 cd E:\Project\Common\MHXY-ShiKong-Control
 npm install
 npm run build
+npm run audit:queue-readiness
 cd src-tauri
 cargo check
 cargo test
