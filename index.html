@@ -26,6 +26,39 @@
           <button id="save-workspace" type="button">保存工作区</button>
           <span id="launch-status" class="meta"></span>
         </div>
+
+        <section class="ops-dashboard" aria-label="运行总览">
+          <article class="ops-card strong">
+            <span>窗口</span>
+            <strong id="ops-window-total">0</strong>
+            <small id="ops-window-detail">已选 0 · 管理员 0</small>
+          </article>
+          <article class="ops-card">
+            <span>队列</span>
+            <strong id="ops-queue-total">0</strong>
+            <small id="ops-queue-detail">0 个窗口已分配</small>
+          </article>
+          <article class="ops-card">
+            <span>运行</span>
+            <strong id="ops-running-total">0</strong>
+            <small id="ops-running-detail">idle</small>
+          </article>
+          <article class="ops-card wide">
+            <span>当前任务</span>
+            <strong id="ops-active-workflow">未载入</strong>
+            <small id="ops-active-gaps">等待工作区</small>
+          </article>
+          <article class="ops-card">
+            <span>后台链路</span>
+            <strong id="ops-dispatch-mode">PostMessageW</strong>
+            <small id="ops-dispatch-detail">hwnd 身份复核</small>
+          </article>
+          <article class="ops-card">
+            <span>最近报告</span>
+            <strong id="ops-last-run-status">none</strong>
+            <small id="ops-last-run-detail">暂无运行记录</small>
+          </article>
+        </section>
       </header>
 
       <section id="workspace" class="app-shell">
@@ -55,12 +88,23 @@
                 批量任务
                 <select id="queue-workflow-picker" multiple size="4"></select>
               </label>
+              <div class="queue-timing-grid">
+                <label>
+                  窗口错峰 ms
+                  <input id="queue-stagger-ms" type="number" min="0" step="100" value="0" />
+                </label>
+                <label>
+                  任务间隔 ms
+                  <input id="queue-gap-ms" type="number" min="0" step="100" value="0" />
+                </label>
+              </div>
               <div class="queue-action-grid">
                 <button id="append-picked-workflows" type="button">追加所选任务</button>
                 <button id="copy-active-queue-to-selected" type="button">复制当前队列</button>
                 <button id="clear-selected-queues" type="button" class="danger">清空已选队列</button>
               </div>
             </div>
+            <div id="queue-overview" class="queue-overview" aria-live="polite"></div>
             <div id="assignment-list" class="compact-list"></div>
           </section>
 
@@ -93,6 +137,7 @@
             </div>
             <div class="library-actions">
               <button id="new-workflow" type="button">新建</button>
+              <button id="import-sample-pack" type="button">导入示例包</button>
               <button id="duplicate-workflow" type="button">复制</button>
               <button id="delete-workflow" type="button" class="danger">删除</button>
             </div>
@@ -101,6 +146,7 @@
                 任务蓝图
                 <select id="workflow-blueprint-select"></select>
               </label>
+              <div id="blueprint-preview" class="blueprint-preview" aria-live="polite"></div>
               <div class="wizard-grid">
                 <label>
                   数量
@@ -248,10 +294,26 @@
                         <select id="param-target-select"></select>
                       </label>
                     </div>
+                    <div class="param-grid" data-step-types="detect_page wait_image image_click ocr_assert click hotkey text_input delay condition retry_until snapshot restore">
+                      <label>
+                        前等待 ms
+                        <input id="param-pre-delay-ms" type="number" min="0" step="100" />
+                      </label>
+                      <label>
+                        后等待 ms
+                        <input id="param-post-delay-ms" type="number" min="0" step="100" />
+                      </label>
+                    </div>
                     <div class="param-grid" data-step-types="hotkey">
                       <label class="wide">
                         快捷键
                         <input id="param-hotkey" type="text" placeholder="ALT+N" />
+                      </label>
+                    </div>
+                    <div class="param-grid" data-step-types="text_input">
+                      <label class="wide">
+                        输入文本
+                        <input id="param-text-value" type="text" maxlength="500" placeholder="要发给目标窗口的文本" />
                       </label>
                     </div>
                     <div class="param-grid" data-step-types="click">
@@ -287,7 +349,19 @@
                         点击点
                         <select id="param-image-point">
                           <option value="center">模板中心</option>
+                          <option value="top-left">模板左上</option>
+                          <option value="top-right">模板右上</option>
+                          <option value="bottom-left">模板左下</option>
+                          <option value="bottom-right">模板右下</option>
                         </select>
+                      </label>
+                      <label data-param-for="image_click">
+                        偏移 X
+                        <input id="param-image-offset-x" type="number" step="1" />
+                      </label>
+                      <label data-param-for="image_click">
+                        偏移 Y
+                        <input id="param-image-offset-y" type="number" step="1" />
                       </label>
                       <label>
                         识别目标
@@ -325,6 +399,7 @@
                       </label>
                     </div>
                     <p class="hint" data-step-types="ocr_assert">OCR 会截图识别目标文字，不发送鼠标或键盘输入。</p>
+                    <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
                     <p class="hint" data-step-types="snapshot restore">此类型当前没有可直接投递的后台输入；会保留在任务编排和日志中。</p>
                   </section>
                   <label>
@@ -410,6 +485,10 @@
                       点击点
                       <select id="target-click-point">
                         <option value="center">模板中心</option>
+                        <option value="top-left">模板左上</option>
+                        <option value="top-right">模板右上</option>
+                        <option value="bottom-left">模板左下</option>
+                        <option value="bottom-right">模板右下</option>
                       </select>
                     </label>
                     <label class="wide">

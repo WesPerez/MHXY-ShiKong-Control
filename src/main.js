@@ -3,16 +3,18 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
-const WORKSPACE_SCHEMA_VERSION = 5;
+const WORKSPACE_SCHEMA_VERSION = 6;
 const DEFAULT_IMAGE_THRESHOLD = 0.86;
 const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 const MAX_LOG_ROWS = 500;
 const MAX_SESSION_STEP_RESULTS = 300;
+const MAX_TEXT_INPUT_CHARS = 500;
 const targetBackedStepTypes = new Set(["image_click", "wait_image", "detect_page", "click", "ocr_assert"]);
 const capturedImageStepTypes = new Set(["image_click", "wait_image", "detect_page"]);
 const stepFailActions = new Set(["stop", "retry", "skip", "restore"]);
 const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
 const workflowConcurrencyOptions = new Set(["per-window-exclusive"]);
+const imageClickPointOptions = new Set(["center", "top-left", "top-right", "bottom-left", "bottom-right"]);
 
 const stepTypes = [
   ["detect_page", "检测页面"],
@@ -21,6 +23,7 @@ const stepTypes = [
   ["ocr_assert", "OCR 确认"],
   ["click", "后台点击"],
   ["hotkey", "快捷键"],
+  ["text_input", "文本输入"],
   ["delay", "延迟等待"],
   ["condition", "条件判断"],
   ["retry_until", "重试直到"],
@@ -81,6 +84,15 @@ const stepDefaults = {
     target: "ALT+N",
     command: "mode=hwnd-key",
     expect: "panel.open",
+    timeoutMs: 1200,
+    retry: 0,
+    onFail: "stop",
+  },
+  text_input: {
+    name: "文本输入",
+    target: "要输入的文本",
+    command: "mode=hwnd-char",
+    expect: "text.sent",
     timeoutMs: 1200,
     retry: 0,
     onFail: "stop",
@@ -150,6 +162,14 @@ const stepBlockPresets = [
       { type: "image_click", name: "点击目标", target: "button.target", command: "button=left; point=center", expect: "screen.changed" },
       { type: "delay", name: "等待点击反馈", target: "600ms", command: "reason=click_feedback", expect: "time.elapsed" },
       { type: "retry_until", name: "等待下一状态", target: "page.next.ready", command: "interval=600ms", expect: "ready=true", timeoutMs: 5000, retry: 2 },
+    ],
+  },
+  {
+    id: "text-input",
+    label: "文本输入 · 2步",
+    steps: [
+      { type: "text_input", name: "输入文本", target: "要输入的文本", command: "mode=hwnd-char", expect: "text.sent" },
+      { type: "delay", name: "等待输入反馈", target: "300ms", command: "reason=text_input_feedback", expect: "time.elapsed" },
     ],
   },
   {
@@ -343,6 +363,7 @@ function setRunState(value) {
   element.textContent = value;
   element.classList.remove("idle", "ready", "running", "blocked");
   element.classList.add(value);
+  renderOpsDashboard();
 }
 
 function appendLog(level, message) {
@@ -762,11 +783,15 @@ function normalizeWindowIdentity(value) {
 
 function normalizeQueueItem(value) {
   const source = value && typeof value === "object" ? value : {};
+  const startDelayMs = normalizedNonNegativeInteger(source.startDelayMs) ?? 0;
+  const afterDelayMs = normalizedNonNegativeInteger(source.afterDelayMs) ?? 0;
   return {
     id: String(source.id || randomId("queue")),
     workflowId: String(source.workflowId || ""),
     enabled: source.enabled !== false,
     order: Number(source.order || 0),
+    startDelayMs,
+    afterDelayMs,
     addedAt: String(source.addedAt || new Date().toISOString()),
   };
 }
@@ -803,6 +828,7 @@ function markDirty(reason = "draft") {
   renderWorkflowList();
   renderQueueWorkflowPicker();
   renderAssignments();
+  renderOpsDashboard();
 }
 
 function activeWorkflow() {
@@ -877,13 +903,21 @@ function ensureAssignment(target) {
   return assignment;
 }
 
-function queueWorkflowsForTarget(target) {
+function queueRunEntriesForTarget(target) {
   const assignment = assignmentForHwnd(target.hwnd);
-  const queue = assignment?.queue || [];
-  return queue
+  return (assignment?.queue || [])
     .filter((item) => item.enabled)
-    .map((item) => workflowById(item.workflowId))
-    .filter(Boolean);
+    .map((item) => ({ queueItem: normalizeQueueItem(item), workflow: workflowById(item.workflowId) }))
+    .filter((entry) => entry.workflow);
+}
+
+function activeWorkflowRunEntry() {
+  const workflow = activeWorkflow();
+  if (!workflow) return null;
+  return {
+    workflow,
+    queueItem: queueItemForWorkflow(workflow.id),
+  };
 }
 
 function renumberQueue(queue) {
@@ -897,10 +931,19 @@ function selectedWorkflowIdsForQueue() {
   return activeWorkflow()?.id ? [activeWorkflow().id] : [];
 }
 
-function queueItemForWorkflow(workflowId, order = 1) {
+function queueTimingOptions() {
+  return {
+    staggerMs: normalizedNonNegativeInteger($("#queue-stagger-ms")?.value) ?? 0,
+    gapMs: normalizedNonNegativeInteger($("#queue-gap-ms")?.value) ?? 0,
+  };
+}
+
+function queueItemForWorkflow(workflowId, order = 1, options = {}) {
   return normalizeQueueItem({
     workflowId,
     order,
+    startDelayMs: options.startDelayMs,
+    afterDelayMs: options.afterDelayMs,
     addedAt: new Date().toISOString(),
   });
 }
@@ -913,6 +956,8 @@ function cloneQueueItems(queue) {
         workflowId: item.workflowId,
         enabled: item.enabled,
         order: index + 1,
+        startDelayMs: item.startDelayMs,
+        afterDelayMs: item.afterDelayMs,
         addedAt: new Date().toISOString(),
       }),
     );
@@ -925,8 +970,109 @@ function totalQueuedWorkflows() {
   );
 }
 
+function renderQueueOverview() {
+  const board = $("#queue-overview");
+  if (!board) return;
+  board.replaceChildren();
+  const rows = Object.entries(state.workspace.assignments || {}).filter(
+    ([, assignment]) => (assignment.queue || []).length,
+  );
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-block compact";
+    empty.textContent = "暂无窗口队列";
+    board.append(empty);
+    return;
+  }
+  for (const [hwnd, assignment] of rows.slice(0, 5)) {
+    const target = state.windows.find((item) => String(item.hwnd) === String(hwnd));
+    const queue = (assignment.queue || []).map(normalizeQueueItem);
+    const enabled = queue.filter((item) => item.enabled !== false && workflowById(item.workflowId));
+    const stepTotal = enabled.reduce((sum, item) => sum + (workflowById(item.workflowId)?.steps.length || 0), 0);
+    const delayTotal = enabled.reduce((sum, item) => sum + (item.startDelayMs || 0) + (item.afterDelayMs || 0), 0);
+    const row = document.createElement("article");
+    row.className = "queue-overview-row";
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(target?.display || assignment.display || `hwnd=${hwnd}`)}</strong>
+        <small>${enabled.length}/${queue.length} 项启用 · ${stepTotal} 步 · 等待 ${durationLabel(delayTotal)}</small>
+      </div>
+    `;
+    const chips = document.createElement("div");
+    chips.className = "queue-overview-chips";
+    for (const item of enabled.slice(0, 4)) {
+      const workflow = workflowById(item.workflowId);
+      if (!workflow) continue;
+      const chip = document.createElement("span");
+      chip.textContent = workflow.name;
+      chip.title = queueItemSummary(item, workflow);
+      chips.append(chip);
+    }
+    if (enabled.length > 4) {
+      const more = document.createElement("span");
+      more.textContent = `+${enabled.length - 4}`;
+      chips.append(more);
+    }
+    row.append(chips);
+    board.append(row);
+  }
+  if (rows.length > 5) {
+    const more = document.createElement("div");
+    more.className = "queue-overview-more";
+    more.textContent = `还有 ${rows.length - 5} 个窗口队列`;
+    board.append(more);
+  }
+}
+
+function renderOpsDashboard() {
+  const windows = state.windows || [];
+  const selectedCount = selectedWindows().length;
+  const elevatedCount = windows.filter((item) => item.elevated === true).length;
+  const assignmentCount = Object.values(state.workspace.assignments || {}).filter(
+    (assignment) => (assignment.queue || []).length,
+  ).length;
+  const queueTotal = totalQueuedWorkflows();
+  const sessions = Object.values(state.sessions || {});
+  const runningSessions = sessions.filter((session) => session.status === "running");
+  const active = activeWorkflow();
+  const completion = active ? workflowCompletionState(active, validateWorkflow(active, "background")) : null;
+  const issueCount = completion?.items.filter((item) => item.severity === "issue").length || 0;
+  const warningCount = completion?.items.filter((item) => item.severity === "warning").length || 0;
+  const lastRun = state.workspace.runHistory?.[0] || null;
+
+  setText("#ops-window-total", windows.length);
+  setText("#ops-window-detail", `已选 ${selectedCount} · 管理员 ${elevatedCount}`);
+  setText("#ops-queue-total", queueTotal);
+  setText("#ops-queue-detail", `${assignmentCount} 个窗口已分配`);
+  setText("#ops-running-total", runningSessions.length);
+  setText("#ops-running-detail", runningSessions.length ? runningSessions.map((item) => item.display).join(" / ") : "idle");
+  setText("#ops-active-workflow", active?.name || "未载入");
+  setText(
+    "#ops-active-gaps",
+    active ? `${active.steps.length} 步 · 阻塞 ${issueCount} · 提醒 ${warningCount}` : "等待工作区",
+  );
+  setText("#ops-dispatch-mode", state.privilege?.currentProcessElevated ? "Admin + PostMessageW" : "PostMessageW");
+  setText(
+    "#ops-dispatch-detail",
+    windows.length ? `hwnd 身份复核 · ${TARGET_TITLE}` : "等待扫描目标窗口",
+  );
+  setText("#ops-last-run-status", lastRun?.status || "none");
+  setText(
+    "#ops-last-run-detail",
+    lastRun
+      ? `${lastRun.display || lastRun.hwnd} · ${durationLabel(lastRun.durationMs)} · ${lastRun.endedAt || ""}`
+      : "暂无运行记录",
+  );
+}
+
+function setText(selector, value) {
+  const element = $(selector);
+  if (element) element.textContent = String(value ?? "");
+}
+
 function renderAll() {
   fillWorkflowBlueprintSelect($("#workflow-blueprint-select"));
+  renderBlueprintPreview();
   renderQueueWorkflowPicker();
   renderWorkflowList();
   renderWorkflowForm();
@@ -936,6 +1082,7 @@ function renderAll() {
   renderWindows();
   renderAssignments();
   renderSessions();
+  renderOpsDashboard();
 }
 
 function renderWorkflowList() {
@@ -1057,6 +1204,32 @@ function createWorkflowBatch(options = {}) {
   appendLog("info", `按蓝图生成 ${workflows.length} 个任务：${blueprint.label}`);
   if (options.assignToSelected) assignWorkflowsToSelected(workflows);
   return workflows;
+}
+
+function importSampleWorkflowPack() {
+  const existingIds = new Set(state.workspace.workflows.map((item) => item.id));
+  const samples = createSampleWorkflows().filter((item) => !existingIds.has(item.id));
+  if (!samples.length) {
+    setStatus("内置示例包已存在");
+    appendLog("info", "内置示例包已存在，没有重复导入");
+    return [];
+  }
+  state.workspace.workflows.unshift(...samples);
+  state.workspace.targets = mergeTargetCatalog(
+    [...state.workspace.targets, ...createTargetCatalogFromWorkflows(samples)],
+    state.workspace.workflows,
+  );
+  state.workspace.activeWorkflowId = samples[0].id;
+  state.selectedStepId = samples[0]?.steps[0]?.id || null;
+  selectFirstUnboundCapturedStep(samples[0]?.steps || []);
+  markDirty("sample pack");
+  renderAll();
+  setStatus(`已导入 ${samples.length} 个内置示例任务`);
+  appendLog(
+    "info",
+    `导入示例包：${samples.map((item) => `${item.name}(${item.steps.length}步)`).join(" / ")}`,
+  );
+  return samples;
 }
 
 function newWorkflow() {
@@ -1215,6 +1388,57 @@ function syncWorkflowBlueprintDefaults(options = {}) {
   const blueprint = workflowBlueprintById($("#workflow-blueprint-select")?.value);
   if (!input || !blueprint) return;
   if (options.force || !input.value.trim()) input.value = blueprint.defaultPrefix || blueprint.label;
+}
+
+function renderBlueprintPreview() {
+  const preview = $("#blueprint-preview");
+  if (!preview) return;
+  const blueprint = workflowBlueprintById($("#workflow-blueprint-select")?.value);
+  if (!blueprint) {
+    preview.replaceChildren();
+    return;
+  }
+  const counts = blueprint.steps.reduce((sum, step) => {
+    sum[step.type] = (sum[step.type] || 0) + 1;
+    return sum;
+  }, {});
+  const actionStats = [
+    ["hotkey", "热键"],
+    ["image_click", "识图点击"],
+    ["click", "坐标点击"],
+    ["ocr_assert", "OCR"],
+    ["wait_image", "等图"],
+    ["text_input", "文本"],
+    ["delay", "等待"],
+  ]
+    .filter(([type]) => counts[type])
+    .map(([type, label]) => `${label} ${counts[type]}`)
+    .join(" · ");
+
+  preview.replaceChildren();
+  const summary = document.createElement("div");
+  summary.className = "blueprint-summary";
+  summary.innerHTML = `
+    <strong>${escapeHtml(blueprint.label)}</strong>
+    <span>${escapeHtml(blueprint.category)} · ${blueprint.steps.length} 步 · ${escapeHtml(actionStats || "语义步骤")}</span>
+    <small>${escapeHtml(blueprint.description || "")}</small>
+  `;
+  const track = document.createElement("div");
+  track.className = "blueprint-step-track";
+  blueprint.steps.slice(0, 12).forEach((step, index) => {
+    const chip = document.createElement("span");
+    chip.className = `blueprint-chip type-${step.type}`;
+    chip.title = `${step.name} · ${step.target}`;
+    chip.textContent = `${String(index + 1).padStart(2, "0")} ${stepLabels[step.type] || step.type}`;
+    track.append(chip);
+  });
+  if (blueprint.steps.length > 12) {
+    const more = document.createElement("span");
+    more.className = "blueprint-chip more";
+    more.textContent = `+${blueprint.steps.length - 12}`;
+    track.append(more);
+  }
+  preview.append(summary, track);
 }
 
 function renderQueueWorkflowPicker() {
@@ -1392,12 +1616,13 @@ function workflowCompletionItem(message, severity, workflow) {
 }
 
 function isSpecificCompletionGap(message) {
-  return /Ctrl\+V 图片|OCR 需要目标文本|后台点击需要|绑定的识别目标已不存在|匹配阈值|鼠标键|重试间隔|延迟步骤/.test(
+  return /Ctrl\+V 图片|OCR 需要目标文本|文本输入需要|后台点击需要|绑定的识别目标已不存在|匹配阈值|鼠标键|重试间隔|延迟步骤/.test(
     message,
   );
 }
 
 function completionKindForMessage(message) {
+  if (message.includes("文本输入")) return "文本";
   if (message.includes("Ctrl+V 图片")) return "缺图";
   if (message.includes("OCR 需要目标文本")) return "OCR";
   if (message.includes("未限定 ROI")) return "ROI";
@@ -1412,6 +1637,7 @@ function completionKindForMessage(message) {
 }
 
 function completionActionForMessage(message) {
+  if (message.includes("文本输入")) return "填文本";
   if (message.includes("Ctrl+V 图片")) return "粘贴图";
   if (message.includes("OCR 需要目标文本")) return "填文本";
   if (message.includes("未限定 ROI")) return "设 ROI";
@@ -1497,6 +1723,7 @@ function focusCompletionField(item, stepItem) {
 }
 
 function completionFocusSelector(item, stepItem) {
+  if (item.message.includes("文本输入")) return "#param-text-value";
   if (item.message.includes("OCR 需要目标文本")) {
     return targetForStep(stepItem) ? "#target-texts" : "#step-expect";
   }
@@ -1515,6 +1742,7 @@ function completionFocusSelector(item, stepItem) {
 
 function completionStatusMessage(item) {
   if (item.message.includes("Ctrl+V 图片")) return "已定位缺图步骤：复制图片后直接 Ctrl+V，或在预览中框 ROI 后存为目标";
+  if (item.message.includes("文本输入")) return "已定位文本输入步骤：填写要发给目标窗口的文字";
   if (item.message.includes("OCR 需要目标文本")) return "已定位 OCR 步骤：填写目标文本后即可用于后台识别";
   if (item.message.includes("后台点击需要")) return "已定位点击步骤：填写 x/y 坐标或绑定 ROI 目标";
   if (item.message.includes("未限定 ROI")) return "已定位 OCR ROI 提醒：可绑定 ROI 或在命令里设置 roi=top/panel/dialog";
@@ -1724,7 +1952,10 @@ function renderStepParamPanel(item) {
 
   $("#step-param-summary").textContent = paramSummaryForStep(item);
   renderTargetSelect(item);
+  $("#param-pre-delay-ms").value = commandDurationMs(item.command, "preDelay") ?? "";
+  $("#param-post-delay-ms").value = commandDurationMs(item.command, "postDelay") ?? "";
   $("#param-hotkey").value = item.type === "hotkey" ? item.target || "" : "";
+  $("#param-text-value").value = item.type === "text_input" ? textInputValueForStep(item) : "";
 
   const boundTarget = targetForStep(item);
   const boundDefaults = targetCommandDefaults(boundTarget, item.command);
@@ -1736,6 +1967,8 @@ function renderStepParamPanel(item) {
   $("#param-image-threshold").value = commandValue(item.command, "threshold") || boundDefaults.threshold;
   $("#param-image-button").value = boundDefaults.button;
   $("#param-image-point").value = commandValue(item.command, "point") || boundDefaults.point;
+  $("#param-image-offset-x").value = commandIntegerValue(item.command, "offsetX") ?? "";
+  $("#param-image-offset-y").value = commandIntegerValue(item.command, "offsetY") ?? "";
   $("#param-image-target").value = ["image_click", "wait_image", "detect_page"].includes(item.type)
     ? item.target || ""
     : "";
@@ -1768,17 +2001,37 @@ function renderTargetSelect(item) {
 
 function paramSummaryForStep(item) {
   const target = targetForStep(item);
+  const timing = timingSummaryForStep(item);
   if (["image_click", "wait_image", "detect_page"].includes(item.type)) {
     const threshold = commandValue(item.command, "threshold") || target?.match?.threshold || DEFAULT_IMAGE_THRESHOLD;
-    return target ? `${target.name} · threshold ${threshold}` : `未绑定图片目标 · threshold ${threshold}`;
+    const offset = item.type === "image_click" ? clickOffsetSummary(item) : "";
+    const base = target ? `${target.name} · threshold ${threshold}` : `未绑定图片目标 · threshold ${threshold}`;
+    return `${base}${offset}${timing}`;
   }
   if (item.type === "click") {
     const point = parsePointText(item.target) || parsePointText(item.command);
-    return point ? `点击 ${point.x},${point.y}` : target?.roi ? "点击绑定 ROI 中心" : "需要坐标或 ROI";
+    const base = point ? `点击 ${point.x},${point.y}` : target?.roi ? "点击绑定 ROI 中心" : "需要坐标或 ROI";
+    return `${base}${timing}`;
   }
-  if (item.type === "hotkey") return item.target || "输入快捷键";
-  if (item.type === "delay") return `${durationMsFromText(item.target) ?? item.timeoutMs ?? 0} ms`;
-  return "保留为编排语义，当前后端不直接输入";
+  if (item.type === "hotkey") return `${item.target || "输入快捷键"}${timing}`;
+  if (item.type === "text_input") return `${textInputValueForStep(item) || "输入文本"}${timing}`;
+  if (item.type === "delay") return `${durationMsFromText(item.target) ?? item.timeoutMs ?? 0} ms${timing}`;
+  return `保留为编排语义，当前后端不直接输入${timing}`;
+}
+
+function timingSummaryForStep(item) {
+  const preDelay = commandDurationMs(item.command, "preDelay");
+  const postDelay = commandDurationMs(item.command, "postDelay");
+  const parts = [];
+  if (preDelay) parts.push(`前 ${preDelay}ms`);
+  if (postDelay) parts.push(`后 ${postDelay}ms`);
+  return parts.length ? ` · ${parts.join(" / ")}` : "";
+}
+
+function clickOffsetSummary(item) {
+  const x = commandIntegerValue(item.command, "offsetX") || 0;
+  const y = commandIntegerValue(item.command, "offsetY") || 0;
+  return x || y ? ` · offset ${x},${y}` : "";
 }
 
 function bindStepParamEditor() {
@@ -1797,10 +2050,26 @@ function bindStepParamEditor() {
     });
     renderTargets();
   });
+  $("#param-pre-delay-ms").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithDelayValue(item.command, "preDelay", event.target.value);
+    });
+  });
+  $("#param-post-delay-ms").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.command = commandWithDelayValue(item.command, "postDelay", event.target.value);
+    });
+  });
   $("#param-hotkey").addEventListener("input", (event) => {
     updateSelectedStepFromParams((item) => {
       item.target = event.target.value.trim();
       item.command = commandWithValues(item.command, { mode: "hwnd-key" });
+    });
+  });
+  $("#param-text-value").addEventListener("input", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.target = event.target.value;
+      item.command = commandWithValues(item.command, { mode: "hwnd-char" });
     });
   });
   $("#param-click-x").addEventListener("input", updateClickPointFromParams);
@@ -1828,6 +2097,8 @@ function bindStepParamEditor() {
       item.command = commandWithValues(item.command, { point: event.target.value });
     });
   });
+  $("#param-image-offset-x").addEventListener("input", updateImageOffsetFromParams);
+  $("#param-image-offset-y").addEventListener("input", updateImageOffsetFromParams);
   $("#param-image-target").addEventListener("input", (event) => {
     updateSelectedStepFromParams((item) => {
       item.target = event.target.value.trim();
@@ -1953,6 +2224,13 @@ function updateClickPointFromParams() {
   });
 }
 
+function updateImageOffsetFromParams() {
+  updateSelectedStepFromParams((item) => {
+    item.command = commandWithIntegerValue(item.command, "offsetX", $("#param-image-offset-x").value);
+    item.command = commandWithIntegerValue(item.command, "offsetY", $("#param-image-offset-y").value);
+  });
+}
+
 function updateSelectedStepFromParams(mutator) {
   const item = selectedStep();
   if (!item) return;
@@ -2074,6 +2352,16 @@ function commandValue(command, key) {
   return "";
 }
 
+function commandDurationMs(command, key) {
+  const raw = commandValue(command, key);
+  return raw ? durationMsFromText(raw) : null;
+}
+
+function commandIntegerValue(command, key) {
+  const raw = commandValue(command, key);
+  return /^-?\d+$/.test(raw) ? Number(raw) : null;
+}
+
 function commandWithValues(command, updates) {
   const updateKeys = new Set(Object.keys(updates).map((key) => key.toLowerCase()));
   const parts = commandParts(command).filter((part) => !part.key || !updateKeys.has(part.key.toLowerCase()));
@@ -2082,6 +2370,20 @@ function commandWithValues(command, updates) {
     if (text) parts.push({ key, value: text });
   }
   return parts.map((part) => (part.key ? `${part.key}=${part.value}` : part.raw)).join("; ");
+}
+
+function commandWithDelayValue(command, key, value) {
+  const text = String(value ?? "").trim();
+  if (!text) return commandWithValues(command, { [key]: "" });
+  const ms = normalizedNonNegativeInteger(text);
+  return ms == null ? command : commandWithValues(command, { [key]: `${ms}ms` });
+}
+
+function commandWithIntegerValue(command, key, value) {
+  const text = String(value ?? "").trim();
+  if (!text) return commandWithValues(command, { [key]: "" });
+  const integer = normalizedInteger(text);
+  return integer == null ? command : commandWithValues(command, { [key]: integer });
 }
 
 function parsePointText(value) {
@@ -2113,6 +2415,12 @@ function normalizedNonNegativeInteger(value) {
   if (String(value ?? "").trim() === "") return null;
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function normalizedInteger(value) {
+  if (String(value ?? "").trim() === "") return null;
+  const number = Number(value);
+  return Number.isInteger(number) ? number : null;
 }
 
 function normalizedButton(command) {
@@ -2383,6 +2691,7 @@ async function refreshPrivilege() {
     $("#restart-admin").disabled = false;
     appendLog("error", `权限状态读取失败：${error}`);
   }
+  renderOpsDashboard();
 }
 
 async function refreshGameLaunchStatus() {
@@ -2424,6 +2733,7 @@ async function refreshWindows() {
 
   renderWindows();
   renderAssignments();
+  renderOpsDashboard();
   await capturePreview();
   const elevatedTargets = state.windows.filter((item) => item.elevated === true).length;
   if (elevatedTargets > 0 && state.privilege?.currentProcessElevated === false) {
@@ -2444,6 +2754,7 @@ function renderWindows() {
     empty.textContent = `未找到标题包含“${TARGET_TITLE}”的窗口`;
     list.append(empty);
     updateActiveMeta();
+    renderOpsDashboard();
     return;
   }
 
@@ -2496,6 +2807,7 @@ function renderWindows() {
     list.append(row);
   }
   updateActiveMeta();
+  renderOpsDashboard();
 }
 
 function selectGameWindows() {
@@ -2543,12 +2855,19 @@ function appendPickedWorkflowsToSelected() {
   return targets.length;
 }
 
-function appendWorkflowIdsToTargets(workflowIds, targets) {
+function appendWorkflowIdsToTargets(workflowIds, targets, timing = queueTimingOptions()) {
   const validIds = workflowIds.filter((workflowId) => workflowById(workflowId));
-  for (const target of targets) {
+  const staggerMs = normalizedNonNegativeInteger(timing.staggerMs) ?? 0;
+  const gapMs = normalizedNonNegativeInteger(timing.gapMs) ?? 0;
+  for (const [targetIndex, target] of targets.entries()) {
     const assignment = ensureAssignment(target);
-    for (const workflowId of validIds) {
-      assignment.queue.push(queueItemForWorkflow(workflowId, assignment.queue.length + 1));
+    for (const [workflowIndex, workflowId] of validIds.entries()) {
+      assignment.queue.push(
+        queueItemForWorkflow(workflowId, assignment.queue.length + 1, {
+          startDelayMs: workflowIndex === 0 ? targetIndex * staggerMs : 0,
+          afterDelayMs: gapMs,
+        }),
+      );
     }
     assignment.queue = renumberQueue(assignment.queue);
     assignment.updatedAt = new Date().toISOString();
@@ -2598,6 +2917,7 @@ function clearSelectedQueues() {
 }
 
 function renderAssignments() {
+  renderQueueOverview();
   const list = $("#assignment-list");
   list.replaceChildren();
   const entries = Object.entries(state.workspace.assignments || {}).filter(
@@ -2609,6 +2929,7 @@ function renderAssignments() {
     empty.className = "empty-block compact";
     empty.textContent = "还没有窗口任务队列";
     list.append(empty);
+    renderOpsDashboard();
     return;
   }
   for (const [hwnd, assignment] of entries) {
@@ -2644,8 +2965,18 @@ function renderAssignments() {
         <button class="queue-item-title" type="button">
           <span>${String(index + 1).padStart(2, "0")}</span>
           <strong>${escapeHtml(workflow?.name || "任务已删除")}</strong>
-          <small>${queueItem.enabled === false ? "停用" : `${workflow?.steps?.length || 0} 步`}</small>
+          <small>${escapeHtml(queueItemSummary(queueItem, workflow))}</small>
         </button>
+        <div class="queue-item-timing">
+          <label>
+            前等
+            <input type="number" min="0" step="100" value="${escapeHtml(queueItem.startDelayMs || 0)}" data-delay-field="startDelayMs" ${locked ? "disabled" : ""} />
+          </label>
+          <label>
+            后等
+            <input type="number" min="0" step="100" value="${escapeHtml(queueItem.afterDelayMs || 0)}" data-delay-field="afterDelayMs" ${locked ? "disabled" : ""} />
+          </label>
+        </div>
         <div class="queue-item-actions">
           <button type="button" data-action="toggle" ${locked ? "disabled" : ""}>${queueItem.enabled === false ? "启用" : "停用"}</button>
           <button type="button" data-action="up" ${locked ? "disabled" : ""}>上移</button>
@@ -2661,6 +2992,11 @@ function renderAssignments() {
         renderAll();
         capturePreview();
       });
+      itemRow.querySelector(".queue-item-timing").addEventListener("change", (event) => {
+        const field = event.target?.dataset?.delayField;
+        if (!field) return;
+        updateQueueItemTiming(hwnd, queueItem.id, field, event.target.value);
+      });
       itemRow.querySelector(".queue-item-actions").addEventListener("click", (event) => {
         const action = event.target?.dataset?.action;
         if (!action) return;
@@ -2670,6 +3006,15 @@ function renderAssignments() {
     });
     list.append(row);
   }
+  renderOpsDashboard();
+}
+
+function queueItemSummary(queueItem, workflow) {
+  if (queueItem.enabled === false) return "停用";
+  const parts = [`${workflow?.steps?.length || 0} 步`];
+  if (queueItem.startDelayMs) parts.push(`前等 ${durationLabel(queueItem.startDelayMs)}`);
+  if (queueItem.afterDelayMs) parts.push(`后等 ${durationLabel(queueItem.afterDelayMs)}`);
+  return parts.join(" · ");
 }
 
 function updateQueueItem(hwnd, queueItemId, action) {
@@ -2698,6 +3043,24 @@ function updateQueueItem(hwnd, queueItemId, action) {
   markDirty("queued");
   renderAssignments();
   renderWindows();
+}
+
+function updateQueueItemTiming(hwnd, queueItemId, field, value) {
+  if (isQueueLocked(hwnd)) {
+    setStatus("该窗口正在运行，队列已锁定");
+    appendLog("warn", `运行中的窗口队列不可修改：hwnd=${hwnd}`);
+    renderAssignments();
+    return;
+  }
+  if (!["startDelayMs", "afterDelayMs"].includes(field)) return;
+  const assignment = assignmentForHwnd(hwnd);
+  const queueItem = assignment?.queue?.find((item) => item.id === queueItemId);
+  if (!assignment || !queueItem) return;
+  queueItem[field] = normalizedNonNegativeInteger(value) ?? 0;
+  assignment.updatedAt = new Date().toISOString();
+  markDirty("queued");
+  renderWindows();
+  renderSessions();
 }
 
 async function restartAsAdmin() {
@@ -3237,7 +3600,7 @@ function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
     if (!stepLabels[item.type]) addIssue(`${prefix} 类型未知`, item);
     if (item.enabled === false) continue;
     if (!item.name.trim()) addIssue(`${prefix} 名称为空`, item);
-    if (!item.target.trim() && !["delay", "snapshot"].includes(item.type)) {
+    if (!item.target.trim() && !["delay", "snapshot", "text_input"].includes(item.type)) {
       addIssue(`${prefix} 缺少目标`, item);
     }
     if (!Number.isFinite(item.timeoutMs) || item.timeoutMs < 0) addIssue(`${prefix} 超时必须是非负数`, item);
@@ -3274,6 +3637,22 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
       addIssue(`${prefix} 匹配阈值必须在 0 到 1 之间`, item);
     }
   }
+  for (const key of ["preDelay", "postDelay"]) {
+    const raw = commandValue(item.command, key);
+    if (raw && durationMsFromText(raw) == null) {
+      addIssue(`${prefix} ${key} 必须是 300ms、1s 或非负毫秒数字`, item);
+    }
+  }
+  for (const key of ["offsetX", "offsetY"]) {
+    const raw = commandValue(item.command, key);
+    if (raw && normalizedInteger(raw) == null) {
+      addIssue(`${prefix} ${key} 必须是整数像素`, item);
+    }
+  }
+  const clickPoint = commandValue(item.command, "point");
+  if (item.type === "image_click" && clickPoint && !imageClickPointOptions.has(clickPoint)) {
+    addIssue(`${prefix} 图像点击点只支持 center/top-left/top-right/bottom-left/bottom-right`, item);
+  }
   const point = parsePointText(item.target) || parsePointText(item.command);
   const targetId = stepTargetId(item);
   const targetItem = targetForStep(item);
@@ -3298,6 +3677,14 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
   }
   if (item.type === "delay" && durationMsFromText(item.target) == null && item.timeoutMs <= 0) {
     addIssue(`${prefix} 延迟步骤需要有效等待时长`, item);
+  }
+  if (item.type === "text_input") {
+    const text = textInputValueForStep(item);
+    if (!text) {
+      addIssue(`${prefix} 文本输入需要内容`, item);
+    } else if ([...text].length > MAX_TEXT_INPUT_CHARS) {
+      addIssue(`${prefix} 文本输入最多 ${MAX_TEXT_INPUT_CHARS} 个字符`, item);
+    }
   }
   if (item.type === "retry_until") {
     const interval = commandValue(item.command, "interval");
@@ -3358,6 +3745,14 @@ function ocrLanguageForStep(item) {
 
 function ocrRegionForStep(item) {
   return commandValue(item?.command || "", "roi") || "";
+}
+
+function textInputValueForStep(item) {
+  return (
+    commandValue(item?.command || "", "text") ||
+    commandValue(item?.command || "", "value") ||
+    String(item?.target || "")
+  ).trim();
 }
 
 function validateActiveWorkflow() {
@@ -3425,10 +3820,10 @@ async function runSelected(mode) {
   let launched = 0;
   for (const target of targets) {
     const assignment = assignmentForHwnd(target.hwnd);
-    const queuedWorkflows = queueWorkflowsForTarget(target);
     const hasWindowQueue = Boolean(assignment?.queue?.length);
     const source = hasWindowQueue ? "queue" : "active";
-    const workflows = hasWindowQueue ? queuedWorkflows : activeWorkflow() ? [activeWorkflow()] : [];
+    const runEntries = hasWindowQueue ? queueRunEntriesForTarget(target) : [activeWorkflowRunEntry()].filter(Boolean);
+    const workflows = runEntries.map((entry) => entry.workflow);
     if (hasWindowQueue) {
       const mismatch = windowIdentityMismatchReason(assignment.windowIdentity, windowIdentityForTarget(target));
       if (mismatch) {
@@ -3459,7 +3854,7 @@ async function runSelected(mode) {
     if (validation.warnings.length) {
       appendLog("warn", `${target.display} 队列提醒：${validation.warnings.join("；")}`);
     }
-    if (await startRunForWindow(target, workflows, mode, source)) launched += 1;
+    if (await startRunForWindow(target, runEntries, mode, source)) launched += 1;
   }
   setStatus(launched ? `已启动 ${launched} 个窗口队列` : "没有启动任何窗口队列");
 }
@@ -3481,7 +3876,7 @@ function validateWorkflowQueue(workflows, mode = "definition") {
   return { issues, warnings, firstBlockingWorkflow, firstBlockingValidation };
 }
 
-async function startRunForWindow(target, workflows, mode, source) {
+async function startRunForWindow(target, runEntries, mode, source) {
   const key = String(target.hwnd);
   const running = state.sessions[key]?.status === "running";
   if (running) {
@@ -3490,9 +3885,12 @@ async function startRunForWindow(target, workflows, mode, source) {
   }
   const windowIdentity = await currentWindowIdentityForRun(target, mode);
   if (!windowIdentity) return false;
-  const workflowCopies = JSON.parse(JSON.stringify(workflows));
-  const enabledStepTotal = workflowCopies.reduce(
-    (sum, workflow) => sum + workflow.steps.filter((item) => item.enabled !== false).length,
+  const runPlan = runEntries.map((entry) => ({
+    workflow: JSON.parse(JSON.stringify(entry.workflow)),
+    queueItem: normalizeQueueItem(entry.queueItem || { workflowId: entry.workflow.id }),
+  }));
+  const enabledStepTotal = runPlan.reduce(
+    (sum, entry) => sum + entry.workflow.steps.filter((item) => item.enabled !== false).length,
     0,
   );
   if (!enabledStepTotal) {
@@ -3506,10 +3904,19 @@ async function startRunForWindow(target, workflows, mode, source) {
     hwnd: target.hwnd,
     display: target.display,
     windowIdentity,
-    workflowIds: workflowCopies.map((workflow) => workflow.id),
-    workflowNames: workflowCopies.map((workflow) => workflow.name),
-    workflowId: workflowCopies[0]?.id || "",
-    workflowName: workflowCopies.length === 1 ? workflowCopies[0].name : `${workflowCopies.length} 个任务`,
+    workflowIds: runPlan.map((entry) => entry.workflow.id),
+    workflowNames: runPlan.map((entry) => entry.workflow.name),
+    workflowId: runPlan[0]?.workflow.id || "",
+    workflowName: runPlan.length === 1 ? runPlan[0].workflow.name : `${runPlan.length} 个任务`,
+    queuePlan: runPlan.map((entry, index) => ({
+      queueItemId: entry.queueItem.id,
+      workflowId: entry.workflow.id,
+      workflowName: entry.workflow.name,
+      order: index + 1,
+      startDelayMs: entry.queueItem.startDelayMs || 0,
+      afterDelayMs: entry.queueItem.afterDelayMs || 0,
+    })),
+    queueEvents: [],
     currentWorkflowName: "",
     status: "running",
     currentStep: 0,
@@ -3528,20 +3935,44 @@ async function startRunForWindow(target, workflows, mode, source) {
   setRunState("running");
   appendLog("info", `${modeLabel(mode)} 启动：${target.display} -> ${session.workflowNames.join(" / ")}`);
   renderSessions();
-  void runSession(session, workflowCopies);
+  void runSession(session, runPlan);
   return true;
 }
 
-async function runSession(session, workflows) {
-  for (const workflow of workflows) {
+async function runSession(session, runPlan) {
+  for (const entry of runPlan) {
+    const workflow = entry.workflow;
+    const queueItem = entry.queueItem;
     if (session.cancelRequested || session.status === "failed") break;
     session.currentWorkflowName = workflow.name;
+    if (queueItem.startDelayMs > 0) {
+      const completed = await runQueueDelay(session, workflow, "start", queueItem.startDelayMs);
+      if (!completed) break;
+    }
     const steps = workflow.steps.filter((item) => item.enabled !== false);
     for (const item of steps) {
       if (session.cancelRequested) break;
       session.currentStep += 1;
       const stepStartedAt = new Date();
       let result = null;
+      let stopAfterResult = false;
+      const preDelay = await runStepDelay(session, workflow, item, "preDelay");
+      if (!preDelay.completed) {
+        result = withStepTimingDetail(
+          {
+            status: "stopped",
+            action: "pre_delay",
+            detail: "interrupted after stop request during step preDelay",
+            inputSent: false,
+            matched: false,
+          },
+          preDelay.elapsedMs,
+          0,
+        );
+        recordSessionStepResult(session, workflow, item, result, stepStartedAt, new Date());
+        renderSessions();
+        break;
+      }
       if (session.mode === "background") {
         result = await executeBackgroundStepWithRetries(session, item).catch((error) => ({
           status: "error",
@@ -3551,7 +3982,8 @@ async function runSession(session, workflows) {
           matched: false,
         }));
         session.logs.unshift(formatStepLog(session.currentStep - 1, workflow, item, result));
-        if (shouldStopAfterResult(item, result)) {
+        stopAfterResult = shouldStopAfterResult(item, result);
+        if (stopAfterResult) {
           session.cancelRequested = true;
           session.status = "failed";
           session.failureReason = result.detail || `${result.status}/${result.action}`;
@@ -3567,11 +3999,29 @@ async function runSession(session, workflows) {
           matched: false,
         };
         session.logs.unshift(formatStepLog(session.currentStep - 1, workflow, item, result));
-        await sleep(dryRunDelay(item));
+        await cancellableSleep(session, dryRunDelay(item));
       }
+      const postDelay =
+        session.cancelRequested || stopAfterResult
+          ? { completed: true, elapsedMs: 0 }
+          : await runStepDelay(session, workflow, item, "postDelay");
+      if (!postDelay.completed) {
+        result = {
+          ...result,
+          status: "stopped",
+          action: "post_delay",
+          detail: `${result?.detail || ""}; interrupted after stop request during step postDelay`,
+        };
+      }
+      result = withStepTimingDetail(result, preDelay.elapsedMs, postDelay.elapsedMs);
       recordSessionStepResult(session, workflow, item, result, stepStartedAt, new Date());
       renderSessions();
       if (session.status === "failed") break;
+    }
+    if (session.cancelRequested || session.status === "failed") break;
+    if (queueItem.afterDelayMs > 0) {
+      const completed = await runQueueDelay(session, workflow, "after", queueItem.afterDelayMs);
+      if (!completed) break;
     }
   }
   if (session.status !== "failed") {
@@ -3619,6 +4069,53 @@ function recordSessionStepResult(session, workflow, item, result, startedAt, end
   }
 }
 
+async function runQueueDelay(session, workflow, phase, ms) {
+  const label = phase === "start" ? "启动前错峰" : "任务后间隔";
+  appendLog("info", `${session.display} / ${workflow.name} ${label} ${durationLabel(ms)}`);
+  const startedAt = new Date();
+  const completed = await cancellableSleep(session, ms);
+  const endedAt = new Date();
+  const event = {
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    phase,
+    delayMs: ms,
+    status: completed ? "done" : "stopped",
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+    durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()),
+  };
+  session.queueEvents.push(event);
+  session.logs.unshift(`${workflow.name} / ${label} ${completed ? "完成" : "已停止"} · ${durationLabel(ms)}`);
+  renderSessions();
+  return completed;
+}
+
+async function runStepDelay(session, workflow, item, key) {
+  const ms = stepTimingDelay(item, key);
+  if (ms <= 0) return { completed: true, elapsedMs: 0 };
+  const label = key === "preDelay" ? "步骤前等待" : "步骤后等待";
+  appendLog("info", `${session.display} / ${workflow.name} / ${item.name} ${label} ${durationLabel(ms)}`);
+  const startedAt = Date.now();
+  const completed = await cancellableSleep(session, ms);
+  const elapsedMs = Math.max(0, Date.now() - startedAt);
+  session.logs.unshift(`${workflow.name} / ${item.name} / ${label} ${completed ? "完成" : "已停止"} · ${durationLabel(ms)}`);
+  renderSessions();
+  return { completed, elapsedMs: completed ? ms : elapsedMs };
+}
+
+function stepTimingDelay(item, key) {
+  return Math.max(0, commandDurationMs(item.command, key) ?? 0);
+}
+
+function withStepTimingDetail(result, preDelayMs, postDelayMs) {
+  if (!preDelayMs && !postDelayMs) return result;
+  return {
+    ...result,
+    detail: `${result?.detail || ""}; timing preDelay=${preDelayMs}ms postDelay=${postDelayMs}ms`,
+  };
+}
+
 async function attachEndedWindowIdentity(session) {
   try {
     const current = await invoke("current_window_identity", { hwnd: Number(session.hwnd) });
@@ -3652,6 +4149,8 @@ function runHistoryEntryFromSession(session) {
     windowIdentity: session.windowIdentity,
     endedWindowIdentity: session.endedWindowIdentity,
     endedWindowIdentityError: session.endedWindowIdentityError || "",
+    queuePlan: session.queuePlan || [],
+    queueEvents: session.queueEvents || [],
     stepResults: session.stepResults.slice(-MAX_SESSION_STEP_RESULTS),
     startedAt: session.startedAt,
     endedAt: session.endedAt,
@@ -3671,7 +4170,15 @@ async function executeBackgroundStepWithRetries(session, item) {
       };
     }
     if (!shouldRetryBackgroundStep(item, result) || attempt === attempts) return result;
-    await sleep(backgroundRetryDelay(item));
+    const completed = await cancellableSleep(session, backgroundRetryDelay(item));
+    if (!completed) {
+      return {
+        ...result,
+        status: "stopped",
+        action: "retry_wait",
+        detail: `${result.detail}; stopped during retry wait`,
+      };
+    }
   }
   return result;
 }
@@ -3679,11 +4186,11 @@ async function executeBackgroundStepWithRetries(session, item) {
 async function executeBackgroundStep(session, item) {
   if (item.type === "delay") {
     const ms = backgroundStepDelay(item);
-    await sleep(ms);
+    const completed = await cancellableSleep(session, ms);
     return {
-      status: "ok",
+      status: completed ? "ok" : "stopped",
       action: "delay",
-      detail: `waited ${ms}ms`,
+      detail: completed ? `waited ${ms}ms` : `interrupted after stop request during ${ms}ms delay`,
       inputSent: false,
       matched: false,
     };
@@ -3722,7 +4229,15 @@ async function executeRetryUntilStep(session, item) {
     }
     if (!["below_threshold", "planned"].includes(result.status)) return result;
     if (Date.now() >= deadline) break;
-    await sleep(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
+    const completed = await cancellableSleep(session, Math.min(intervalMs, Math.max(0, deadline - Date.now())));
+    if (!completed) return {
+      ...(result || {}),
+      status: "stopped",
+      action: "retry_until",
+      detail: `interrupted after stop request during retry_until wait; ${result?.detail || ""}`.trim(),
+      inputSent: false,
+      matched: false,
+    };
   } while (timeoutMs > 0);
   return {
     ...(result || {}),
@@ -3940,6 +4455,7 @@ function renderSessions() {
     lanes.append(lane);
   }
   renderRunHistory(lanes);
+  renderOpsDashboard();
 }
 
 function renderRunHistory(container) {
@@ -4024,6 +4540,14 @@ function imageSize(dataUrl) {
   });
 }
 
+async function cancellableSleep(session, ms) {
+  const deadline = Date.now() + Math.max(0, Number(ms) || 0);
+  while (!session.cancelRequested && Date.now() < deadline) {
+    await sleep(Math.min(250, deadline - Date.now()));
+  }
+  return !session.cancelRequested;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -4061,10 +4585,14 @@ $("#assign-selected").addEventListener("click", assignWorkflowToSelected);
 $("#append-picked-workflows").addEventListener("click", appendPickedWorkflowsToSelected);
 $("#copy-active-queue-to-selected").addEventListener("click", copyActiveQueueToSelectedWindows);
 $("#clear-selected-queues").addEventListener("click", clearSelectedQueues);
-$("#workflow-blueprint-select").addEventListener("change", () => syncWorkflowBlueprintDefaults({ force: true }));
+$("#workflow-blueprint-select").addEventListener("change", () => {
+  syncWorkflowBlueprintDefaults({ force: true });
+  renderBlueprintPreview();
+});
 $("#create-workflow-from-blueprint").addEventListener("click", () => createWorkflowBatch());
 $("#create-and-assign-blueprint").addEventListener("click", () => createWorkflowBatch({ assignToSelected: true }));
 $("#new-workflow").addEventListener("click", newWorkflow);
+$("#import-sample-pack").addEventListener("click", importSampleWorkflowPack);
 $("#duplicate-workflow").addEventListener("click", duplicateWorkflow);
 $("#delete-workflow").addEventListener("click", deleteWorkflow);
 $("#add-step").addEventListener("click", addStep);

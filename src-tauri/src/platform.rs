@@ -135,6 +135,18 @@ pub fn post_hotkey(hwnd: isize, _hotkey: &str) -> Result<HwndInputResult, String
 }
 
 #[cfg(windows)]
+pub fn post_text(hwnd: isize, text: &str) -> Result<HwndInputResult, String> {
+    windows_impl::post_text(hwnd, text)
+}
+
+#[cfg(not(windows))]
+pub fn post_text(hwnd: isize, _text: &str) -> Result<HwndInputResult, String> {
+    Err(format!(
+        "hwnd text input is only implemented on Windows: {hwnd}"
+    ))
+}
+
+#[cfg(windows)]
 mod windows_impl {
     use super::{AppWindow, HwndInputResult, HwndPoint, RgbFrame};
     use std::{
@@ -165,9 +177,9 @@ mod windows_impl {
             UI::WindowsAndMessaging::{
                 EnumWindows, GetClientRect, GetWindow, GetWindowLongW, GetWindowRect,
                 GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindow,
-                IsWindowVisible, PostMessageW, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL, WM_KEYDOWN,
-                WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDOWN, WM_RBUTTONUP,
-                WM_SYSKEYDOWN, WM_SYSKEYUP, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+                IsWindowVisible, PostMessageW, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL, WM_CHAR,
+                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDOWN,
+                WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
             },
         },
     };
@@ -390,6 +402,21 @@ mod windows_impl {
         }
     }
 
+    pub fn post_text(hwnd: isize, text: &str) -> Result<HwndInputResult, String> {
+        unsafe {
+            let hwnd = checked_hwnd(hwnd)?;
+            let units = text_message_units(text)?;
+            for unit in &units {
+                post(hwnd, WM_CHAR, WPARAM(*unit as usize), LPARAM(1))?;
+            }
+            Ok(HwndInputResult {
+                hwnd: hwnd.0 as isize,
+                sent_messages: units.len() as u32,
+                detail: format!("posted {} text character message(s)", units.len()),
+            })
+        }
+    }
+
     unsafe fn checked_hwnd(hwnd: isize) -> Result<HWND, String> {
         let hwnd = HWND(hwnd as *mut c_void);
         if hwnd.0.is_null() || !unsafe { IsWindow(Some(hwnd)) }.as_bool() {
@@ -468,6 +495,14 @@ mod windows_impl {
             return Err("hotkey is empty".to_string());
         }
         Ok(keys)
+    }
+
+    fn text_message_units(value: &str) -> Result<Vec<u16>, String> {
+        let text = value.trim();
+        if text.is_empty() {
+            return Err("text input is empty".to_string());
+        }
+        Ok(text.encode_utf16().collect())
     }
 
     fn parse_key(value: &str) -> Result<ParsedKey, String> {
@@ -855,6 +890,17 @@ mod windows_impl {
         #[test]
         fn rejects_unknown_hotkey_key() {
             assert!(parse_hotkey("ALT+鼠").is_err());
+        }
+
+        #[test]
+        fn encodes_text_input_as_utf16_messages() {
+            let units = text_message_units("你好A").expect("text should encode");
+            assert_eq!(units, "你好A".encode_utf16().collect::<Vec<_>>());
+        }
+
+        #[test]
+        fn rejects_empty_text_input() {
+            assert!(text_message_units("   ").is_err());
         }
     }
 }

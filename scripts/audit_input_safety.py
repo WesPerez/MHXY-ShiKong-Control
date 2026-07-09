@@ -69,7 +69,7 @@ IMAGE_CLICK_RECHECK_PATTERNS = [
     ),
     (
         "template image_click revalidates before click",
-        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,center,button)?;",
+        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,click_point,button)?;",
     ),
     (
         "roi image_click revalidates before click",
@@ -153,6 +153,29 @@ RUNNER_SEMANTIC_TOKENS = [
     "retryUntilHasVisualTarget",
     "type: \"wait_image\"",
 ]
+STEP_TIMING_TOKENS = [
+    "param-pre-delay-ms",
+    "param-post-delay-ms",
+    "commandWithDelayValue",
+    "commandDurationMs",
+    "runStepDelay",
+    "stepTimingDelay",
+    "withStepTimingDetail",
+    "preDelay",
+    "postDelay",
+]
+IMAGE_CLICK_POINT_TOKENS = [
+    "imageClickPointOptions",
+    "param-image-point",
+    "param-image-offset-x",
+    "param-image-offset-y",
+    "image_click_point",
+    "point_from_step_with_offset",
+    "point_with_command_offset",
+    "command_i32_value",
+    "offsetX",
+    "offsetY",
+]
 COMPLETION_BOARD_TOKENS = [
     "workflow-completion",
     "completion-list",
@@ -200,6 +223,20 @@ BATCH_QUEUE_TOKENS = [
     ".batch-queue-panel",
     ".queue-action-grid",
 ]
+QUEUE_TIMING_TOKENS = [
+    "queue-stagger-ms",
+    "queue-gap-ms",
+    "queueTimingOptions",
+    "startDelayMs",
+    "afterDelayMs",
+    "queueRunEntriesForTarget",
+    "queuePlan",
+    "queueEvents",
+    "runQueueDelay",
+    "cancellableSleep",
+    ".queue-timing-grid",
+    ".queue-item-timing",
+]
 OCR_CONTRACT_TOKENS = [
     "dispatch_ocr_step",
     "recognize_ocr_text",
@@ -231,6 +268,17 @@ RUN_REPORT_TOKENS = [
     "renderRunHistory",
     ".session-lane.history",
 ]
+TEXT_INPUT_TOKENS = [
+    "text_input",
+    "post_text",
+    "WM_CHAR",
+    "dispatch_text_input_step",
+    "textInputValueForStep",
+    "param-text-value",
+    "MAX_TEXT_INPUT_CHARS",
+    "mode=hwnd-char",
+    "文本输入会向目标 hwnd 投递 WM_CHAR",
+]
 
 
 def main() -> int:
@@ -256,13 +304,17 @@ def main() -> int:
     paste_auto_step = scan_tokens(files, PASTE_AUTO_STEP_TOKENS)
     clipboard_fallback = scan_tokens(files, CLIPBOARD_FALLBACK_TOKENS)
     runner_semantics = scan_tokens(files, RUNNER_SEMANTIC_TOKENS)
+    step_timing = scan_tokens(files, STEP_TIMING_TOKENS)
+    image_click_point = scan_tokens(files, IMAGE_CLICK_POINT_TOKENS)
     completion_board = scan_tokens(files, COMPLETION_BOARD_TOKENS)
     workflow_blueprint = scan_tokens(files, WORKFLOW_BLUEPRINT_TOKENS)
     workflow_duplicate_target = scan_tokens(files, WORKFLOW_DUPLICATE_TARGET_TOKENS)
     batch_queue = scan_tokens(files, BATCH_QUEUE_TOKENS)
+    queue_timing = scan_tokens(files, QUEUE_TIMING_TOKENS)
     ocr_contract = scan_tokens(files, OCR_CONTRACT_TOKENS)
     ui_stability = scan_tokens(files, UI_STABILITY_TOKENS)
     run_report = scan_tokens(files, RUN_REPORT_TOKENS)
+    text_input = scan_tokens(files, TEXT_INPUT_TOKENS)
     identity_required = bool(hwnd)
     identity_seen = {hit["token"] for hit in identity}
     identity_missing = [
@@ -312,6 +364,14 @@ def main() -> int:
     runner_semantics_missing = [
         token for token in RUNNER_SEMANTIC_TOKENS if token not in runner_semantics_seen
     ]
+    step_timing_seen = {hit["token"] for hit in step_timing}
+    step_timing_missing = [
+        token for token in STEP_TIMING_TOKENS if token not in step_timing_seen
+    ]
+    image_click_point_seen = {hit["token"] for hit in image_click_point}
+    image_click_point_missing = [
+        token for token in IMAGE_CLICK_POINT_TOKENS if token not in image_click_point_seen
+    ]
     completion_board_seen = {hit["token"] for hit in completion_board}
     completion_board_missing = [
         token for token in COMPLETION_BOARD_TOKENS if token not in completion_board_seen
@@ -330,6 +390,10 @@ def main() -> int:
     batch_queue_missing = [
         token for token in BATCH_QUEUE_TOKENS if token not in batch_queue_seen
     ]
+    queue_timing_seen = {hit["token"] for hit in queue_timing}
+    queue_timing_missing = [
+        token for token in QUEUE_TIMING_TOKENS if token not in queue_timing_seen
+    ]
     ocr_contract_seen = {hit["token"] for hit in ocr_contract}
     ocr_contract_missing = [
         token for token in OCR_CONTRACT_TOKENS if token not in ocr_contract_seen
@@ -341,6 +405,10 @@ def main() -> int:
     run_report_seen = {hit["token"] for hit in run_report}
     run_report_missing = [
         token for token in RUN_REPORT_TOKENS if token not in run_report_seen
+    ]
+    text_input_seen = {hit["token"] for hit in text_input}
+    text_input_missing = [
+        token for token in TEXT_INPUT_TOKENS if token not in text_input_seen
     ]
     report = {
         "version": 1,
@@ -373,6 +441,10 @@ def main() -> int:
         "clipboardFallbackMissing": clipboard_fallback_missing,
         "runnerSemanticEvidence": runner_semantics,
         "runnerSemanticMissing": runner_semantics_missing,
+        "stepTimingEvidence": step_timing,
+        "stepTimingMissing": step_timing_missing,
+        "imageClickPointEvidence": image_click_point,
+        "imageClickPointMissing": image_click_point_missing,
         "completionBoardEvidence": completion_board,
         "completionBoardMissing": completion_board_missing,
         "workflowBlueprintEvidence": workflow_blueprint,
@@ -381,12 +453,16 @@ def main() -> int:
         "workflowDuplicateTargetMissing": workflow_duplicate_target_missing,
         "batchQueueEvidence": batch_queue,
         "batchQueueMissing": batch_queue_missing,
+        "queueTimingEvidence": queue_timing,
+        "queueTimingMissing": queue_timing_missing,
         "ocrContractEvidence": ocr_contract,
         "ocrContractMissing": ocr_contract_missing,
         "uiStabilityEvidence": ui_stability,
         "uiStabilityMissing": ui_stability_missing,
         "runReportEvidence": run_report,
         "runReportMissing": run_report_missing,
+        "textInputEvidence": text_input,
+        "textInputMissing": text_input_missing,
         "passed": (
             not forbidden
             and not focus
@@ -401,13 +477,17 @@ def main() -> int:
             and not paste_auto_step_missing
             and not clipboard_fallback_missing
             and not runner_semantics_missing
+            and not step_timing_missing
+            and not image_click_point_missing
             and not completion_board_missing
             and not workflow_blueprint_missing
             and not workflow_duplicate_target_missing
             and not batch_queue_missing
+            and not queue_timing_missing
             and not ocr_contract_missing
             and not ui_stability_missing
             and not run_report_missing
+            and not text_input_missing
         ),
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
@@ -416,7 +496,7 @@ def main() -> int:
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
             "expectedWindow.hwnd must be required and checked before dispatch. "
             "image_click must recheck expectedWindow after matching and before posting a click. "
-            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, workflow blueprint, independent workflow duplicate targets, batch queue, run report, and UI stability tokens catch visible UI or modeled-step regressions."
+            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, step timing, image click point controls, workflow blueprint, independent workflow duplicate targets, batch queue, queue timing, run report, text input, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -449,6 +529,10 @@ def main() -> int:
         print(f"clipboardFallbackMissing={len(clipboard_fallback_missing)}")
         print(f"runnerSemanticEvidence={len(runner_semantics)}")
         print(f"runnerSemanticMissing={len(runner_semantics_missing)}")
+        print(f"stepTimingEvidence={len(step_timing)}")
+        print(f"stepTimingMissing={len(step_timing_missing)}")
+        print(f"imageClickPointEvidence={len(image_click_point)}")
+        print(f"imageClickPointMissing={len(image_click_point_missing)}")
         print(f"completionBoardEvidence={len(completion_board)}")
         print(f"completionBoardMissing={len(completion_board_missing)}")
         print(f"workflowBlueprintEvidence={len(workflow_blueprint)}")
@@ -457,12 +541,16 @@ def main() -> int:
         print(f"workflowDuplicateTargetMissing={len(workflow_duplicate_target_missing)}")
         print(f"batchQueueEvidence={len(batch_queue)}")
         print(f"batchQueueMissing={len(batch_queue_missing)}")
+        print(f"queueTimingEvidence={len(queue_timing)}")
+        print(f"queueTimingMissing={len(queue_timing_missing)}")
         print(f"ocrContractEvidence={len(ocr_contract)}")
         print(f"ocrContractMissing={len(ocr_contract_missing)}")
         print(f"uiStabilityEvidence={len(ui_stability)}")
         print(f"uiStabilityMissing={len(ui_stability_missing)}")
         print(f"runReportEvidence={len(run_report)}")
         print(f"runReportMissing={len(run_report_missing)}")
+        print(f"textInputEvidence={len(text_input)}")
+        print(f"textInputMissing={len(text_input_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
@@ -499,6 +587,12 @@ def main() -> int:
         if runner_semantics_missing:
             for token in runner_semantics_missing:
                 print(f"MISSING_RUNNER_SEMANTIC {token}")
+        if step_timing_missing:
+            for token in step_timing_missing:
+                print(f"MISSING_STEP_TIMING {token}")
+        if image_click_point_missing:
+            for token in image_click_point_missing:
+                print(f"MISSING_IMAGE_CLICK_POINT {token}")
         if completion_board_missing:
             for token in completion_board_missing:
                 print(f"MISSING_COMPLETION_BOARD {token}")
@@ -511,6 +605,9 @@ def main() -> int:
         if batch_queue_missing:
             for token in batch_queue_missing:
                 print(f"MISSING_BATCH_QUEUE {token}")
+        if queue_timing_missing:
+            for token in queue_timing_missing:
+                print(f"MISSING_QUEUE_TIMING {token}")
         if ocr_contract_missing:
             for token in ocr_contract_missing:
                 print(f"MISSING_OCR_CONTRACT {token}")
@@ -520,6 +617,9 @@ def main() -> int:
         if run_report_missing:
             for token in run_report_missing:
                 print(f"MISSING_RUN_REPORT {token}")
+        if text_input_missing:
+            for token in text_input_missing:
+                print(f"MISSING_TEXT_INPUT {token}")
     return 0 if report["passed"] else 2
 
 

@@ -8,7 +8,7 @@ use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
     capture_client_rgb, current_process_elevated, list_windows, post_hotkey, post_mouse_click,
-    window_for_hwnd, HwndPoint, RgbFrame,
+    post_text, window_for_hwnd, HwndPoint, RgbFrame,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -189,12 +189,13 @@ struct TemplateMatch {
     score: f32,
 }
 
-const WORKSPACE_SCHEMA_VERSION: u32 = 5;
+const WORKSPACE_SCHEMA_VERSION: u32 = 6;
 const DEFAULT_IMAGE_THRESHOLD: f32 = 0.86;
 const MAX_TEMPLATE_DATA_URL_CHARS: usize = 5 * 1024 * 1024;
 const MAX_TEMPLATE_BYTES: usize = 4 * 1024 * 1024;
 const MAX_TEMPLATE_PIXELS: u64 = 2_000_000;
 const MAX_OCR_PIXELS: u64 = 4_000_000;
+const MAX_TEXT_INPUT_CHARS: usize = 500;
 const WINDOW_CLIENT_SIZE_TOLERANCE: u32 = 2;
 
 #[tauri::command]
@@ -284,6 +285,7 @@ fn execute_workflow_step(
     let step_type = step.step_type.trim().to_ascii_lowercase();
     let mut result = match step_type.as_str() {
         "hotkey" => dispatch_hotkey_step(hwnd, &step),
+        "text_input" => dispatch_text_input_step(hwnd, &step),
         "click" => dispatch_click_step(hwnd, &step),
         "image_click" => dispatch_image_step(hwnd, &step, true, expected_window),
         "wait_image" | "detect_page" => dispatch_image_step(hwnd, &step, false, None),
@@ -534,6 +536,23 @@ fn dispatch_hotkey_step(
     ))
 }
 
+fn dispatch_text_input_step(
+    hwnd: isize,
+    step: &WorkflowStepInput,
+) -> Result<StepDispatchResult, String> {
+    let text = text_input_value(step)?;
+    let result = post_text(hwnd, text)?;
+    Ok(step_result_with_input(
+        hwnd,
+        &step.step_type,
+        "sent",
+        "text_input",
+        result.detail,
+        true,
+        None,
+    ))
+}
+
 fn dispatch_click_step(
     hwnd: isize,
     step: &WorkflowStepInput,
@@ -570,10 +589,7 @@ fn dispatch_image_step(
         let template = load_image_data_url_rgb(data_url)?;
         let search_roi = scaled_roi(step.roi, frame.width, frame.height);
         let matched = match_template(&frame, &template, search_roi)?;
-        let center = HwndPoint {
-            x: matched.x + matched.width / 2,
-            y: matched.y + matched.height / 2,
-        };
+        let click_point = image_click_point(&matched, step, frame.width, frame.height)?;
         let mut output = step_result_with_input(
             hwnd,
             &step.step_type,
@@ -599,18 +615,18 @@ fn dispatch_image_step(
             Some(matched.score),
         );
         output.matched = matched.score >= threshold;
-        output.x = Some(center.x);
-        output.y = Some(center.y);
+        output.x = Some(click_point.x);
+        output.y = Some(click_point.y);
         if execute_click && matched.score >= threshold {
             validate_expected_window(hwnd, expected_window)?;
-            let result = post_mouse_click(hwnd, center, button)?;
+            let result = post_mouse_click(hwnd, click_point, button)?;
             output.input_sent = true;
             output.detail = format!("{}; {}", output.detail, result.detail);
         }
         return Ok(output);
     }
 
-    if let Some(point) = point_from_step(step) {
+    if let Some(point) = point_from_step_with_offset(step)? {
         if execute_click {
             validate_expected_window(hwnd, expected_window)?;
             let result = post_mouse_click(hwnd, point.clone(), button)?;
@@ -1082,6 +1098,21 @@ fn first_non_empty<'a>(values: impl IntoIterator<Item = &'a str>) -> Option<&'a 
         .find(|value| !value.is_empty())
 }
 
+fn text_input_value(step: &WorkflowStepInput) -> Result<&str, String> {
+    let text = first_non_empty([
+        command_value(&step.command, "text").unwrap_or_default(),
+        command_value(&step.command, "value").unwrap_or_default(),
+        step.target.as_str(),
+    ])
+    .ok_or_else(|| "text_input step requires target text or command text=...".to_string())?;
+    if text.chars().count() > MAX_TEXT_INPUT_CHARS {
+        return Err(format!(
+            "text_input is too long: maximum {MAX_TEXT_INPUT_CHARS} characters"
+        ));
+    }
+    Ok(text)
+}
+
 fn command_value<'a>(command: &'a str, key: &str) -> Option<&'a str> {
     command.split([';', ',']).find_map(|part| {
         let (left, right) = part.split_once('=')?;
@@ -1112,6 +1143,89 @@ fn image_threshold(step: &WorkflowStepInput) -> Result<f32, String> {
         ));
     }
     Ok(value)
+}
+
+fn image_click_point(
+    matched: &TemplateMatch,
+    step: &WorkflowStepInput,
+    frame_width: u32,
+    frame_height: u32,
+) -> Result<HwndPoint, String> {
+    if frame_width == 0 || frame_height == 0 {
+        return Err("target frame is empty".to_string());
+    }
+    let point = command_value(&step.command, "point").unwrap_or("center");
+    let (base_x, base_y) = match point.trim().to_ascii_lowercase().as_str() {
+        "" | "center" | "middle" => (
+            matched.x as i64 + i64::from(matched.width / 2),
+            matched.y as i64 + i64::from(matched.height / 2),
+        ),
+        "top-left" | "left-top" | "tl" => (matched.x as i64, matched.y as i64),
+        "top-right" | "right-top" | "tr" => (
+            matched.x as i64 + i64::from(matched.width.saturating_sub(1)),
+            matched.y as i64,
+        ),
+        "bottom-left" | "left-bottom" | "bl" => (
+            matched.x as i64,
+            matched.y as i64 + i64::from(matched.height.saturating_sub(1)),
+        ),
+        "bottom-right" | "right-bottom" | "br" => (
+            matched.x as i64 + i64::from(matched.width.saturating_sub(1)),
+            matched.y as i64 + i64::from(matched.height.saturating_sub(1)),
+        ),
+        other => return Err(format!("unsupported image click point: {other}")),
+    };
+    if base_x < 0 || base_y < 0 || base_x > u32::MAX as i64 || base_y > u32::MAX as i64 {
+        return Err(format!(
+            "image click point is outside coordinate range: {base_x},{base_y}"
+        ));
+    }
+    let point = point_with_command_offset(
+        HwndPoint {
+            x: base_x as u32,
+            y: base_y as u32,
+        },
+        step,
+    )?;
+    if point.x >= frame_width || point.y >= frame_height {
+        return Err(format!(
+            "image click point {},{} is outside target frame {}x{}",
+            point.x, point.y, frame_width, frame_height
+        ));
+    }
+    Ok(point)
+}
+
+fn command_i32_value(command: &str, key: &str) -> Result<Option<i32>, String> {
+    let Some(raw) = command_value(command, key) else {
+        return Ok(None);
+    };
+    raw.parse::<i32>()
+        .map(Some)
+        .map_err(|_| format!("{key} must be an integer: {raw}"))
+}
+
+fn point_from_step_with_offset(step: &WorkflowStepInput) -> Result<Option<HwndPoint>, String> {
+    point_from_step(step)
+        .map(|point| point_with_command_offset(point, step))
+        .transpose()
+}
+
+fn point_with_command_offset(
+    point: HwndPoint,
+    step: &WorkflowStepInput,
+) -> Result<HwndPoint, String> {
+    let offset_x = command_i32_value(&step.command, "offsetX")?.unwrap_or(0);
+    let offset_y = command_i32_value(&step.command, "offsetY")?.unwrap_or(0);
+    let x = i64::from(point.x) + i64::from(offset_x);
+    let y = i64::from(point.y) + i64::from(offset_y);
+    if x < 0 || y < 0 || x > u32::MAX as i64 || y > u32::MAX as i64 {
+        return Err(format!("click point is outside coordinate range: {x},{y}"));
+    }
+    Ok(HwndPoint {
+        x: x as u32,
+        y: y as u32,
+    })
 }
 
 fn point_from_step(step: &WorkflowStepInput) -> Option<HwndPoint> {
@@ -1556,6 +1670,8 @@ fn timestamp() -> u64 {
 mod tests {
     use super::*;
 
+    const LIVE_GAME_TITLE: &str = "梦幻西游：时空";
+
     fn fake_window() -> platform::AppWindow {
         platform::AppWindow {
             hwnd: 42,
@@ -1576,10 +1692,183 @@ mod tests {
         }
     }
 
+    fn expected_from_window(window: &platform::AppWindow) -> ExpectedWindowInput {
+        ExpectedWindowInput {
+            hwnd: Some(window.hwnd),
+            title: Some(window.title.clone()),
+            process_id: Some(window.process_id),
+            process_name: Some(window.process_name.clone()),
+            client_width: Some(window.client_width),
+            client_height: Some(window.client_height),
+            elevated: window.elevated,
+        }
+    }
+
+    fn frame_delta_ratio(left: &RgbFrame, right: &RgbFrame) -> f64 {
+        if left.width != right.width || left.height != right.height {
+            return 1.0;
+        }
+        let compared = left.pixels.len().min(right.pixels.len());
+        if compared == 0 {
+            return 0.0;
+        }
+        let changed = left
+            .pixels
+            .iter()
+            .zip(&right.pixels)
+            .filter(|(a, b)| a.abs_diff(**b) > 12)
+            .count();
+        changed as f64 / compared as f64
+    }
+
     fn image_step(command: &str) -> WorkflowStepInput {
         WorkflowStepInput {
             step_type: "image_click".to_string(),
             target: String::new(),
+            command: command.to_string(),
+            expect: String::new(),
+            target_id: None,
+            target_kind: None,
+            target_data_url: None,
+            asset_id: None,
+            asset_kind: None,
+            asset_data_url: None,
+            roi: None,
+            target_texts: Vec::new(),
+            ocr_language: None,
+            ocr_region: None,
+        }
+    }
+
+    #[test]
+    #[ignore = "requires live game windows and sends background ALT+N messages"]
+    fn live_background_hotkey_changes_two_game_windows() {
+        if std::env::var("MHXY_LIVE_GAME_TEST").ok().as_deref() != Some("1") {
+            eprintln!("set MHXY_LIVE_GAME_TEST=1 to run live background input test");
+            return;
+        }
+        let windows = list_windows(LIVE_GAME_TITLE).expect("list live game windows");
+        assert!(
+            windows.len() >= 2,
+            "expected at least two live game windows, got {}",
+            windows.len()
+        );
+        for window in windows.iter().take(2) {
+            let before = capture_client_rgb(window.hwnd).expect("capture before hotkey");
+            let step = WorkflowStepInput {
+                step_type: "hotkey".to_string(),
+                target: "ALT+N".to_string(),
+                command: "mode=hwnd-key".to_string(),
+                expect: "panel.open".to_string(),
+                target_id: None,
+                target_kind: None,
+                target_data_url: None,
+                asset_id: None,
+                asset_kind: None,
+                asset_data_url: None,
+                roi: None,
+                target_texts: Vec::new(),
+                ocr_language: None,
+                ocr_region: None,
+            };
+            let result =
+                execute_workflow_step(window.hwnd, step, Some(expected_from_window(window)))
+                    .expect("post live background hotkey");
+            assert!(result.input_sent, "hotkey should report input_sent");
+            std::thread::sleep(std::time::Duration::from_millis(900));
+            let after = capture_client_rgb(window.hwnd).expect("capture after hotkey");
+            let delta = frame_delta_ratio(&before, &after);
+            assert!(
+                delta > 0.001,
+                "window {} did not visibly change after background ALT+N; delta={delta:.6}",
+                window.hwnd
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "requires live game windows and sends parallel background ALT+N messages"]
+    fn live_parallel_background_hotkey_changes_two_game_windows() {
+        if std::env::var("MHXY_LIVE_GAME_TEST").ok().as_deref() != Some("1") {
+            eprintln!("set MHXY_LIVE_GAME_TEST=1 to run live parallel background input test");
+            return;
+        }
+        let windows = list_windows(LIVE_GAME_TITLE).expect("list live game windows");
+        assert!(
+            windows.len() >= 2,
+            "expected at least two live game windows, got {}",
+            windows.len()
+        );
+        let windows: Vec<_> = windows.into_iter().take(2).collect();
+        let before_frames: Vec<_> = windows
+            .iter()
+            .map(|window| {
+                (
+                    window.hwnd,
+                    capture_client_rgb(window.hwnd).expect("capture before parallel hotkey"),
+                )
+            })
+            .collect();
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(windows.len()));
+        let handles: Vec<_> = windows
+            .into_iter()
+            .map(|window| {
+                let barrier = std::sync::Arc::clone(&barrier);
+                std::thread::spawn(move || {
+                    let step = WorkflowStepInput {
+                        step_type: "hotkey".to_string(),
+                        target: "ALT+N".to_string(),
+                        command: "mode=hwnd-key".to_string(),
+                        expect: "panel.open".to_string(),
+                        target_id: None,
+                        target_kind: None,
+                        target_data_url: None,
+                        asset_id: None,
+                        asset_kind: None,
+                        asset_data_url: None,
+                        roi: None,
+                        target_texts: Vec::new(),
+                        ocr_language: None,
+                        ocr_region: None,
+                    };
+                    barrier.wait();
+                    let result = execute_workflow_step(
+                        window.hwnd,
+                        step,
+                        Some(expected_from_window(&window)),
+                    )?;
+                    Ok::<_, String>((window.hwnd, result))
+                })
+            })
+            .collect();
+        let mut sent_hwnds = Vec::new();
+        for handle in handles {
+            let (hwnd, result) = handle
+                .join()
+                .expect("parallel hotkey thread panicked")
+                .expect("parallel hotkey failed");
+            assert!(
+                result.input_sent,
+                "hotkey should report input_sent for {hwnd}"
+            );
+            sent_hwnds.push(hwnd);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(900));
+        for (hwnd, before) in before_frames {
+            assert!(sent_hwnds.contains(&hwnd));
+            let after = capture_client_rgb(hwnd).expect("capture after parallel hotkey");
+            let delta = frame_delta_ratio(&before, &after);
+            assert!(
+                delta > 0.001,
+                "window {hwnd} did not visibly change after parallel background ALT+N; delta={delta:.6}",
+            );
+        }
+    }
+
+    fn text_input_step(target: &str, command: &str) -> WorkflowStepInput {
+        WorkflowStepInput {
+            step_type: "text_input".to_string(),
+            target: target.to_string(),
             command: command.to_string(),
             expect: String::new(),
             target_id: None,
@@ -1783,6 +2072,113 @@ mod tests {
         ] {
             assert!(image_threshold(&image_step(raw)).is_err(), "{raw}");
         }
+    }
+
+    #[test]
+    fn image_click_point_supports_corners_and_offsets() {
+        let matched = TemplateMatch {
+            x: 10,
+            y: 20,
+            width: 8,
+            height: 6,
+            score: 0.9,
+        };
+        let step = image_step("point=bottom-right; offsetX=-2; offsetY=3");
+        let point = image_click_point(&matched, &step, 100, 100).unwrap();
+        assert_eq!((point.x, point.y), (15, 28));
+    }
+
+    #[test]
+    fn image_click_point_rejects_unknown_point() {
+        let matched = TemplateMatch {
+            x: 10,
+            y: 20,
+            width: 8,
+            height: 6,
+            score: 0.9,
+        };
+        let step = image_step("point=random");
+        let error = image_click_point(&matched, &step, 100, 100).unwrap_err();
+        assert!(error.contains("unsupported image click point"));
+    }
+
+    #[test]
+    fn image_click_point_rejects_invalid_offset() {
+        let matched = TemplateMatch {
+            x: 10,
+            y: 20,
+            width: 8,
+            height: 6,
+            score: 0.9,
+        };
+        let step = image_step("offsetX=left");
+        let error = image_click_point(&matched, &step, 100, 100).unwrap_err();
+        assert!(error.contains("offsetX must be an integer"));
+    }
+
+    #[test]
+    fn image_click_point_rejects_offset_outside_frame() {
+        let matched = TemplateMatch {
+            x: 10,
+            y: 20,
+            width: 8,
+            height: 6,
+            score: 0.9,
+        };
+        let step = image_step("point=bottom-right; offsetX=100");
+        let error = image_click_point(&matched, &step, 100, 100).unwrap_err();
+        assert!(error.contains("outside target frame"));
+    }
+
+    #[test]
+    fn point_from_step_applies_offsets_to_direct_points() {
+        let step = image_step("offsetX=-3; offsetY=4");
+        let mut step = step;
+        step.target = "x=20,y=30".to_string();
+        let point = point_from_step_with_offset(&step).unwrap().unwrap();
+        assert_eq!((point.x, point.y), (17, 34));
+    }
+
+    #[test]
+    fn plain_point_parser_ignores_image_offsets() {
+        let mut step = image_step("offsetX=-3; offsetY=4");
+        step.target = "x=20,y=30".to_string();
+        let point = point_from_step(&step).unwrap();
+        assert_eq!((point.x, point.y), (20, 30));
+    }
+
+    #[test]
+    fn point_from_step_rejects_negative_offset_outside_window() {
+        let mut step = image_step("offsetX=-30");
+        step.target = "x=20,y=30".to_string();
+        let error = point_from_step_with_offset(&step).unwrap_err();
+        assert!(error.contains("outside coordinate range"));
+    }
+
+    #[test]
+    fn reads_text_input_from_command_before_target() {
+        let step = text_input_step("target fallback", "mode=hwnd-char; text=hello");
+        assert_eq!(text_input_value(&step).unwrap(), "hello");
+    }
+
+    #[test]
+    fn reads_text_input_from_target_when_command_has_no_text() {
+        let step = text_input_step("你好", "mode=hwnd-char");
+        assert_eq!(text_input_value(&step).unwrap(), "你好");
+    }
+
+    #[test]
+    fn rejects_empty_text_input_step() {
+        let step = text_input_step("   ", "mode=hwnd-char");
+        let error = text_input_value(&step).unwrap_err();
+        assert!(error.contains("requires target text"));
+    }
+
+    #[test]
+    fn rejects_overlong_text_input_step() {
+        let step = text_input_step(&"a".repeat(MAX_TEXT_INPUT_CHARS + 1), "");
+        let error = text_input_value(&step).unwrap_err();
+        assert!(error.contains("maximum"));
     }
 
     #[test]
