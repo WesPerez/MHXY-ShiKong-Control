@@ -164,7 +164,6 @@ COMPLETION_BOARD_TOKENS = [
     ".completion-item.issue",
 ]
 WORKFLOW_BLUEPRINT_TOKENS = [
-    "workflow-blueprint-panel",
     "workflow-blueprint-select",
     "workflow-batch-count",
     "workflow-name-prefix",
