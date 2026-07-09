@@ -299,6 +299,12 @@ def audit(project_root: Path) -> dict[str, object]:
 
     require_contains(failures, run_history, "queuePlan: session.queuePlan", "run history must keep queue plan")
     require_contains(failures, run_history, "queueEvents: session.queueEvents", "run history must keep queue delay events")
+    require_contains(
+        failures,
+        run_history,
+        "controlFlowTransitions:",
+        "run history must keep control-flow transition evidence",
+    )
     require_contains(failures, run_history, "windowIdentity: session.windowIdentity", "run history must keep startup identity")
     require_contains(
         failures,

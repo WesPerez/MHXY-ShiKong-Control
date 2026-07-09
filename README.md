@@ -44,7 +44,7 @@
 - 工作区 schema v7 已保存 `targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`；复制任务会重映射同任务步骤引用，单步复制会清空控制流引用。
 - 前端运行器已改为带 `MAX_CONTROL_FLOW_STEPS` 预算的指令指针模型：`condition` 会按 guard 选择 true/false 目标，普通成功步骤可用 `targetStepId` 跳到同任务步骤；后向跳转必须设置 `maxIterations`。`restore`、`onFail=restore`、跨任务 `jumpWorkflowId` 和专用 `loop/task_jump` 仍是计划态。
 - 运行状态 pill 和会话卡片会区分 idle/ready/running/blocked/failed，界面日志保留最近 500 条，适合长时间运行时保持可用。
-- 运行结束会写入 `runHistory` 报告，记录队列计划、错峰等待事件、每步状态、失败点、耗时、启动窗口身份和结束窗口身份，便于排查多窗口长时间运行。
+- 运行结束会写入 `runHistory` 报告，记录队列计划、错峰等待事件、控制流 `controlFlowTransitions`、每步状态、失败点、耗时、启动窗口身份和结束窗口身份，便于排查多窗口长时间运行。
 - `ocr_assert` 会截图、按 ROI 或命名区域裁剪后调用 Windows OCR；识别未命中或系统 OCR/语言包不可用都会明确失败，不会伪装成可识别。
 - `127.0.0.1:47638` 是桌面应用单实例唤醒端口，不是前端页面。浏览器访问它会显示说明页；真实界面在标题为“时空任务编排器”的 Tauri 桌面窗口里。开发浏览器预览请启动 Vite 后访问 `http://127.0.0.1:5173/`。
 

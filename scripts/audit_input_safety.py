@@ -270,6 +270,8 @@ RUN_REPORT_TOKENS = [
     "runHistoryEntryFromSession",
     "endedWindowIdentity",
     "endedWindowIdentityError",
+    "controlFlowTransitions",
+    "recordControlFlowTransition",
     "stepResults",
     "renderRunHistory",
     ".session-lane.history",

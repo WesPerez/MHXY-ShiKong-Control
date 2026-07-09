@@ -8,6 +8,7 @@ const DEFAULT_IMAGE_THRESHOLD = 0.86;
 const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 const MAX_LOG_ROWS = 500;
 const MAX_SESSION_STEP_RESULTS = 300;
+const MAX_CONTROL_FLOW_TRANSITIONS = 300;
 const MAX_TEXT_INPUT_CHARS = 500;
 const MAX_CONTROL_FLOW_STEPS = 500;
 const targetBackedStepTypes = new Set([
@@ -4637,7 +4638,12 @@ function validateStepControlFlowReferences(workflow, item, prefix, addIssue, add
   checkStepReference("recoveryStepId", "恢复入口", { executable: false });
   const jumpWorkflowId = String(item.jumpWorkflowId || "").trim();
   if (jumpWorkflowId && !workflowIds.has(jumpWorkflowId)) {
-    addReferenceMessage(`${prefix} 任务跳转指向不存在的任务；跨任务跳转尚未接入运行器`, { executable: false });
+    addReferenceMessage(`${prefix} 任务跳转指向不存在的任务；跨任务跳转尚未接入运行器`);
+  } else if (jumpWorkflowId) {
+    addReferenceMessage(`${prefix} 任务跳转字段已保存，但跨任务跳转尚未接入运行器`);
+  }
+  if (item.recoveryStepId) {
+    addWarning(`${prefix} 恢复入口已保存，但失败后自动恢复仍是计划态`, item);
   }
   if (item.maxIterations && (!Number.isInteger(Number(item.maxIterations)) || Number(item.maxIterations) < 0)) {
     addReferenceMessage(`${prefix} 最大循环次数必须是非负整数`);
@@ -4724,6 +4730,17 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
     }
     if (!retryUntilHasVisualTarget(item)) {
       const message = `${prefix} 重试直到需要绑定图片、ROI 或坐标目标；纯状态目标当前只是计划语义，后台不会判定成功`;
+      mode === "background" ? addIssue(message, item) : addWarning(message, item);
+    }
+  }
+  if (item.type === "condition") {
+    const guard = evaluateConditionGuard(
+      item,
+      { status: "ok", action: "validation", matched: false, inputSent: false, score: 0 },
+      null,
+    );
+    if (!guard.supported) {
+      const message = `${prefix} 条件 guard=${guard.expression || "空"} 当前不支持；请使用 true/false、last.matched、last.status=...、last.action=... 或 last.score 比较`;
       mode === "background" ? addIssue(message, item) : addWarning(message, item);
     }
   }
@@ -4958,6 +4975,8 @@ async function startRunForWindow(target, runEntries, mode, source) {
       afterDelayMs: entry.queueItem.afterDelayMs || 0,
     })),
     queueEvents: [],
+    controlFlowTransitions: [],
+    controlFlowTransitionSerial: 0,
     currentWorkflowName: "",
     status: "running",
     currentStep: 0,
@@ -5089,6 +5108,10 @@ async function runWorkflowEntry(session, entry) {
     }
     result = withStepTimingDetail(result, preDelay.elapsedMs, postDelay.elapsedMs);
     recordSessionStepResult(session, workflow, item, result, stepStartedAt, new Date());
+    if (session.status === "failed" || session.cancelRequested || result?.status === "stopped") {
+      renderSessions();
+      return false;
+    }
     const decision = controlFlowDecisionForStep({
       session,
       workflow,
@@ -5099,6 +5122,7 @@ async function runWorkflowEntry(session, entry) {
       result,
       previousResult,
     });
+    recordControlFlowTransition(session, decision.transition);
     previousResult = result;
     if (decision.message) session.logs.unshift(decision.message);
     renderSessions();
@@ -5125,17 +5149,71 @@ function controlFlowDecisionForStep(context) {
   const { session, workflow, steps, stepIndexById, item, currentPc, result, previousResult } = context;
   let targetStepId = "";
   let reason = "";
+  let guardResult = null;
+  let guardSupported = null;
+  let guardExpression = "";
+  const defaultNextPc = currentPc + 1;
+  const buildTransition = (status, nextPc, extra = {}) => {
+    const targetStep = Number.isInteger(nextPc) ? steps[nextPc] : null;
+    return {
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      fromStepId: item.id,
+      fromStepName: item.name || stepLabels[item.type] || item.type,
+      fromStepType: item.type,
+      fromIndex: currentPc,
+      stepOrder: session.currentStep,
+      reason,
+      guardResult,
+      guardSupported,
+      guardExpression,
+      configuredTargetStepId: targetStepId || "",
+      toStepId: status === "taken" && targetStep ? targetStep.id : "",
+      toStepName: status === "taken" && targetStep ? targetStep.name || stepLabels[targetStep.type] || targetStep.type : "",
+      toStepType: status === "taken" && targetStep ? targetStep.type : "",
+      toIndex: status === "taken" && Number.isInteger(nextPc) ? nextPc : null,
+      defaultNextStepId: steps[defaultNextPc]?.id || "",
+      defaultNextIndex: defaultNextPc < steps.length ? defaultNextPc : null,
+      status,
+      resultStatus: result?.status || "",
+      resultAction: result?.action || "",
+      ...extra,
+    };
+  };
   if (item.type === "condition") {
-    const passed = evaluateConditionGuard(item, result, previousResult);
-    targetStepId = passed ? item.targetStepId : item.elseTargetStepId;
-    reason = `condition ${passed ? "true" : "false"}`;
-  } else if (isSuccessfulStepResult(result) && item.targetStepId) {
+    const guard = evaluateConditionGuard(item, result, previousResult);
+    guardResult = guard.passed;
+    guardSupported = guard.supported;
+    guardExpression = guard.expression;
+    if (!guard.supported) {
+      reason = "condition unsupported";
+      return {
+        nextPc: defaultNextPc,
+        message: `${workflow.name} / ${item.name} 条件 guard=${guard.expression || "空"} 当前不支持，保持顺序执行`,
+        transition: buildTransition("skipped", defaultNextPc, { skippedReason: "unsupported guard expression" }),
+      };
+    }
+    targetStepId = guard.passed ? item.targetStepId : item.elseTargetStepId;
+    reason = `condition ${guard.passed ? "true" : "false"}`;
+  } else if (isSuccessfulStepResult(result) && result?.status !== "planned" && item.targetStepId) {
     targetStepId = item.targetStepId;
     reason = "success";
   }
-  if (!targetStepId) return { nextPc: currentPc + 1, message: "" };
+  if (!targetStepId) {
+    return {
+      nextPc: defaultNextPc,
+      message: "",
+      transition: item.type === "condition" ? buildTransition("fallthrough", defaultNextPc, { skippedReason: "no target step configured" }) : null,
+    };
+  }
   const nextPc = stepIndexById.get(targetStepId);
-  if (!Number.isInteger(nextPc)) return { nextPc: currentPc + 1, message: "" };
+  if (!Number.isInteger(nextPc)) {
+    return {
+      nextPc: defaultNextPc,
+      message: "",
+      transition: buildTransition("skipped", defaultNextPc, { skippedReason: "target step not enabled or missing" }),
+    };
+  }
   if (nextPc <= currentPc) {
     const maxIterations = Math.max(0, Number(item.maxIterations) || 0);
     const key = `${workflow.id}:${item.id}:${targetStepId}`;
@@ -5143,32 +5221,87 @@ function controlFlowDecisionForStep(context) {
     if (maxIterations <= 0 || currentCount >= maxIterations) {
       const limit = maxIterations <= 0 ? "未设置后向跳转上限" : `已达到 maxIterations=${maxIterations}`;
       return {
-        nextPc: currentPc + 1,
+        nextPc: defaultNextPc,
         message: `${workflow.name} / ${item.name} ${reason} 后向跳转到 ${stepLabelForExecution(steps[nextPc])} 被跳过：${limit}`,
+        transition: buildTransition("skipped", defaultNextPc, {
+          skippedReason: limit,
+          requestedToStepId: targetStepId,
+          requestedToIndex: nextPc,
+          backward: true,
+          maxIterations,
+          iterationCount: currentCount,
+        }),
       };
     }
     session.controlFlowCounts ||= {};
     session.controlFlowCounts[key] = currentCount + 1;
+    return {
+      nextPc,
+      message: `${workflow.name} / ${item.name} ${reason} 跳转到 ${stepLabelForExecution(steps[nextPc])}`,
+      transition: buildTransition("taken", nextPc, {
+        backward: true,
+        maxIterations,
+        iterationCount: currentCount + 1,
+      }),
+    };
   }
   return {
     nextPc,
     message: `${workflow.name} / ${item.name} ${reason} 跳转到 ${stepLabelForExecution(steps[nextPc])}`,
+    transition: buildTransition("taken", nextPc, {
+      backward: false,
+      maxIterations: Math.max(0, Number(item.maxIterations) || 0),
+      iterationCount: null,
+    }),
   };
 }
 
 function evaluateConditionGuard(item, result, previousResult) {
-  const raw = (commandValue(item.command, "guard") || item.expect || "true").trim().toLowerCase();
+  const expression = (commandValue(item.command, "guard") || item.expect || "true").trim();
+  const raw = expression.toLowerCase();
   const last = previousResult || result || {};
-  if (["true", "1", "yes", "y", "continue", "pass", "passed", "ready", "ready=true"].includes(raw)) return true;
-  if (["false", "0", "no", "n", "stop", "fail", "failed", "blocked"].includes(raw)) return false;
-  if (["matched", "last.matched"].includes(raw)) return Boolean(last.matched);
-  if (["!matched", "not matched", "last.!matched", "!last.matched"].includes(raw)) return !last.matched;
-  if (["inputsent", "input_sent", "last.inputsent", "last.input_sent"].includes(raw)) return Boolean(last.inputSent);
+  const outcome = (supported, passed, source) => ({ expression, supported, passed: Boolean(passed), source });
+  if (["true", "1", "yes", "y", "continue", "pass", "passed", "ready", "ready=true"].includes(raw)) return outcome(true, true, "literal");
+  if (["false", "0", "no", "n", "stop", "fail", "failed", "blocked"].includes(raw)) return outcome(true, false, "literal");
+  if (["matched", "last.matched"].includes(raw)) return outcome(true, Boolean(last.matched), "last.matched");
+  if (["!matched", "not matched", "last.!matched", "!last.matched"].includes(raw)) return outcome(true, !last.matched, "last.matched");
+  if (["inputsent", "input_sent", "last.inputsent", "last.input_sent"].includes(raw)) return outcome(true, Boolean(last.inputSent), "last.inputSent");
   const statusMatch = raw.match(/^(?:last\.)?status\s*={1,2}\s*([a-z0-9_-]+)$/);
-  if (statusMatch) return String(last.status || "").toLowerCase() === statusMatch[1];
+  if (statusMatch) return outcome(true, String(last.status || "").toLowerCase() === statusMatch[1], "last.status");
   const actionMatch = raw.match(/^(?:last\.)?action\s*={1,2}\s*([a-z0-9_-]+)$/);
-  if (actionMatch) return String(last.action || "").toLowerCase() === actionMatch[1];
-  return true;
+  if (actionMatch) return outcome(true, String(last.action || "").toLowerCase() === actionMatch[1], "last.action");
+  const scoreMatch = raw.match(/^(?:last\.)?score\s*(>=|<=|>|<|={1,2})\s*(-?\d+(?:\.\d+)?)$/);
+  if (scoreMatch) return outcome(true, compareNumbers(Number(last.score), scoreMatch[1], Number(scoreMatch[2])), "last.score");
+  const bareScoreMatch = raw.match(/^(=>|>=|<=|>|<|={1,2})\s*(-?\d+(?:\.\d+)?)$/);
+  if (bareScoreMatch) {
+    const operator = bareScoreMatch[1] === "=>" ? ">=" : bareScoreMatch[1];
+    return outcome(true, compareNumbers(Number(last.score), operator, Number(bareScoreMatch[2])), "last.score");
+  }
+  return outcome(false, false, "unsupported");
+}
+
+function compareNumbers(left, operator, right) {
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+  if (operator === ">") return left > right;
+  if (operator === ">=") return left >= right;
+  if (operator === "<") return left < right;
+  if (operator === "<=") return left <= right;
+  return left === right;
+}
+
+function recordControlFlowTransition(session, transition) {
+  if (!transition) return;
+  session.controlFlowTransitionSerial = Math.max(0, Number(session.controlFlowTransitionSerial) || 0) + 1;
+  const record = {
+    order: session.controlFlowTransitionSerial,
+    at: new Date().toISOString(),
+    ...transition,
+  };
+  session.controlFlowTransitions ||= [];
+  session.controlFlowTransitions.push(record);
+  if (session.controlFlowTransitions.length > MAX_CONTROL_FLOW_TRANSITIONS) {
+    session.controlFlowTransitions.splice(0, session.controlFlowTransitions.length - MAX_CONTROL_FLOW_TRANSITIONS);
+  }
 }
 
 function isSuccessfulStepResult(result) {
@@ -5288,6 +5421,7 @@ function runHistoryEntryFromSession(session) {
     endedWindowIdentityError: session.endedWindowIdentityError || "",
     queuePlan: session.queuePlan || [],
     queueEvents: session.queueEvents || [],
+    controlFlowTransitions: (session.controlFlowTransitions || []).slice(-MAX_CONTROL_FLOW_TRANSITIONS),
     stepResults: session.stepResults.slice(-MAX_SESSION_STEP_RESULTS),
     startedAt: session.startedAt,
     endedAt: session.endedAt,
@@ -5610,6 +5744,7 @@ function renderRunHistory(container) {
     const lane = document.createElement("div");
     const status = record.status || "unknown";
     const lastStep = Array.isArray(record.stepResults) ? record.stepResults.at(-1) : null;
+    const transitionCount = Array.isArray(record.controlFlowTransitions) ? record.controlFlowTransitions.length : 0;
     const failed = record.failedStepName || (status === "failed" ? lastStep?.stepName : "");
     lane.className = `session-lane history ${status}`;
     lane.innerHTML = `
@@ -5617,7 +5752,7 @@ function renderRunHistory(container) {
         <strong>${escapeHtml(record.display || record.hwnd)}</strong>
         <span>${escapeHtml(modeLabel(record.mode))} · ${escapeHtml(record.workflowName || `${record.queueLength || 0} 个任务`)} · ${escapeHtml(status)}</span>
       </div>
-      <small>${escapeHtml(record.completedSteps ?? record.stepResults?.length ?? 0)}/${escapeHtml(record.totalSteps || 0)} 步 · ${escapeHtml(durationLabel(record.durationMs))} · ${escapeHtml(record.endedAt || "")}</small>
+      <small>${escapeHtml(record.completedSteps ?? record.stepResults?.length ?? 0)}/${escapeHtml(record.totalSteps || 0)} 步 · 控制流 ${escapeHtml(transitionCount)} · ${escapeHtml(durationLabel(record.durationMs))} · ${escapeHtml(record.endedAt || "")}</small>
       <small>${escapeHtml(failed ? `失败点：${failed}` : lastStep ? `末步：${lastStep.stepName} ${lastStep.status}/${lastStep.action}` : "无步骤明细")}</small>
     `;
     if (record.failureReason) {

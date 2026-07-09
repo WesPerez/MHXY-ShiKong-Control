@@ -35,7 +35,7 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `workflows[]`: 任务定义，步骤仍保留兼容字段 `target/command/expect`，并保存 `targetStepId/elseTargetStepId/recoveryStepId/jumpWorkflowId/maxIterations` 这些控制流字段。
 - `targets[]`: 共享目标库，保存图片 data URL、ROI、阈值、点击默认值、OCR 文本和备注。
 - `assignments[]`: 窗口队列，保存 hwnd 与 `windowIdentity` 快照，以及队列项顺序、启用状态和等待参数。
-- `runHistory[]`: 运行报告，保存队列计划、步骤结果、失败原因、开始/结束窗口身份。
+- `runHistory[]`: 运行报告，保存队列计划、控制流 transition、步骤结果、失败原因、开始/结束窗口身份。
 
 当前 v7 边界：
 
@@ -55,10 +55,10 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - 设置全局 `MAX_CONTROL_FLOW_STEPS` 和每个 loop 的 `maxIterations`，防止无限循环。
 - `condition` 根据结构化 guard 和上一步/会话状态决定 true/false 目标。
 - 普通成功步骤可用 `targetStepId` 跳到同一 workflow 内已启用步骤；后向跳转必须有次数上限。
+- 每次控制流决策会写入 `runHistory[].controlFlowTransitions[]`，记录 taken/skipped/fallthrough、guard 结果、目标步骤、后向跳转次数和跳过原因。
 
 未落地的 v7 边界：
 
-- 每次 transition 还未写入 `runHistory` 独立事件，只进入会话日志和步骤结果。
 - 专用 `loop` 步骤尚未进入下拉框；当前用同任务后向跳转和 `maxIterations` 表达有限循环。
 - `task_jump` 只能保存 `jumpWorkflowId`，尚未接入队列调度。
 - `restore` 应是普通可执行恢复步骤或恢复流程，不应再由 `onFail=restore` 隐式承诺。
@@ -130,7 +130,7 @@ cargo clippy --all-targets -- -D warnings
 
 1. 继续修 v7 安全和 readiness，确保不会把计划态或失败态当成功。
 2. 用管理员环境补 `double_click` 真实游戏窗口验收，确认游戏对后台双击消息的响应。
-3. 扩展 schema v7 控制流：补 runHistory transition、专用 loop 和跨任务 task_jump。
+3. 扩展 schema v7 控制流：补专用 loop 和跨任务 task_jump。
 4. 继续完善前端 runner，逐步把恢复流程和任务跳转纳入队列调度。
 5. 实现显式 `restore` 恢复流程和失败恢复报告。
 6. 将 runner 逐步迁到 Rust 事件流，前端只订阅状态和渲染报告。

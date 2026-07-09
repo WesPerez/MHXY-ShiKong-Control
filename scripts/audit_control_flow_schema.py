@@ -181,7 +181,7 @@ def audit(project_root: Path) -> dict[str, object]:
     except ValueError as error:
         failures.append(str(error))
 
-    require_contains(main, ["MAX_CONTROL_FLOW_STEPS"], failures, "src/main.js")
+    require_contains(main, ["MAX_CONTROL_FLOW_STEPS", "MAX_CONTROL_FLOW_TRANSITIONS"], failures, "src/main.js")
     try:
         run_session_body = function_body(main, "runSession")
         require_contains(run_session_body, ["runWorkflowEntry(session, entry)"], failures, "runSession")
@@ -192,7 +192,14 @@ def audit(project_root: Path) -> dict[str, object]:
         workflow_runner_body = function_body(main, "runWorkflowEntry")
         require_contains(
             workflow_runner_body,
-            ["let pc = 0", "stepIndexById", "executedSteps >= MAX_CONTROL_FLOW_STEPS", "controlFlowDecisionForStep"],
+            [
+                "let pc = 0",
+                "stepIndexById",
+                "executedSteps >= MAX_CONTROL_FLOW_STEPS",
+                "controlFlowDecisionForStep",
+                "recordControlFlowTransition",
+                "session.status === \"failed\"",
+            ],
             failures,
             "runWorkflowEntry",
         )
@@ -205,7 +212,21 @@ def audit(project_root: Path) -> dict[str, object]:
         decision_body = function_body(main, "controlFlowDecisionForStep")
         require_contains(
             decision_body,
-            ["evaluateConditionGuard", "item.targetStepId", "item.elseTargetStepId", "session.controlFlowCounts", "maxIterations"],
+            [
+                "evaluateConditionGuard",
+                "item.targetStepId",
+                "item.elseTargetStepId",
+                "session.controlFlowCounts",
+                "maxIterations",
+                "buildTransition",
+                "fallthrough",
+                "skipped",
+                "taken",
+                "stepOrder",
+                "defaultNextIndex",
+                "unsupported guard expression",
+                "result?.status !== \"planned\"",
+            ],
             failures,
             "controlFlowDecisionForStep",
         )
@@ -213,8 +234,35 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append(str(error))
 
     try:
+        transition_body = function_body(main, "recordControlFlowTransition")
+        require_contains(
+            transition_body,
+            [
+                "controlFlowTransitionSerial",
+                "controlFlowTransitions",
+                "MAX_CONTROL_FLOW_TRANSITIONS",
+                "new Date().toISOString()",
+            ],
+            failures,
+            "recordControlFlowTransition",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        history_body = function_body(main, "runHistoryEntryFromSession")
+        require_contains(history_body, ["controlFlowTransitions", "MAX_CONTROL_FLOW_TRANSITIONS"], failures, "runHistoryEntryFromSession")
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
         guard_body = function_body(main, "evaluateConditionGuard")
-        require_contains(guard_body, ["last.matched", "status", "action"], failures, "evaluateConditionGuard")
+        require_contains(
+            guard_body,
+            ["last.matched", "status", "action", "supported", "compareNumbers", "unsupported"],
+            failures,
+            "evaluateConditionGuard",
+        )
     except ValueError as error:
         failures.append(str(error))
 
@@ -229,7 +277,7 @@ def audit(project_root: Path) -> dict[str, object]:
 
     docs_text = "\n".join([workflow_docs, product_docs, readme])
     require_contains(docs_text, ["schema v7", "targetStepId", "elseTargetStepId", "recoveryStepId", "jumpWorkflowId", "maxIterations"], failures, "docs")
-    require_contains(docs_text, ["指令指针", "condition", "后向跳转", "恢复入口仍是计划态"], failures, "docs")
+    require_contains(docs_text, ["指令指针", "condition", "后向跳转", "恢复入口仍是计划态", "controlFlowTransitions"], failures, "docs")
 
     scripts = package.get("scripts", {})
     if scripts.get("audit:control-flow-schema") != "python scripts/audit_control_flow_schema.py":

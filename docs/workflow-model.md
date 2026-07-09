@@ -93,6 +93,7 @@
       "endedWindowIdentity": {},
       "queuePlan": [],
       "queueEvents": [],
+      "controlFlowTransitions": [],
       "stepResults": []
     }
   ]
@@ -104,7 +105,7 @@
 - `workflows`: 用户创建和导入的任务库。
 - `assignments`: 窗口 hwnd 到任务队列的分配表。旧版 `workflowId` 会在载入时迁移成单项 `queue`。
 - `targets`: 粘贴图片、ROI、后续模板图和 OCR 文本等可复用识别目标。旧版 `assets` 会在载入时迁移成 `targets`。
-- `runHistory`: 观察运行或真实运行的最近报告，包含每步结果、失败点、耗时和结束窗口身份。
+- `runHistory`: 观察运行或真实运行的最近报告，包含每步结果、控制流跳转、失败点、耗时和结束窗口身份。
 
 当前保存位置是 Tauri AppData 下的 `workspace.json`。第一阶段不用 SQLite，是为了让格式可读、易迁移、好调试；等任务历史、资产索引、运行日志变多后再迁移数据库。
 
@@ -200,7 +201,7 @@
 
 Ctrl+V 粘贴图片是目标库入口，不是运行时步骤。粘贴后会生成 `Target` 并绑定到当前步骤；如果当前步骤不是可接收图片的图像类步骤，会在当前步骤下方自动创建 `image_click`，避免误改原步骤语义，并同步目标默认阈值、点击键和点击点。文本输入框、JSON 文本框和其它可编辑控件内的粘贴不会被拦截，避免误创建目标。如果 WebView 的粘贴事件没有带图片文件，前端会调用 Rust 后端读取 Windows 剪贴板里的 DIB/DIBV5 位图，再按同一套目标绑定流程导入。
 
-schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`。导入、保存和复制任务会保留这些字段；复制任务时同任务内 step 引用会重映射到副本步骤，单步复制会清空控制流引用，避免复制出的步骤意外跳到旧上下文。当前前端 runner 使用指令指针执行同任务 `targetStepId/elseTargetStepId`，并用 `MAX_CONTROL_FLOW_STEPS` 和 `maxIterations` 限制后向跳转；`recoveryStepId`、`jumpWorkflowId`、专用 `loop/task_jump` 仍是计划态。
+schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`。导入、保存和复制任务会保留这些字段；复制任务时同任务内 step 引用会重映射到副本步骤，单步复制会清空控制流引用，避免复制出的步骤意外跳到旧上下文。当前前端 runner 使用指令指针执行同任务 `targetStepId/elseTargetStepId`，并用 `MAX_CONTROL_FLOW_STEPS` 和 `maxIterations` 限制后向跳转；执行结果会写入 `runHistory[].controlFlowTransitions[]`。`recoveryStepId`、`jumpWorkflowId`、专用 `loop/task_jump` 仍是计划态。
 
 旧版 `branch` 失败/成功分支字段未接入运行器，编辑器不再生成；后续如果要做状态机，应以显式 `targetStepId` 和 guard 表达式重新设计。
 成功路径默认进入下一启用步骤；如果步骤设置了 `targetStepId` 且执行结果不是失败/停止状态，会跳转到同任务目标步骤。旧版 `onSuccess` 字段已不再由编辑器生成。
@@ -214,7 +215,7 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - `click` / `double_click`: X/Y、左键/右键，同步为 `x=...,y=...` 和 `button=...`。
 - `image_click` / `double_click` / `wait_image` / `detect_page`: 识别目标名、阈值，`image_click` 和 `double_click` 额外有点击键、模板中心/四角点位和 `offsetX/offsetY` 像素偏移。
 - `delay`: 等待时长和原因。
-- `condition`: 状态目标、guard、true/false 跳转步骤；guard 支持 `true/false`、`last.matched`、`last.status=...`、`last.action=...` 等轻量表达。
+- `condition`: 状态目标、guard、true/false 跳转步骤；guard 支持 `true/false`、`last.matched`、`last.status=...`、`last.action=...`、`last.score>=0.86` 这类轻量表达。未知表达式不会默认当作 true，后台运行会在 readiness 阶段阻止。
 - `retry_until`: 等待目标和重试间隔；绑定图片、ROI 或坐标后才会在后台轮询，否则阻止后台运行。
 - 所有步骤都可以设置 `preDelay` 和 `postDelay`，分别表示该步骤执行前/后等待；这些参数继续写入 `command` 字符串，不需要 schema 迁移。
 
@@ -302,7 +303,9 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - 后台步骤返回 `error` 或 `unsupported` 时一律停止窗口会话。`missing_asset`、`below_threshold`、`text_miss`、`ocr_unavailable`、`missing_expect` 等失败状态在重试耗尽后默认停止，只有步骤显式设置 `onFail=skip` 才会继续下一步。
 - `onFail=restore` 当前只保留为计划态配置，UI 会标记为“恢复计划”；恢复入口仍是计划态，运行器尚不会自动跳转到恢复步骤，因此失败仍按停止处理。后续 schema v7 需要通过显式 `recoveryStepId` 或恢复流程实现。
 
-`runHistory[]` 保存完成后的报告：`mode/source/hwnd/display/workflowIds/workflowNames/queueLength/status/completedSteps/totalSteps/durationMs/failureReason/windowIdentity/endedWindowIdentity/queuePlan/queueEvents/stepResults/startedAt/endedAt`。运行中的 `state.sessions` 仍是内存态，后续 Rust 后端 runner 接管后再扩展为事件流。
+`runHistory[]` 保存完成后的报告：`mode/source/hwnd/display/workflowIds/workflowNames/queueLength/status/completedSteps/totalSteps/durationMs/failureReason/windowIdentity/endedWindowIdentity/queuePlan/queueEvents/controlFlowTransitions/stepResults/startedAt/endedAt`。运行中的 `state.sessions` 仍是内存态，后续 Rust 后端 runner 接管后再扩展为事件流。
+
+每条 `controlFlowTransitions[]` 会记录来源步骤、目标步骤、guard 结果、跳转原因、状态 `taken/skipped/fallthrough`、后向跳转次数和跳过原因。它用于解释一次运行为什么跳到某一步或为什么没有跳；它不是任务定义的一部分，也不会跨运行复用。
 
 每条 `queueEvents[]` 会记录队列项启动前错峰或任务后间隔的 phase、delayMs、状态和耗时。每条 `stepResults[]` 会记录 workflow、step、状态、动作、详情、是否发送输入、匹配分数、坐标和耗时；如果步骤有前/后等待，详情中会带 `timing preDelay=... postDelay=...`。运行结束时前端会通过只读 `current_window_identity` 再读取一次 hwnd 身份，写入 `endedWindowIdentity` 或 `endedWindowIdentityError`，便于排查长时间多窗口运行后的 hwnd 漂移、窗口关闭和权限变化。
 
