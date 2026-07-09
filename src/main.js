@@ -15,6 +15,32 @@ const stepFailActions = new Set(["stop", "retry", "skip", "restore"]);
 const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
 const workflowConcurrencyOptions = new Set(["per-window-exclusive"]);
 const imageClickPointOptions = new Set(["center", "top-left", "top-right", "bottom-left", "bottom-right"]);
+const builtinTargetTemplateBindings = [
+  { target: "page.home.ready", key: "zonghe/jiahao.png", kind: "page", name: "主界面判定", threshold: 0.86 },
+  { target: "target.activity.icon", key: "zonghe/huodong1.png", kind: "image", name: "活动入口" },
+  { target: "page.activity.ready", key: "zonghe/huodong_jiemian_panduan.png", kind: "page", name: "活动界面判定" },
+  { target: "button.welfare", key: "qiandao/fuli.png", kind: "image", name: "福利入口" },
+  { target: "page.welfare.ready", key: "qiandao/fuli.png", kind: "page", name: "福利界面判定" },
+  { target: "button.cumulative_reward", key: "qiandao/leiji2.png", kind: "image", name: "累计奖励" },
+  { target: "page.guild.ready", key: "qiandao/bangpai_jiemian_panduan.png", kind: "page", name: "帮派界面判定" },
+  { target: "button.guild_welfare", key: "qiandao/bangpaifuli.png", kind: "image", name: "帮派福利入口" },
+  { target: "button.guild_checkin", key: "qiandao/bangpaifuli.png", kind: "image", name: "帮派福利签到区" },
+  { target: "button.confirm", key: "zonghe/zhujiemian_shiyong_cha.png", kind: "image", name: "确认/关闭按钮" },
+  { target: "button.team_up", key: "duiwu/duiwu-zudui.png", kind: "image", name: "组队按钮" },
+  { target: "page.team.ready", key: "duiwu/duiwu-duiwu.png", kind: "page", name: "队伍界面判定" },
+  { target: "page.bag.ready", key: "beibao/beibao_jiemian_panduan.png", kind: "page", name: "背包界面判定" },
+  { target: "button.home_clean", key: "jiayuan/dali.png", kind: "image", name: "家园打理按钮" },
+  { target: "page.home_yard.ready", key: "jiayuan/dali.png", kind: "page", name: "家园打理页判定" },
+  { target: "item.target", key: "beibao/zhenfajuan.png", kind: "image", name: "示例背包物品", threshold: 0.82 },
+  { target: "item.treasure_map", key: "baotu/cangbaotu.png", kind: "image", name: "藏宝图物品" },
+  { target: "entry.secret_realm", key: "mijing/mijing_moshi.png", kind: "image", name: "秘境入口/模式" },
+  { target: "item.realm_material", key: "mijing_cailiao/nanshanyu.png", kind: "image", name: "秘境材料" },
+  { target: "target.realm_material", key: "mijing_cailiao/nanshanyu.png", kind: "image", name: "秘境材料确认" },
+  { target: "page.stall.ready", key: "shangcheng/baitan_zhujiemian.png", kind: "page", name: "摆摊界面判定" },
+  { target: "page.quest.ready", key: "zonghe/renwu_tanchuang.png", kind: "page", name: "任务面板判定" },
+  { target: "item.current_quest", key: "zonghe/rwl_suojin.png", kind: "image", name: "当前任务条目" },
+  { target: "item.target_material", key: "beibao/bailianjingtie.png", kind: "image", name: "目标材料" },
+];
 
 const stepTypes = [
   ["detect_page", "检测页面"],
@@ -716,16 +742,21 @@ async function loadWorkspace() {
     const result = await invoke("load_workflow_workspace");
     state.workspacePath = result.path;
     state.workspace = normalizeWorkspace(result.data);
+    let shouldSave = false;
     if (!state.workspace.workflows.length) {
       state.workspace = createSeedWorkspace();
-      await saveWorkspaceNow();
+      shouldSave = true;
       appendLog("info", `首次启动已写入 ${state.workspace.workflows.length} 个示例任务`);
     }
+    const hydrated = await hydrateBuiltinTargetTemplates({ log: true });
+    shouldSave = shouldSave || hydrated > 0;
+    if (shouldSave) await saveWorkspaceNow();
     $("#workspace-state").textContent = result.existed ? "loaded" : "seeded";
     $("#workspace-state").classList.add("ok");
     $("#workspace-path").textContent = state.workspacePath;
   } catch (error) {
     state.workspace = createSeedWorkspace();
+    await hydrateBuiltinTargetTemplates({ log: true });
     $("#workspace-state").textContent = "memory";
     $("#workspace-state").classList.remove("ok");
     $("#workspace-path").textContent = "工作区载入失败，当前使用内存草稿";
@@ -1379,7 +1410,7 @@ function createWorkflowFromBlueprint(blueprintInput, index = 1, namePrefix = "")
   return workflow;
 }
 
-function createWorkflowBatch(options = {}) {
+async function createWorkflowBatch(options = {}) {
   const blueprint = workflowBlueprintById(options.blueprintId || $("#workflow-blueprint-select")?.value);
   const countInput = Number($("#workflow-batch-count")?.value || 1);
   const count = Math.max(1, Math.min(10, Math.floor(Number.isFinite(countInput) ? countInput : 1)));
@@ -1391,6 +1422,7 @@ function createWorkflowBatch(options = {}) {
   state.workspace.activeWorkflowId = workflows[0]?.id || state.workspace.activeWorkflowId;
   state.selectedStepId = workflows[0]?.steps[0]?.id || null;
   selectFirstUnboundCapturedStep(workflows[0]?.steps || []);
+  await hydrateBuiltinTargetTemplates({ log: true });
   markDirty("draft");
   renderAll();
   appendLog("info", `按蓝图生成 ${workflows.length} 个任务：${blueprint.label}`);
@@ -1398,7 +1430,7 @@ function createWorkflowBatch(options = {}) {
   return workflows;
 }
 
-function importSampleWorkflowPack() {
+async function importSampleWorkflowPack() {
   const existingIds = new Set(state.workspace.workflows.map((item) => item.id));
   const samples = createSampleWorkflows().filter((item) => !existingIds.has(item.id));
   if (!samples.length) {
@@ -1411,6 +1443,7 @@ function importSampleWorkflowPack() {
     [...state.workspace.targets, ...createTargetCatalogFromWorkflows(samples)],
     state.workspace.workflows,
   );
+  await hydrateBuiltinTargetTemplates({ log: true });
   state.workspace.activeWorkflowId = samples[0].id;
   state.selectedStepId = samples[0]?.steps[0]?.id || null;
   selectFirstUnboundCapturedStep(samples[0]?.steps || []);
@@ -1424,12 +1457,13 @@ function importSampleWorkflowPack() {
   return samples;
 }
 
-function createExerciseSuite() {
+async function createExerciseSuite() {
   const workflows = exerciseSuiteBlueprintIds.map((blueprintId) => {
     const blueprint = workflowBlueprintById(blueprintId);
     return createWorkflowFromBlueprint(blueprint, 1, `演练 ${blueprint.defaultPrefix || blueprint.label}`);
   });
   state.workspace.workflows.unshift(...workflows);
+  await hydrateBuiltinTargetTemplates({ log: true });
   state.workspace.activeWorkflowId = workflows[0]?.id || state.workspace.activeWorkflowId;
   state.selectedStepId = workflows[0]?.steps[0]?.id || null;
   selectFirstUnboundCapturedStep(workflows[0]?.steps || []);
@@ -2485,6 +2519,7 @@ function bindTargetEditor() {
   $("#bind-selected-target").addEventListener("click", bindSelectedTargetToStep);
   $("#unbind-step-target").addEventListener("click", unbindCurrentStepTarget);
   $("#delete-target").addEventListener("click", deleteSelectedTarget);
+  $("#apply-builtin-templates").addEventListener("click", applyBuiltinTemplatesToTargets);
 }
 
 function updateClickPointFromParams() {
@@ -2934,6 +2969,140 @@ function deleteSelectedTarget() {
   renderStepEditor();
   appendLog("info", `删除未使用目标：${target.name}`);
   setStatus(`已删除目标：${target.name}`);
+}
+
+function targetMatchesBuiltinBinding(targetId, logicalTargetId) {
+  const id = String(targetId || "").trim();
+  const logical = String(logicalTargetId || "").trim();
+  return Boolean(id && logical && (id === logical || id.endsWith(`.${logical}`)));
+}
+
+function builtinBindingForTarget(target) {
+  return builtinTargetTemplateBindings.find((binding) =>
+    targetMatchesBuiltinBinding(target?.id, binding.target),
+  );
+}
+
+function builtinTemplateCandidates() {
+  return state.workspace.targets
+    .map((target) => ({ target, binding: builtinBindingForTarget(target) }))
+    .filter(({ target, binding }) => binding && !target.dataUrl && !target.roi);
+}
+
+function shouldRefreshGeneratedTargetName(target) {
+  if (!target?.name) return true;
+  const note = String(target.note || "");
+  return note.includes("由任务步骤生成") || note.includes("由步骤片段自动创建");
+}
+
+function appendTargetNote(target, note) {
+  const next = String(note || "").trim();
+  if (!next) return;
+  const current = String(target.note || "").trim();
+  if (current.includes(next)) return;
+  target.note = current ? `${current}\n${next}` : next;
+}
+
+function applyBuiltinTemplateToTarget(target, binding, template) {
+  target.dataUrl = template.dataUrl || "";
+  target.width = Number(template.width || 0);
+  target.height = Number(template.height || 0);
+  target.kind = binding.kind || target.kind || "image";
+  if (shouldRefreshGeneratedTargetName(target) && binding.name) target.name = binding.name;
+  target.match = {
+    ...(target.match || {}),
+    threshold: normalizedThreshold(binding.threshold ?? target.match?.threshold, DEFAULT_IMAGE_THRESHOLD),
+    scope: target.match?.scope || "window",
+  };
+  target.click = {
+    ...(target.click || {}),
+    button: binding.button || target.click?.button || "left",
+    point: binding.point || target.click?.point || "center",
+  };
+  target.source = {
+    type: "builtin-template",
+    display: `内置素材 · ${template.key}`,
+    key: template.key,
+    path: template.replacementPath,
+    sourceRoi: template.sourceRoi || null,
+    sourceFrameWidth: Number(template.sourceFrameWidth || 0),
+    sourceFrameHeight: Number(template.sourceFrameHeight || 0),
+    matchScore: template.matchScore ?? null,
+  };
+  appendTargetNote(target, `内置素材：${template.key}${template.note ? `；${template.note}` : ""}`);
+  target.updatedAt = new Date().toISOString();
+  syncTargetDefaultsToBoundSteps(target, { threshold: true, clickButton: true, clickPoint: true });
+}
+
+async function applyBuiltinTemplatesToTargets() {
+  const stateLabel = $("#builtin-template-state");
+  const candidates = builtinTemplateCandidates();
+  if (!candidates.length) {
+    const message = "没有可补的空目标";
+    if (stateLabel) stateLabel.textContent = message;
+    setStatus(message);
+    appendLog("info", "内置素材：当前目标都已绑定素材/ROI，或没有匹配的内置模板");
+    return;
+  }
+  const keys = [...new Set(candidates.map(({ binding }) => binding.key))];
+  if (stateLabel) stateLabel.textContent = `读取 ${keys.length} 个内置模板…`;
+  try {
+    const templates = await invoke("load_builtin_target_templates", { keys });
+    const byKey = new Map(templates.map((item) => [item.key, item]));
+    let applied = 0;
+    let missing = 0;
+    for (const { target, binding } of candidates) {
+      if (target.dataUrl || target.roi) continue;
+      const template = byKey.get(binding.key);
+      if (!template) {
+        missing += 1;
+        continue;
+      }
+      applyBuiltinTemplateToTarget(target, binding, template);
+      applied += 1;
+    }
+    if (applied) {
+      markDirty("builtin templates");
+      renderTargets({ preserveEditor: true });
+      renderStepEditor();
+      renderWorkflowCompletion();
+    }
+    const message = `已接入 ${applied} 个内置素材${missing ? `，${missing} 个缺模板` : ""}`;
+    if (stateLabel) stateLabel.textContent = message;
+    setStatus(message);
+    appendLog("info", `内置素材：${message}`);
+  } catch (error) {
+    const message = `内置素材读取失败：${error}`;
+    if (stateLabel) stateLabel.textContent = "读取失败";
+    setStatus(message);
+    appendLog("error", message);
+  }
+}
+
+async function hydrateBuiltinTargetTemplates(options = {}) {
+  const candidates = builtinTemplateCandidates();
+  if (!candidates.length) return 0;
+  const keys = [...new Set(candidates.map(({ binding }) => binding.key))];
+  let templates = [];
+  try {
+    templates = await invoke("load_builtin_target_templates", { keys });
+  } catch (error) {
+    appendLog("warn", `内置素材自动接入失败：${error}`);
+    return 0;
+  }
+  const byKey = new Map(templates.map((item) => [item.key, item]));
+  let applied = 0;
+  for (const { target, binding } of candidates) {
+    if (target.dataUrl || target.roi) continue;
+    const template = byKey.get(binding.key);
+    if (!template) continue;
+    applyBuiltinTemplateToTarget(target, binding, template);
+    applied += 1;
+  }
+  if (applied && options.log !== false) {
+    appendLog("info", `已自动接入 ${applied} 个内置素材目标`);
+  }
+  return applied;
 }
 
 function targetCommandDefaults(target, command = "") {

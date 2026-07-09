@@ -1443,6 +1443,22 @@ label {
   gap: 8px;
 }
 
+.target-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 128px) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.target-tools .meta {
+  min-width: 0;
+  overflow: hidden;
+  color: #87949c;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .target-row {
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
@@ -1747,6 +1763,7 @@ progress::-webkit-progress-value {
   .form-grid,
   .inline-fields,
   .param-grid,
+  .target-tools,
   .target-filters,
   .target-actions,
   .capture-actions,

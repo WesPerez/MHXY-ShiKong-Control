@@ -39,6 +39,21 @@ struct ImportedPreviewImage {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct BuiltinTargetTemplate {
+    key: String,
+    replacement_path: String,
+    width: u32,
+    height: u32,
+    data_url: String,
+    source_roi: Option<Vec<u32>>,
+    source_frame_width: Option<u32>,
+    source_frame_height: Option<u32>,
+    match_score: Option<f32>,
+    note: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SnapshotResult {
     saved_path: String,
     width: u32,
@@ -395,6 +410,85 @@ fn import_clipboard_image() -> Result<ImportedPreviewImage, String> {
             general_purpose::STANDARD.encode(png)
         ),
     })
+}
+
+#[tauri::command]
+fn load_builtin_target_templates(keys: Vec<String>) -> Result<Vec<BuiltinTargetTemplate>, String> {
+    let root = project_root()?;
+    let mapping_path = root
+        .join("assets")
+        .join("resource")
+        .join("ShiKong")
+        .join("template_mapping.json");
+    let text = fs::read_to_string(&mapping_path)
+        .map_err(|err| format!("{}: {err}", mapping_path.display()))?;
+    let mapping: Value =
+        serde_json::from_str(&text).map_err(|err| format!("{}: {err}", mapping_path.display()))?;
+    let templates = mapping
+        .get("templates")
+        .and_then(Value::as_object)
+        .ok_or_else(|| format!("{}: templates object missing", mapping_path.display()))?;
+
+    let mut loaded = Vec::new();
+    let mut seen = Vec::new();
+    for raw_key in keys {
+        let key = raw_key.trim().replace('\\', "/");
+        if key.is_empty() || seen.iter().any(|item: &String| item == &key) {
+            continue;
+        }
+        seen.push(key.clone());
+        let Some(entry) = templates.get(&key) else {
+            continue;
+        };
+        let Some(replacement_path) = entry.get("replacementPath").and_then(Value::as_str) else {
+            continue;
+        };
+        let image_path = root.join(replacement_path);
+        if !image_path.is_file() {
+            continue;
+        }
+        let frame = load_image_rgb(&image_path)?;
+        let png = encode_png(&frame)?;
+        loaded.push(BuiltinTargetTemplate {
+            key,
+            replacement_path: replacement_path.to_string(),
+            width: frame.width,
+            height: frame.height,
+            data_url: format!(
+                "data:image/png;base64,{}",
+                general_purpose::STANDARD.encode(png)
+            ),
+            source_roi: entry.get("sourceRoi").and_then(json_u32_array),
+            source_frame_width: json_u32(entry.get("sourceFrameWidth")),
+            source_frame_height: json_u32(entry.get("sourceFrameHeight")),
+            match_score: json_f32(entry.get("matchScore")),
+            note: entry
+                .get("note")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
+        });
+    }
+    Ok(loaded)
+}
+
+fn json_u32(value: Option<&Value>) -> Option<u32> {
+    value
+        .and_then(Value::as_u64)
+        .and_then(|number| u32::try_from(number).ok())
+}
+
+fn json_f32(value: Option<&Value>) -> Option<f32> {
+    value.and_then(Value::as_f64).map(|number| number as f32)
+}
+
+fn json_u32_array(value: &Value) -> Option<Vec<u32>> {
+    let items = value.as_array()?;
+    let values = items
+        .iter()
+        .map(|item| json_u32(Some(item)))
+        .collect::<Option<Vec<_>>>()?;
+    (values.len() == 4).then_some(values)
 }
 
 fn project_root() -> Result<PathBuf, String> {
@@ -2162,6 +2256,25 @@ mod tests {
     }
 
     #[test]
+    fn loads_builtin_target_template_from_mapping() {
+        let templates = load_builtin_target_templates(vec![
+            "zonghe/jiahao.png".to_string(),
+            "zonghe/jiahao.png".to_string(),
+            "missing/template.png".to_string(),
+        ])
+        .unwrap();
+
+        assert_eq!(templates.len(), 1);
+        assert_eq!(templates[0].key, "zonghe/jiahao.png");
+        assert!(templates[0]
+            .replacement_path
+            .ends_with("assets/resource/ShiKong/image/zonghe/jiahao.png"));
+        assert!(templates[0].width > 0);
+        assert!(templates[0].height > 0);
+        assert!(templates[0].data_url.starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
     fn reads_text_input_from_target_when_command_has_no_text() {
         let step = text_input_step("你好", "mode=hwnd-char");
         assert_eq!(text_input_value(&step).unwrap(), "你好");
@@ -2408,7 +2521,8 @@ fn main() {
             capture_window_preview,
             save_window_snapshot,
             import_preview_image,
-            import_clipboard_image
+            import_clipboard_image,
+            load_builtin_target_templates
         ])
         .run(tauri::generate_context!())
         .expect("error while running shikong workflow app");
