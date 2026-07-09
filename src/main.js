@@ -11,6 +11,7 @@ import {
   recordControlFlowTransition as recordControlFlowTransitionCore,
   recoveryDecisionForFailedStep as recoveryDecisionForFailedStepCore,
   stepLabelForExecution as stepLabelForExecutionCore,
+  unboundedWorkflowJumpCycleFindings,
 } from "./control-flow-core.js";
 import "./styles.css";
 
@@ -181,7 +182,7 @@ const stepDefaults = {
   },
   condition: {
     name: "条件判断",
-    target: "state.flag",
+    target: "last.score",
     command: "guard=true",
     expect: "condition.checked",
     timeoutMs: 1000,
@@ -494,7 +495,7 @@ const workflowBlueprints = [
       { type: "hotkey", name: "打开背包", target: "ALT+E", command: "mode=hwnd-key", expect: "bag.open" },
       { type: "wait_image", name: "等待背包界面", target: "page.bag.ready", command: "threshold=0.85", expect: "visible" },
       { type: "ocr_assert", name: "确认背包标题", target: "包裹", command: "lang=zh; roi=top", expect: "text_found" },
-      { type: "condition", name: "检查背包空间", target: "state.bag_space", command: "guard=>2", expect: "continue" },
+      { type: "condition", name: "检查背包页识别可信度", target: "last.score", command: "guard=last.score>=0.5", expect: "continue" },
       { type: "wait_image", name: "查找目标材料", target: "item.target_material", command: "threshold=0.86", expect: "visible" },
       { type: "image_click", name: "选择目标材料", target: "item.target_material", command: "button=left; point=center", expect: "item.selected" },
       { type: "image_click", name: "移动到整理区", target: "button.sort_material", command: "button=left; point=center", expect: "sort.accepted" },
@@ -2380,9 +2381,15 @@ function focusCompletionField(item, stepItem) {
     const selector = completionFocusSelector(item, stepItem);
     const element = selector ? $(selector) : null;
     if (!element) return;
+    openContainingDetails(element);
     element.focus();
     if (typeof element.select === "function") element.select();
   });
+}
+
+function openContainingDetails(element) {
+  const details = element.closest?.("details");
+  if (details) details.open = true;
 }
 
 function completionFocusSelector(item, stepItem) {
@@ -2399,6 +2406,9 @@ function completionFocusSelector(item, stepItem) {
   if (item.message.includes("延迟") || item.message.includes("间隔")) {
     return stepItem?.type === "retry_until" ? "#param-retry-interval" : "#param-delay-ms";
   }
+  if (item.message.includes("任务跳转")) return "#param-control-workflow-jump";
+  if (item.message.includes("后向跳转") || item.message.includes("循环")) return "#param-control-max-iterations";
+  if (item.message.includes("恢复入口")) return "#param-control-recovery-step";
   if (item.message.includes("缺少目标") || item.message.includes("识别目标已不存在")) return "#param-target-select";
   return "";
 }
@@ -2646,6 +2656,57 @@ function renderStepParamPanel(item) {
   renderWorkflowJumpSelect(item);
   $("#param-retry-target").value = item.type === "retry_until" ? item.target || "" : "";
   $("#param-retry-interval").value = durationMsFromText(commandValue(item.command, "interval")) ?? "";
+  syncStepAdvancedPanels(item);
+}
+
+function syncStepAdvancedPanels(item) {
+  const flow = $("#step-flow-advanced");
+  if (flow && flow.hidden) {
+    flow.open = false;
+  } else if (flow) {
+    flow.open = stepNeedsAdvancedFlowPanel(item);
+  }
+  const compat = $("#step-compat-fields");
+  if (compat && !compat.open) {
+    compat.open = stepHasCompatibilityDrift(item);
+  }
+}
+
+function stepNeedsAdvancedFlowPanel(item) {
+  if (!item) return false;
+  const messages = [
+    ...(state.stepValidation?.[item.id]?.issues || []),
+    ...(state.stepValidation?.[item.id]?.warnings || []),
+  ].join(" / ");
+  return Boolean(
+    item.type === "task_jump" ||
+      item.jumpWorkflowId ||
+      item.maxIterations ||
+      /后向跳转|任务跳转|循环/.test(messages),
+  );
+}
+
+function stepHasCompatibilityDrift(item) {
+  if (!item) return false;
+  const defaults = stepDefaults[item.type] || {};
+  const commonStructuredTypes = new Set([
+    "hotkey",
+    "text_input",
+    "click",
+    "double_click",
+    "image_click",
+    "wait_image",
+    "detect_page",
+    "ocr_assert",
+    "delay",
+    "condition",
+    "retry_until",
+  ]);
+  return Boolean(
+    !commonStructuredTypes.has(item.type) &&
+      !item.targetId &&
+      ((item.target && item.target !== defaults.target) || (item.command && item.command !== defaults.command)),
+  );
 }
 
 function renderTargetSelect(item) {
@@ -2738,7 +2799,7 @@ function paramSummaryForStep(item) {
   if (item.type === "delay") return `${durationMsFromText(item.target) ?? item.timeoutMs ?? 0} ms${timing}`;
   if (item.type === "condition") {
     const refs = controlFlowReferenceSummary(item);
-    return `${item.target || "状态目标"} · guard=${commandValue(item.command, "guard") || "未设置"}${refs ? ` · ${refs}` : ""}${timing}`;
+    return `${item.target || "条件标签"} · guard=${commandValue(item.command, "guard") || "未设置"}${refs ? ` · ${refs}` : ""}${timing}`;
   }
   if (item.type === "task_jump") {
     const refs = controlFlowReferenceSummary(item);
@@ -4675,6 +4736,7 @@ function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
   if (workflow && enabledSteps.length > 0 && enabledSteps.length < 10) {
     addWarning("少于 10 步，作为完整样例覆盖不足");
   }
+  const jumpCycleFindings = unboundedWorkflowJumpCycleFindings(state.workspace?.workflows || []);
   for (const [index, item] of workflow?.steps.entries() || []) {
     const prefix = `第 ${index + 1} 步`;
     if (!stepLabels[item.type]) addIssue(`${prefix} 类型未知`, item);
@@ -4688,13 +4750,13 @@ function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
     if (item.type === "hotkey" && !/[+]/.test(item.target)) {
       addWarning(`${prefix} 快捷键建议使用 ALT+N 这类组合格式`, item);
     }
-    validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode);
+    validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode, jumpCycleFindings);
     validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode);
   }
   return result;
 }
 
-function validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode) {
+function validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode, jumpCycleFindings = []) {
   const steps = workflow?.steps || [];
   const byId = new Map(steps.map((step) => [step.id, step]));
   const currentIndex = steps.findIndex((step) => step.id === item.id);
@@ -4748,6 +4810,12 @@ function validateStepControlFlowReferences(workflow, item, prefix, addIssue, add
     }
     if (jumpWorkflowId === workflow.id && !item.maxIterations) {
       addReferenceMessage(`${prefix} 任务跳转指向当前任务，必须设置最大循环次数`);
+    }
+    const cycleFinding = jumpCycleFindings.find((finding) => finding.workflowId === workflow.id && finding.stepId === item.id);
+    if (cycleFinding) {
+      addReferenceMessage(
+        `${prefix} 任务跳转参与跨任务循环（${cycleFinding.cycleWorkflowNames.join(" -> ")}），该跳转必须设置最大循环次数`,
+      );
     }
     addWarning(`${prefix} 任务跳转会在当前 hwnd 会话内切换任务，不改写持久化窗口队列`, item);
   }
@@ -5833,6 +5901,7 @@ function renderSessions() {
     lanes.append(lane);
   }
   renderRunHistory(lanes);
+  renderFailureReports();
   renderOpsDashboard();
 }
 
@@ -5912,6 +5981,161 @@ function renderRunHistory(container) {
     }
     container.append(lane);
   }
+}
+
+function renderFailureReports() {
+  const board = $("#failure-report-board");
+  if (!board) return;
+  board.replaceChildren();
+  const reports = failureReportRecords();
+  const head = document.createElement("div");
+  head.className = "failure-report-head";
+  head.innerHTML = `
+    <strong>失败报告</strong>
+    <span>${reports.length ? `最近 ${reports.length} 条` : "暂无失败"}</span>
+  `;
+  board.append(head);
+  if (!reports.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-block compact";
+    empty.textContent = "后台运行失败、停止或窗口身份异常后，会在这里显示可定位的报告。";
+    board.append(empty);
+    return;
+  }
+  for (const report of reports) {
+    const failedStep = failureStepFromRecord(report);
+    const identity = failureIdentitySummary(report);
+    const steps = failureStepTrail(report);
+    const transitions = historyTransitionSummary(report).slice(0, 2);
+    const article = document.createElement("article");
+    article.className = `failure-report ${report.status || "unknown"}`;
+    article.innerHTML = `
+      <div class="failure-report-title">
+        <span>
+          <strong>${escapeHtml(report.display || report.hwnd || "未知窗口")}</strong>
+          <small>${escapeHtml(report.workflowName || `${report.queueLength || 0} 个任务`)} · ${escapeHtml(report.status || "unknown")} · ${escapeHtml(report.endedAt || "")}</small>
+        </span>
+        <em class="readiness-pill ${failureReportLevel(report)}">${escapeHtml(report.status || "report")}</em>
+      </div>
+      <p title="${escapeHtml(report.failureReason || "无失败原因")}">${escapeHtml(failureReasonSummary(report))}</p>
+      <small>${escapeHtml(failedStep ? `失败点：${failedStep.workflowName || report.failedWorkflowName || ""} / ${failedStep.stepName}` : "失败点：未记录步骤")}</small>
+      <small>${escapeHtml(identity)}</small>
+      ${steps.length ? `<ol>${steps.map((item) => `<li title="${escapeHtml(item)}">${escapeHtml(item)}</li>`).join("")}</ol>` : ""}
+      ${transitions.length ? `<small class="history-detail">${escapeHtml(transitions.join(" / "))}</small>` : ""}
+      <div class="failure-report-actions">
+        <button type="button" data-report-action="focus" data-report-id="${escapeHtml(report.id)}"${failedStep ? "" : " disabled"}>定位步骤</button>
+        <button type="button" data-report-action="copy" data-report-id="${escapeHtml(report.id)}">复制报告</button>
+      </div>
+    `;
+    board.append(article);
+  }
+}
+
+function failureReportRecords() {
+  return (state.workspace.runHistory || [])
+    .filter((record) => {
+      const status = record.status || "";
+      return status === "failed" || status === "stopped" || Boolean(record.failureReason) || Boolean(record.endedWindowIdentityError);
+    })
+    .slice(0, 6);
+}
+
+function failureReportLevel(record) {
+  if (record.status === "failed" || record.failureReason) return "blocked";
+  if (record.status === "stopped" || record.endedWindowIdentityError) return "warning";
+  return "ready";
+}
+
+function failureReasonSummary(record) {
+  if (record.failureReason) return record.failureReason;
+  if (record.endedWindowIdentityError) return `结束窗口身份读取失败：${record.endedWindowIdentityError}`;
+  return "运行停止，未记录失败原因";
+}
+
+function failureStepFromRecord(record) {
+  const steps = Array.isArray(record.stepResults) ? record.stepResults : [];
+  const explicit = [...steps].reverse().find((item) => {
+    if (record.failedWorkflowName && item.workflowName !== record.failedWorkflowName) return false;
+    if (record.failedStepName && item.stepName === record.failedStepName) return true;
+    return false;
+  });
+  if (explicit) return explicit;
+  return [...steps].reverse().find((item) => isFailureStepResult(item)) || steps.at(-1) || null;
+}
+
+function isFailureStepResult(result) {
+  const status = result?.status || "";
+  return (
+    status === "stopped" ||
+    terminalBackendStatuses.has(status) ||
+    backgroundFailureStatuses.has(status) ||
+    Boolean(result?.detail && /失败|error|unsupported|identity|threshold|missing/i.test(result.detail))
+  );
+}
+
+function failureIdentitySummary(record) {
+  const start = record.windowIdentity;
+  const end = record.endedWindowIdentity;
+  const startText = compactWindowIdentity(start);
+  const endText = compactWindowIdentity(end);
+  if (record.endedWindowIdentityError) return `窗口身份：启动 ${startText} / 结束读取失败`;
+  if (!startText && !endText) return "窗口身份：未记录";
+  if (startText === endText || !endText) return `窗口身份：${startText || endText}`;
+  return `窗口身份：启动 ${startText} / 结束 ${endText}`;
+}
+
+function compactWindowIdentity(identity) {
+  if (!identity) return "";
+  const process = identity.processName || identity.processId || "unknown";
+  const size = identity.clientWidth && identity.clientHeight ? `${identity.clientWidth}x${identity.clientHeight}` : "";
+  const admin = identity.elevated === true ? "admin" : identity.elevated === false ? "user" : "";
+  return [process, size, admin].filter(Boolean).join(" · ");
+}
+
+function failureStepTrail(record) {
+  const steps = Array.isArray(record.stepResults) ? record.stepResults : [];
+  return steps.slice(-4).map((item) => {
+    const score = item.score == null ? "" : ` · score=${Number(item.score).toFixed(3)}`;
+    return `${item.order || "-"} ${item.stepName || item.stepType || "步骤"} · ${item.status || "unknown"}/${item.action || "-"}${score}`;
+  });
+}
+
+function handleFailureReportAction(event) {
+  const button = event.target.closest("[data-report-action]");
+  if (!button) return;
+  const report = (state.workspace.runHistory || []).find((item) => item.id === button.dataset.reportId);
+  if (!report) return;
+  if (button.dataset.reportAction === "copy") {
+    copyFailureReport(report);
+    return;
+  }
+  if (button.dataset.reportAction === "focus") {
+    focusFailureReportStep(report);
+  }
+}
+
+function copyFailureReport(report) {
+  const json = JSON.stringify(report, null, 2);
+  $("#workspace-json").value = json;
+  navigator.clipboard?.writeText(json).catch(() => {});
+  setStatus("已复制失败报告 JSON，并放入工作区文本框");
+}
+
+function focusFailureReportStep(report) {
+  const failedStep = failureStepFromRecord(report);
+  const workflow = state.workspace.workflows.find((item) => item.id === failedStep?.workflowId);
+  const stepItem = workflow?.steps.find((item) => item.id === failedStep?.stepId);
+  if (!workflow || !stepItem) {
+    setStatus("当前任务库中找不到这条失败报告对应的步骤，可能来自旧工作区或已删除任务");
+    return;
+  }
+  state.workspace.activeWorkflowId = workflow.id;
+  selectStepAndTarget(stepItem);
+  renderAll();
+  window.requestAnimationFrame(() => {
+    $("#step-editor")?.scrollIntoView({ block: "nearest" });
+  });
+  setStatus(`已定位失败步骤：${workflow.name} / ${stepItem.name || stepLabels[stepItem.type] || stepItem.type}`);
 }
 
 function durationLabel(ms) {
@@ -6034,6 +6258,7 @@ $("#background-run-selected").addEventListener("click", backgroundRunSelected);
 $("#stop-dry-run").addEventListener("click", stopDryRun);
 $("#export-workspace").addEventListener("click", exportWorkspace);
 $("#import-workspace").addEventListener("click", importWorkspace);
+$("#failure-report-board").addEventListener("click", handleFailureReportAction);
 $("#preview-click-capture").addEventListener("click", togglePreviewClickCapture);
 $("#preview-click-button").addEventListener("change", (event) => setPreviewClickButton(event.target.value));
 $("#preview-image").addEventListener("mousedown", startRoiDrag);

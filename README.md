@@ -42,9 +42,10 @@
 - Ctrl+V 图片或 ROI 生成目标时，如果当前步骤不适合绑定图片，会自动在当前步骤下方新建可执行步骤，避免误改延迟/热键等步骤语义；如果 WebView 粘贴事件没有带图片文件，会尝试从 Windows 剪贴板 DIB/DIBV5 后端读取截图。
 - 后台 `delay`、步骤前/后等待、队列错峰和任务间隔都使用真实等待时长，等待期间可响应停止请求；`retry_until` 对绑定图片、ROI 或坐标目标执行轻量等待循环，不发送额外输入，纯状态型目标会在后台校验中阻止执行，避免把未实现的状态判断当成功。
 - 工作区 schema v7 已保存 `targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`；复制任务会重映射同任务步骤引用，单步复制会清空控制流引用。
-- 前端运行器已改为带 `MAX_CONTROL_FLOW_STEPS` 预算的指令指针模型：`condition` 会按 guard 选择 true/false 目标，普通成功步骤可用 `targetStepId` 跳到同任务步骤；后向跳转必须设置 `maxIterations`。`onFail=restore` 可跳到同任务 `recoveryStepId` 执行失败恢复分支，`jumpWorkflowId`/`task_jump` 会在当前 hwnd 会话内插入目标任务；`restore` 步骤本身和专用 `loop` 仍是计划态/未落地。
+- 前端运行器已改为带 `MAX_CONTROL_FLOW_STEPS` 预算的指令指针模型：`condition` 会按 guard 选择 true/false 目标，普通成功步骤可用 `targetStepId` 跳到同任务步骤；后向跳转必须设置 `maxIterations`，跨任务环内任意未设上限的 `task_jump` 会在 readiness 中阻塞，直到该跳转补上最大循环次数。`onFail=restore` 可跳到同任务 `recoveryStepId` 执行失败恢复分支，`jumpWorkflowId`/`task_jump` 会在当前 hwnd 会话内插入目标任务；`restore` 步骤本身和专用 `loop` 仍是计划态/未落地。
 - 运行状态 pill 和会话卡片会区分 idle/ready/running/blocked/failed，界面日志保留最近 500 条，适合长时间运行时保持可用。
 - 运行结束会写入 `runHistory` 报告，记录队列计划、错峰等待事件、控制流 `controlFlowTransitions`、每步状态、失败点、耗时、启动窗口身份和结束窗口身份，便于排查多窗口长时间运行。
+- 运行面板会从 `runHistory` 自动提取失败/停止报告，显示失败原因、失败步骤、最近步骤轨迹、窗口身份和控制流摘要，并支持一键定位到当前任务库中的失败步骤或复制单条报告 JSON。
 - `ocr_assert` 会截图、按 ROI 或命名区域裁剪后调用 Windows OCR；识别未命中或系统 OCR/语言包不可用都会明确失败，不会伪装成可识别。
 - `127.0.0.1:47638` 是桌面应用单实例唤醒端口，不是前端页面。浏览器访问它会显示说明页；真实界面在标题为“时空任务编排器”的 Tauri 桌面窗口里。开发浏览器预览请启动 Vite 后访问 `http://127.0.0.1:5173/`。
 
@@ -129,7 +130,7 @@ E:\Project\Common
 
 ## 后续路线
 
-1. 按 [docs/product-plan.md](docs/product-plan.md) 的方案门禁补可执行 `restore` 片段、恢复后重试/继续策略和失败报告详情。
+1. 按 [docs/product-plan.md](docs/product-plan.md) 的方案门禁补可执行 `restore` 片段、恢复后重试/继续策略和更完整的失败分析导出。
 2. 扩展 `targets` 文件化模板、批量导入导出和 OCR 文本目标实测。
 3. 继续完善后台 hwnd 输入执行器：增加 Rust 后端 runner、事件流、停止/失败恢复和真实游戏反馈验证。
 4. 接入 OCR 实测，每补一个真实任务都保留观察运行、运行报告和输入安全审计。

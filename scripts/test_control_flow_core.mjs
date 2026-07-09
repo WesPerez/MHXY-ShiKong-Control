@@ -8,6 +8,7 @@ import {
   insertWorkflowJumpIntoRunPlan,
   recordControlFlowTransition,
   recoveryDecisionForFailedStep,
+  unboundedWorkflowJumpCycleFindings,
 } from "../src/control-flow-core.js";
 
 const labels = {
@@ -359,6 +360,66 @@ function testTransitionRecordingTrimsOldEntries() {
   );
 }
 
+function testUnboundedWorkflowJumpCyclesAreReported() {
+  const workflows = [
+    {
+      id: "wf-a",
+      name: "Workflow A",
+      steps: [{ id: "a-jump", type: "task_jump", name: "Jump to B", jumpWorkflowId: "wf-b" }],
+    },
+    {
+      id: "wf-b",
+      name: "Workflow B",
+      steps: [{ id: "b-jump", type: "task_jump", name: "Jump to A", jumpWorkflowId: "wf-a" }],
+    },
+  ];
+
+  const findings = unboundedWorkflowJumpCycleFindings(workflows);
+
+  assert.deepEqual(
+    findings.map((item) => item.stepId).sort(),
+    ["a-jump", "b-jump"],
+  );
+  assert.deepEqual(findings[0].cycleWorkflowIds, ["wf-a", "wf-b", "wf-a"]);
+}
+
+function testPartlyBoundedWorkflowJumpCyclesReportUnboundedEdge() {
+  const workflows = [
+    {
+      id: "wf-a",
+      name: "Workflow A",
+      steps: [{ id: "a-jump", type: "task_jump", name: "Jump to B", jumpWorkflowId: "wf-b" }],
+    },
+    {
+      id: "wf-b",
+      name: "Workflow B",
+      steps: [{ id: "b-jump", type: "task_jump", name: "Jump to A", jumpWorkflowId: "wf-a", maxIterations: 2 }],
+    },
+  ];
+
+  const findings = unboundedWorkflowJumpCycleFindings(workflows);
+
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].stepId, "a-jump");
+}
+
+function testBoundedWorkflowJumpCyclesAreAllowed() {
+  const workflows = [
+    {
+      id: "wf-a",
+      name: "Workflow A",
+      steps: [{ id: "a-jump", type: "task_jump", name: "Jump to B", jumpWorkflowId: "wf-b", maxIterations: 2 }],
+    },
+    {
+      id: "wf-b",
+      name: "Workflow B",
+      steps: [{ id: "b-jump", type: "task_jump", name: "Jump to A", jumpWorkflowId: "wf-a", maxIterations: 2 }],
+    },
+  ];
+
+  assert.equal(unboundedWorkflowJumpCycleFindings(workflows).length, 0);
+}
+
 const tests = [
   testTaskJumpDecisionRequestsWorkflow,
   testPlannedTaskJumpDoesNotTriggerWorkflowJump,
@@ -371,6 +432,9 @@ const tests = [
   testInsertWorkflowJumpIntoRunPlan,
   testInsertWorkflowJumpBudgetFailure,
   testTransitionRecordingTrimsOldEntries,
+  testUnboundedWorkflowJumpCyclesAreReported,
+  testPartlyBoundedWorkflowJumpCyclesReportUnboundedEdge,
+  testBoundedWorkflowJumpCyclesAreAllowed,
 ];
 
 for (const test of tests) {

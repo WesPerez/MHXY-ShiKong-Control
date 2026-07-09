@@ -200,6 +200,7 @@ def audit(project_root: Path) -> dict[str, object]:
             "controlFlowDecisionForStepCore",
             "insertWorkflowJumpIntoRunPlanCore",
             "recoveryDecisionForFailedStepCore",
+            "unboundedWorkflowJumpCycleFindings",
         ],
         failures,
         "src/main.js",
@@ -211,6 +212,17 @@ def audit(project_root: Path) -> dict[str, object]:
             ["pendingRunPlan", "runWorkflowEntry(session, entry)", "workflowJumpRequest", "insertWorkflowJumpIntoRunPlan"],
             failures,
             "runSession",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        cycle_body = function_body(core, "unboundedWorkflowJumpCycleFindings")
+        require_contains(
+            cycle_body,
+            ["jumpWorkflowId", "maxIterations", "bounded", "!item.bounded", "workflowJumpPathToWorkflow", "cycleWorkflowNames"],
+            failures,
+            "src/control-flow-core.js unboundedWorkflowJumpCycleFindings",
         )
     except ValueError as error:
         failures.append(str(error))
@@ -392,7 +404,12 @@ def audit(project_root: Path) -> dict[str, object]:
 
     docs_text = "\n".join([workflow_docs, product_docs, readme])
     require_contains(docs_text, ["schema v7", "targetStepId", "elseTargetStepId", "recoveryStepId", "jumpWorkflowId", "maxIterations"], failures, "docs")
-    require_contains(docs_text, ["指令指针", "condition", "后向跳转", "失败恢复", "任务跳转", "controlFlowTransitions"], failures, "docs")
+    require_contains(
+        docs_text,
+        ["指令指针", "condition", "后向跳转", "失败恢复", "任务跳转", "跨任务环", "controlFlowTransitions"],
+        failures,
+        "docs",
+    )
 
     scripts = package.get("scripts", {})
     if scripts.get("audit:control-flow-schema") != "python scripts/audit_control_flow_schema.py":

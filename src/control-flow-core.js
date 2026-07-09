@@ -27,6 +27,65 @@ function plannedOnlyStepTypesFrom(options) {
   return options.plannedOnlyStepTypes || DEFAULT_PLANNED_ONLY_STEP_TYPES;
 }
 
+export function unboundedWorkflowJumpCycleFindings(workflows) {
+  const workflowList = Array.isArray(workflows) ? workflows : [];
+  const workflowById = new Map(workflowList.map((workflow) => [String(workflow.id || ""), workflow]));
+  const edges = [];
+  for (const workflow of workflowList) {
+    const workflowId = String(workflow.id || "").trim();
+    if (!workflowId) continue;
+    for (const step of workflow.steps || []) {
+      const targetWorkflowId = String(step.jumpWorkflowId || "").trim();
+      if (step.enabled === false || !targetWorkflowId || !workflowById.has(targetWorkflowId)) continue;
+      const maxIterations = Math.max(0, Number(step.maxIterations) || 0);
+      edges.push({
+        workflowId,
+        workflowName: workflow.name || workflowId,
+        stepId: String(step.id || ""),
+        stepName: step.name || step.type || step.id,
+        stepType: step.type || "",
+        targetWorkflowId,
+        targetWorkflowName: workflowById.get(targetWorkflowId)?.name || targetWorkflowId,
+        maxIterations,
+        bounded: maxIterations > 0,
+      });
+    }
+  }
+  const edgesByWorkflow = new Map();
+  for (const edge of edges) {
+    const group = edgesByWorkflow.get(edge.workflowId) || [];
+    group.push(edge);
+    edgesByWorkflow.set(edge.workflowId, group);
+  }
+  const findings = [];
+  for (const edge of edges.filter((item) => !item.bounded)) {
+    const path = workflowJumpPathToWorkflow(edge.targetWorkflowId, edge.workflowId, edgesByWorkflow);
+    if (!path) continue;
+    findings.push({
+      ...edge,
+      cycleWorkflowIds: [edge.workflowId, ...path.workflowIds],
+      cycleWorkflowNames: [edge.workflowName, ...path.workflowIds.map((id) => workflowById.get(id)?.name || id)],
+    });
+  }
+  return findings;
+}
+
+function workflowJumpPathToWorkflow(startWorkflowId, targetWorkflowId, edgesByWorkflow) {
+  const stack = [{ workflowId: startWorkflowId, path: [startWorkflowId] }];
+  const visited = new Set();
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || visited.has(current.workflowId)) continue;
+    if (current.workflowId === targetWorkflowId) return { workflowIds: current.path };
+    visited.add(current.workflowId);
+    for (const edge of edgesByWorkflow.get(current.workflowId) || []) {
+      if (visited.has(edge.targetWorkflowId)) continue;
+      stack.push({ workflowId: edge.targetWorkflowId, path: [...current.path, edge.targetWorkflowId] });
+    }
+  }
+  return null;
+}
+
 export function insertWorkflowJumpIntoRunPlan(session, runPlan, insertIndex, request, options = {}) {
   const {
     workflowById = () => null,

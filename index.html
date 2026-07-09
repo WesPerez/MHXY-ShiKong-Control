@@ -286,14 +286,6 @@
                     <input id="step-enabled" type="checkbox" />
                     启用此步骤
                   </label>
-                  <label class="raw-field">
-                    兼容目标
-                    <input id="step-target" type="text" />
-                  </label>
-                  <label class="raw-field">
-                    兼容参数
-                    <input id="step-command" type="text" />
-                  </label>
                   <section id="step-param-panel" class="param-panel" aria-label="结构化步骤参数">
                     <div class="param-panel-head">
                       <strong>常用参数</strong>
@@ -391,26 +383,22 @@
                     </div>
                     <div class="param-grid" data-step-types="condition">
                       <label>
-                        状态目标
-                        <input id="param-condition-target" type="text" placeholder="state.flag" />
+                        条件标签
+                        <input id="param-condition-target" type="text" placeholder="last.score" />
                       </label>
                       <label>
                         Guard
                         <input id="param-condition-guard" type="text" placeholder="true 或 >0" />
                       </label>
                     </div>
-                    <div class="param-grid" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition retry_until snapshot task_jump">
+                    <div class="param-section-title" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition retry_until snapshot task_jump restore">
+                      <strong>流程</strong>
+                      <span>默认执行下一步，只配置需要改变顺序的地方</span>
+                    </div>
+                    <div class="param-grid" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition retry_until snapshot">
                       <label>
                         成功/True 跳转
                         <select id="param-control-target-step"></select>
-                      </label>
-                      <label>
-                        任务跳转
-                        <select id="param-control-workflow-jump"></select>
-                      </label>
-                      <label>
-                        循环/任务跳转上限
-                        <input id="param-control-max-iterations" type="number" min="0" step="1" />
                       </label>
                     </div>
                     <div class="param-grid" data-step-types="condition">
@@ -425,6 +413,19 @@
                         <select id="param-control-recovery-step"></select>
                       </label>
                     </div>
+                    <details id="step-flow-advanced" class="advanced-fields flow-advanced" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition retry_until snapshot task_jump">
+                      <summary>跨任务 / 循环保护</summary>
+                      <div class="param-grid">
+                        <label>
+                          任务跳转
+                          <select id="param-control-workflow-jump"></select>
+                        </label>
+                        <label>
+                          循环/任务跳转上限
+                          <input id="param-control-max-iterations" type="number" min="0" step="1" />
+                        </label>
+                      </div>
+                    </details>
                     <div class="param-grid" data-step-types="retry_until">
                       <label>
                         等待目标
@@ -442,6 +443,18 @@
                     <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
                     <p class="hint" data-step-types="snapshot restore">此类型当前不发送鼠标键盘输入；失败恢复只会在失败步骤同时配置 onFail=restore 和恢复入口时生效。</p>
                   </section>
+                  <details id="step-compat-fields" class="advanced-fields compat-fields">
+                    <summary>高级兼容字段</summary>
+                    <p class="hint">这些字段用于旧任务导入、调试和脚本兼容。常用参数会自动同步到这里。</p>
+                    <label class="raw-field">
+                      兼容目标
+                      <input id="step-target" type="text" />
+                    </label>
+                    <label class="raw-field">
+                      兼容参数
+                      <input id="step-command" type="text" />
+                    </label>
+                  </details>
                   <label>
                     成功确认
                     <input id="step-expect" type="text" />
@@ -574,6 +587,7 @@
             <textarea id="workspace-json" spellcheck="false"></textarea>
             <div id="run-summary" class="run-summary">等待定义</div>
             <div id="session-lanes" class="session-lanes"></div>
+            <div id="failure-report-board" class="failure-report-board" aria-live="polite"></div>
             <div id="run-log" class="run-log"></div>
           </section>
         </section>

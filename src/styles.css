@@ -364,11 +364,11 @@ h3 {
 .run-panel {
   grid-area: run;
   display: grid;
-  grid-template-columns: 380px minmax(260px, 0.7fr) minmax(0, 1fr);
+  grid-template-columns: 320px minmax(250px, 0.66fr) minmax(320px, 1fr) minmax(280px, 0.9fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "run-title run-actions run-json"
-    "summary sessions logs";
+    "run-title run-actions run-actions run-json"
+    "summary sessions reports logs";
   gap: 10px;
   border-top: 1px solid #2a3034;
   border-bottom: 0;
@@ -1611,6 +1611,30 @@ label {
   white-space: nowrap;
 }
 
+.param-section-title {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  min-height: 24px;
+  border-top: 1px solid #293135;
+  padding-top: 9px;
+}
+
+.param-section-title strong {
+  color: #d8d0c4;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.param-section-title span {
+  overflow: hidden;
+  color: #87949c;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .param-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1619,6 +1643,39 @@ label {
 
 .step-editor .raw-field {
   order: 20;
+}
+
+.advanced-fields {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #293135;
+  border-radius: 7px;
+  background: #101416;
+  padding: 8px;
+}
+
+.advanced-fields summary {
+  cursor: pointer;
+  color: #c9d2d8;
+  font-size: 12px;
+  font-weight: 720;
+  list-style-position: outside;
+}
+
+.advanced-fields summary:hover {
+  color: #f1ecdf;
+}
+
+.advanced-fields[open] summary {
+  margin-bottom: 8px;
+}
+
+.advanced-fields.flow-advanced {
+  background: #11181a;
+}
+
+.advanced-fields.compat-fields {
+  border-style: dashed;
 }
 
 .hint {
@@ -1786,6 +1843,114 @@ label {
   grid-area: sessions;
 }
 
+.failure-report-board {
+  grid-area: reports;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.failure-report-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #a8b2b9;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.failure-report-head span {
+  color: #7f8c94;
+  font-weight: 650;
+}
+
+.failure-report {
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  border: 1px solid #553b36;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(217, 130, 118, 0.1), transparent 42%),
+    #141719;
+  padding: 8px;
+}
+
+.failure-report.stopped {
+  border-color: #65572f;
+  background:
+    linear-gradient(135deg, rgba(215, 169, 75, 0.1), transparent 42%),
+    #141719;
+}
+
+.failure-report.done {
+  border-color: #355445;
+}
+
+.failure-report-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.failure-report-title strong,
+.failure-report-title small,
+.failure-report p,
+.failure-report li,
+.failure-report code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.failure-report-title strong,
+.failure-report-title small {
+  display: block;
+  white-space: nowrap;
+}
+
+.failure-report-title small,
+.failure-report p,
+.failure-report li {
+  color: #9aa6ad;
+  font-size: 11px;
+  line-height: 1.42;
+}
+
+.failure-report p {
+  display: -webkit-box;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.failure-report ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.failure-report li {
+  white-space: nowrap;
+}
+
+.failure-report-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.failure-report-actions button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
 .session-lane {
   display: grid;
   gap: 6px;
@@ -1913,7 +2078,12 @@ progress::-webkit-progress-value {
   }
 
   .run-panel {
-    grid-template-columns: 320px minmax(220px, 0.8fr) minmax(0, 1fr);
+    grid-template-columns: 300px minmax(220px, 0.75fr) minmax(300px, 1fr);
+    grid-template-areas:
+      "run-title run-actions run-json"
+      "summary sessions reports"
+      "logs logs logs";
+    grid-template-rows: auto minmax(0, 1fr) minmax(84px, 0.45fr);
   }
 }
 
@@ -1953,13 +2123,14 @@ progress::-webkit-progress-value {
 
   .run-panel {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(92px, auto) minmax(110px, 1fr) minmax(110px, 1fr) minmax(110px, 1fr);
+    grid-template-rows: auto auto minmax(92px, auto) minmax(110px, 0.8fr) minmax(110px, 1fr) minmax(140px, 1fr) minmax(110px, 1fr);
     grid-template-areas:
       "run-title"
       "run-actions"
       "run-json"
       "summary"
       "sessions"
+      "reports"
       "logs";
   }
 }

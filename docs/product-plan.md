@@ -24,9 +24,10 @@
 - 已有实体：`Workflow`、`Step`、`Target`、`WindowAssignment`、`RunSession`、`runHistory`。
 - 已有运行：观察运行、后台运行 beta、每 hwnd 互斥、不同 hwnd 并行、队列错峰和任务后间隔。
 - 已有后台动作：`hotkey`、`text_input`、`click`、`double_click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
+- 已有报告：运行面板会从 `runHistory` 提取失败/停止报告，显示失败原因、失败步骤、窗口身份、最近步骤轨迹和控制流摘要，并支持定位步骤与复制单条报告 JSON。
 - 已知缺口：专用 `loop`、`restore` 步骤自身的真实输入序列、后端事件流和管理员环境下的双击 live 验收尚未完成。
 - 当前安全语义：`unsupported` 和 `error` 强制停止；识图/OCR/缺素材类失败在重试耗尽后默认停止，只有 `onFail=skip` 才继续。
-- 当前 readiness 会校验 v7 同任务跳转、失败恢复入口和任务跳转引用；后向跳转以及跳回当前任务的 `task_jump` 必须有 `maxIterations`。`restore` 步骤本身仍标记为计划态，避免误报成完整返航动作。
+- 当前 readiness 会校验 v7 同任务跳转、失败恢复入口和任务跳转引用；后向跳转、跳回当前任务的 `task_jump` 必须有 `maxIterations`；跨任务环内任意未设上限的 `task_jump` 会阻塞后台运行，直到该跳转补上最大循环次数。`restore` 步骤本身仍标记为计划态，避免误报成完整返航动作。
 
 ## 数据方案
 
@@ -42,7 +43,7 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `normalizeStep` 保留新字段，并从旧 `command` 中尽量回填兼容参数。
 - 复制任务时重映射同任务内 step id 引用，避免跳到原任务步骤。
 - 单步复制会清空控制流引用，避免插入步骤带着旧上下文跳转。
-- 导入和后台 readiness 会校验跳转目标存在、未停用、非自环；同任务 `targetStepId/elseTargetStepId` 会被指令指针 runner 执行，后向跳转必须设置 `maxIterations`。
+- 导入会保留并规范化控制流字段；后台 readiness 会校验跳转目标存在、未停用、非自环；同任务 `targetStepId/elseTargetStepId` 会被指令指针 runner 执行，后向跳转必须设置 `maxIterations`。
 - 保存仍使用临时文件 + rename；损坏 JSON 应保留错误提示，不自动覆盖用户数据。
 
 ## 运行器方案
@@ -52,11 +53,11 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `delay`、pre/post delay、队列等待都必须可取消。
 - `retry_until` 只对图片、ROI 或坐标目标做等待循环；纯状态目标阻止后台运行。
 - 使用 `pc` 指令指针执行，而不是 `for...of`。
-- 设置全局 `MAX_CONTROL_FLOW_STEPS`，并用每个后向跳转/任务跳回当前任务的 `maxIterations` 防止无限循环。
+- 设置全局 `MAX_CONTROL_FLOW_STEPS`，并用后向跳转、任务跳回当前任务，以及跨任务环内每条参与循环的 `task_jump` 的 `maxIterations` 防止无限循环。
 - `condition` 根据结构化 guard 和上一步/会话状态决定 true/false 目标。
 - 普通成功步骤可用 `targetStepId` 跳到同一 workflow 内已启用步骤；后向跳转必须有次数上限。
 - `onFail=restore` 可在可恢复失败后跳到同任务 `recoveryStepId`；恢复分支执行到任务末尾后停止当前窗口队列，并在失败报告中保留原失败点。
-- `task_jump` / `jumpWorkflowId` 可在当前 hwnd 会话内插入目标 workflow；插入项只进入本次 `RunSession.queuePlan`，不改写持久化窗口队列，并受 `MAX_WORKFLOW_JUMPS` 与可选 `maxIterations` 保护。
+- `task_jump` / `jumpWorkflowId` 可在当前 hwnd 会话内插入目标 workflow；插入项只进入本次 `RunSession.queuePlan`，不改写持久化窗口队列，并受 `MAX_WORKFLOW_JUMPS` 与可选 `maxIterations` 保护；一旦多个任务互跳形成环，环内没有上限的跳转会被后台 readiness 阻止。
 - 每次控制流决策会写入 `runHistory[].controlFlowTransitions[]`，记录 taken/skipped/fallthrough、guard 结果、目标步骤、后向跳转次数和跳过原因。
 
 未落地的 v7 边界：
@@ -80,7 +81,7 @@ schema v7 继续使用结构化 JSON + 原子写入：
 
 - 左侧：窗口列表和窗口队列，显示 hwnd、标题、PID、权限、队列数量和运行状态。
 - 中部：任务库和步骤时间线，支持新增、复制、排序、禁用、校验和演练。
-- 右侧：步骤参数、素材/目标库、预览验证和失败报告。
+- 右侧：步骤参数、素材/目标库、预览验证和失败报告；运行区应能直接定位失败步骤并复制报告证据。
 - 顶部：后台就绪状态，按任务和步骤提示缺图片、缺坐标、缺 OCR 文本、缺窗口、权限不足、计划态步骤和可执行提醒。
 - 常用动作少步骤完成：粘贴图片、采点、绑定目标、添加步骤、分配窗口、观察运行、后台运行。
 
@@ -136,7 +137,7 @@ cargo clippy --all-targets -- -D warnings
 2. 用管理员环境补 `double_click` 真实游戏窗口验收，确认游戏对后台双击消息的响应。
 3. 扩展 schema v7 控制流：补专用 loop，并为恢复后重试/继续队列设计明确语义。
 4. 继续完善前端 runner，把失败恢复从“恢复后停止”扩展到可选择的重试/继续策略。
-5. 实现可执行 `restore` 恢复片段模板和失败恢复报告详情页。
+5. 实现可执行 `restore` 恢复片段模板，并扩展失败分析导出、截图证据和恢复后重试/继续策略。
 6. 将 runner 逐步迁到 Rust 事件流，前端只订阅状态和渲染报告。
 
 ## 回滚策略
