@@ -7,8 +7,8 @@ mod tray;
 use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
-    capture_client_rgb, current_process_elevated, list_windows, post_hotkey, post_mouse_click,
-    post_text, window_for_hwnd, HwndPoint, RgbFrame,
+    capture_client_rgb, capture_client_rgb_strict, current_process_elevated, list_windows,
+    post_hotkey, post_mouse_click, post_text, window_for_hwnd, HwndPoint, RgbFrame,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -217,6 +217,7 @@ const MAX_TEMPLATE_PIXELS: u64 = 2_000_000;
 const MAX_OCR_PIXELS: u64 = 4_000_000;
 const MAX_TEXT_INPUT_CHARS: usize = 500;
 const WINDOW_CLIENT_SIZE_TOLERANCE: u32 = 2;
+const TARGET_TITLE_NEEDLE: &str = "梦幻西游：时空";
 
 #[tauri::command]
 fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, String> {
@@ -225,7 +226,7 @@ fn list_game_windows(title_needle: String) -> Result<Vec<platform::AppWindow>, S
 
 #[tauri::command]
 fn current_window_identity(hwnd: isize) -> Result<platform::AppWindow, String> {
-    window_for_hwnd(hwnd)
+    target_window_for_hwnd(hwnd)
 }
 
 #[tauri::command]
@@ -410,7 +411,11 @@ fn execute_workflow_step(
 }
 
 #[tauri::command]
-fn capture_window_preview(hwnd: isize) -> Result<PreviewImage, String> {
+fn capture_window_preview(
+    hwnd: isize,
+    expected_window: Option<ExpectedWindowInput>,
+) -> Result<PreviewImage, String> {
+    validate_expected_window(hwnd, expected_window.as_ref())?;
     let frame = capture_client_rgb(hwnd)?;
     let png = encode_png(&frame)?;
     Ok(PreviewImage {
@@ -424,7 +429,11 @@ fn capture_window_preview(hwnd: isize) -> Result<PreviewImage, String> {
 }
 
 #[tauri::command]
-fn save_window_snapshot(hwnd: isize) -> Result<SnapshotResult, String> {
+fn save_window_snapshot(
+    hwnd: isize,
+    expected_window: Option<ExpectedWindowInput>,
+) -> Result<SnapshotResult, String> {
+    validate_expected_window(hwnd, expected_window.as_ref())?;
     let frame = capture_client_rgb(hwnd)?;
     let root = project_root()?;
     let dir = root
@@ -596,7 +605,7 @@ fn validate_expected_window(
         return Err("expected window identity is required for background dispatch".to_string());
     };
     validate_expected_window_argument(hwnd, expected)?;
-    let current = window_for_hwnd(hwnd)?;
+    let current = target_window_for_hwnd(hwnd)?;
     compare_expected_window(&current, expected)
 }
 
@@ -613,6 +622,39 @@ fn validate_expected_window_argument(
             hwnd, expected_hwnd
         ));
     }
+    let title = non_empty_option(expected.title.as_deref()).ok_or_else(|| {
+        "expected window identity must include title for background dispatch".to_string()
+    })?;
+    if !title.contains(TARGET_TITLE_NEEDLE) {
+        return Err(format!(
+            "target window identity mismatch: title {:?} does not contain {:?}",
+            title, TARGET_TITLE_NEEDLE
+        ));
+    }
+    expected
+        .process_id
+        .filter(|value| *value != 0)
+        .ok_or_else(|| {
+            "expected window identity must include processId for background dispatch".to_string()
+        })?;
+    non_empty_option(expected.process_name.as_deref()).ok_or_else(|| {
+        "expected window identity must include processName for background dispatch".to_string()
+    })?;
+    expected
+        .client_width
+        .filter(|value| *value > 0)
+        .ok_or_else(|| {
+            "expected window identity must include clientWidth for background dispatch".to_string()
+        })?;
+    expected
+        .client_height
+        .filter(|value| *value > 0)
+        .ok_or_else(|| {
+            "expected window identity must include clientHeight for background dispatch".to_string()
+        })?;
+    expected.elevated.ok_or_else(|| {
+        "expected window identity must include elevated for background dispatch".to_string()
+    })?;
     Ok(())
 }
 
@@ -620,62 +662,72 @@ fn compare_expected_window(
     current: &platform::AppWindow,
     expected: &ExpectedWindowInput,
 ) -> Result<(), String> {
-    if let Some(hwnd) = expected.hwnd.filter(|value| *value != 0) {
-        if current.hwnd != hwnd {
-            return Err(format!(
-                "target window identity mismatch: hwnd changed from {} to {}",
-                hwnd, current.hwnd
-            ));
-        }
+    validate_expected_window_argument(current.hwnd, expected)?;
+    let hwnd = expected.hwnd.unwrap_or_default();
+    if current.hwnd != hwnd {
+        return Err(format!(
+            "target window identity mismatch: hwnd changed from {} to {}",
+            hwnd, current.hwnd
+        ));
     }
-    if let Some(title) = non_empty_option(expected.title.as_deref()) {
-        if current.title != title {
-            return Err(format!(
-                "target window identity mismatch: title changed from {:?} to {:?}",
-                title, current.title
-            ));
-        }
+    let title = non_empty_option(expected.title.as_deref()).unwrap_or_default();
+    if current.title != title {
+        return Err(format!(
+            "target window identity mismatch: title changed from {:?} to {:?}",
+            title, current.title
+        ));
     }
-    if let Some(process_id) = expected.process_id.filter(|value| *value != 0) {
-        if current.process_id != process_id {
-            return Err(format!(
-                "target window identity mismatch: pid changed from {} to {}",
-                process_id, current.process_id
-            ));
-        }
+    let process_id = expected.process_id.unwrap_or_default();
+    if current.process_id != process_id {
+        return Err(format!(
+            "target window identity mismatch: pid changed from {} to {}",
+            process_id, current.process_id
+        ));
     }
-    if let Some(process_name) = non_empty_option(expected.process_name.as_deref()) {
-        if !current.process_name.eq_ignore_ascii_case(process_name) {
-            return Err(format!(
-                "target window identity mismatch: process changed from {:?} to {:?}",
-                process_name, current.process_name
-            ));
-        }
+    let process_name = non_empty_option(expected.process_name.as_deref()).unwrap_or_default();
+    if !current.process_name.eq_ignore_ascii_case(process_name) {
+        return Err(format!(
+            "target window identity mismatch: process changed from {:?} to {:?}",
+            process_name, current.process_name
+        ));
     }
-    if let Some(client_width) = expected.client_width.filter(|value| *value > 0) {
-        if current.client_width.abs_diff(client_width) > WINDOW_CLIENT_SIZE_TOLERANCE {
-            return Err(format!(
-                "target window identity mismatch: client width changed from {} to {}",
-                client_width, current.client_width
-            ));
-        }
+    let client_width = expected.client_width.unwrap_or_default();
+    if current.client_width.abs_diff(client_width) > WINDOW_CLIENT_SIZE_TOLERANCE {
+        return Err(format!(
+            "target window identity mismatch: client width changed from {} to {}",
+            client_width, current.client_width
+        ));
     }
-    if let Some(client_height) = expected.client_height.filter(|value| *value > 0) {
-        if current.client_height.abs_diff(client_height) > WINDOW_CLIENT_SIZE_TOLERANCE {
-            return Err(format!(
-                "target window identity mismatch: client height changed from {} to {}",
-                client_height, current.client_height
-            ));
-        }
+    let client_height = expected.client_height.unwrap_or_default();
+    if current.client_height.abs_diff(client_height) > WINDOW_CLIENT_SIZE_TOLERANCE {
+        return Err(format!(
+            "target window identity mismatch: client height changed from {} to {}",
+            client_height, current.client_height
+        ));
     }
-    if let Some(elevated) = expected.elevated {
-        if current.elevated != Some(elevated) {
-            return Err(format!(
-                "target window identity mismatch: elevation changed from {:?} to {:?}",
-                Some(elevated),
-                current.elevated
-            ));
-        }
+    let elevated = expected.elevated.unwrap_or(false);
+    if current.elevated != Some(elevated) {
+        return Err(format!(
+            "target window identity mismatch: elevation changed from {:?} to {:?}",
+            Some(elevated),
+            current.elevated
+        ));
+    }
+    Ok(())
+}
+
+fn target_window_for_hwnd(hwnd: isize) -> Result<platform::AppWindow, String> {
+    let window = window_for_hwnd(hwnd)?;
+    validate_target_window_record(&window)?;
+    Ok(window)
+}
+
+fn validate_target_window_record(window: &platform::AppWindow) -> Result<(), String> {
+    if !window.title.contains(TARGET_TITLE_NEEDLE) {
+        return Err(format!(
+            "target window rejected: title {:?} does not contain {:?}",
+            window.title, TARGET_TITLE_NEEDLE
+        ));
     }
     Ok(())
 }
@@ -751,7 +803,11 @@ fn dispatch_image_step(
     let button = command_value(&step.command, "button").unwrap_or("left");
     let threshold = image_threshold(step)?;
     if let Some(data_url) = template_data_url(step) {
-        let frame = capture_client_rgb(hwnd)?;
+        let frame = if execute_click {
+            capture_client_rgb_strict(hwnd)?
+        } else {
+            capture_client_rgb(hwnd)?
+        };
         let template = load_image_data_url_rgb(data_url)?;
         let search_roi = scaled_roi(step.roi, frame.width, frame.height);
         let matched = match_template(&frame, &template, search_roi)?;
@@ -1832,6 +1888,61 @@ fn timestamp() -> u64 {
         .unwrap_or_default()
 }
 
+fn main() {
+    platform::configure_process_dpi_awareness();
+    if single_instance::notify_existing_instance(single_instance::DEFAULT_NOTIFY_TIMEOUT) {
+        return;
+    }
+    tauri::Builder::default()
+        .setup(|app| {
+            tray::setup(app)?;
+            let app_handle = app.handle().clone();
+            match single_instance::start_listener(move || {
+                let handle = app_handle.clone();
+                let _ = app_handle.run_on_main_thread(move || {
+                    tray::show_main_window(&handle);
+                });
+            }) {
+                Ok(guard) => {
+                    app.manage(guard);
+                }
+                Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
+                    if single_instance::notify_existing_instance(
+                        single_instance::DEFAULT_NOTIFY_TIMEOUT,
+                    ) {
+                        app.handle().exit(0);
+                    }
+                }
+                Err(_) => {}
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            tray::handle_window_event(window, event);
+        })
+        .on_menu_event(|app, event| {
+            tray::handle_menu_event(app, event);
+        })
+        .invoke_handler(tauri::generate_handler![
+            list_game_windows,
+            privilege_status,
+            restart_as_admin,
+            launch_game_client,
+            game_launch_status,
+            load_workflow_workspace,
+            save_workflow_workspace,
+            current_window_identity,
+            execute_workflow_step,
+            capture_window_preview,
+            save_window_snapshot,
+            import_preview_image,
+            import_clipboard_image,
+            load_builtin_target_templates
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running shikong workflow app");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2153,17 +2264,26 @@ mod tests {
     }
 
     #[test]
-    fn ignores_empty_expected_window_fields() {
+    fn rejects_incomplete_expected_window_fields() {
         let expected = ExpectedWindowInput {
-            hwnd: Some(0),
-            title: Some(" ".to_string()),
-            process_id: Some(0),
+            hwnd: Some(42),
+            title: Some("梦幻西游：时空".to_string()),
+            process_id: Some(1234),
             process_name: None,
-            client_width: Some(0),
-            client_height: Some(0),
-            elevated: None,
+            client_width: Some(1264),
+            client_height: Some(720),
+            elevated: Some(true),
         };
-        assert!(compare_expected_window(&fake_window(), &expected).is_ok());
+        let error = compare_expected_window(&fake_window(), &expected).unwrap_err();
+        assert!(error.contains("processName"));
+    }
+
+    #[test]
+    fn rejects_non_target_window_title() {
+        let mut expected = expected_from_window(&fake_window());
+        expected.title = Some("另一个窗口".to_string());
+        let error = validate_expected_window_argument(42, &expected).unwrap_err();
+        assert!(error.contains("does not contain"));
     }
 
     #[test]
@@ -2199,7 +2319,7 @@ mod tests {
     fn rejects_title_mismatch() {
         let expected = ExpectedWindowInput {
             hwnd: Some(42),
-            title: Some("另一个窗口".to_string()),
+            title: Some("梦幻西游：时空 - 另一个".to_string()),
             process_id: Some(1234),
             process_name: Some("MyGame_x64r".to_string()),
             client_width: Some(1264),
@@ -2567,59 +2687,4 @@ mod tests {
             Some("data:image/png;base64,asset")
         );
     }
-}
-
-fn main() {
-    platform::configure_process_dpi_awareness();
-    if single_instance::notify_existing_instance(single_instance::DEFAULT_NOTIFY_TIMEOUT) {
-        return;
-    }
-    tauri::Builder::default()
-        .setup(|app| {
-            tray::setup(app)?;
-            let app_handle = app.handle().clone();
-            match single_instance::start_listener(move || {
-                let handle = app_handle.clone();
-                let _ = app_handle.run_on_main_thread(move || {
-                    tray::show_main_window(&handle);
-                });
-            }) {
-                Ok(guard) => {
-                    app.manage(guard);
-                }
-                Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
-                    if single_instance::notify_existing_instance(
-                        single_instance::DEFAULT_NOTIFY_TIMEOUT,
-                    ) {
-                        app.handle().exit(0);
-                    }
-                }
-                Err(_) => {}
-            }
-            Ok(())
-        })
-        .on_window_event(|window, event| {
-            tray::handle_window_event(window, event);
-        })
-        .on_menu_event(|app, event| {
-            tray::handle_menu_event(app, event);
-        })
-        .invoke_handler(tauri::generate_handler![
-            list_game_windows,
-            privilege_status,
-            restart_as_admin,
-            launch_game_client,
-            game_launch_status,
-            load_workflow_workspace,
-            save_workflow_workspace,
-            current_window_identity,
-            execute_workflow_step,
-            capture_window_preview,
-            save_window_snapshot,
-            import_preview_image,
-            import_clipboard_image,
-            load_builtin_target_templates
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running shikong workflow app");
 }

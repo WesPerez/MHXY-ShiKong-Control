@@ -1457,6 +1457,7 @@ function renderWorkflowList() {
       renderSteps();
       renderStepEditor();
       renderTargets();
+      renderOpsDashboard();
       setStatus(`已选择任务：${item.name}`);
     });
     list.append(button);
@@ -1712,7 +1713,7 @@ function queueExerciseSuiteForTargets(workflows, targets, options = {}) {
   return { queued, skipped, queueSizes, staggerMs, gapMs };
 }
 
-function newWorkflow() {
+async function newWorkflow() {
   const blueprint = workflowBlueprintById($("#workflow-blueprint-select")?.value);
   const prefix = String($("#workflow-name-prefix")?.value || blueprint.defaultPrefix || "新任务").trim();
   const workflow = createWorkflowFromBlueprint(blueprint, 1, prefix);
@@ -1720,6 +1721,7 @@ function newWorkflow() {
   state.workspace.activeWorkflowId = workflow.id;
   state.selectedStepId = workflow.steps[0]?.id || null;
   selectFirstUnboundCapturedStep(workflow.steps);
+  await hydrateBuiltinTargetTemplates({ log: true });
   markDirty("draft");
   renderAll();
 }
@@ -3765,7 +3767,10 @@ async function capturePreview() {
 
   updateActiveMeta();
   try {
-    const preview = await invokeBackend("capture_window_preview", { hwnd: Number(target.hwnd) });
+    const preview = await invokeBackend("capture_window_preview", {
+      hwnd: Number(target.hwnd),
+      expectedWindow: windowIdentityForTarget(target),
+    });
     setPreviewImage(preview.dataUrl, preview.width, preview.height, "window");
     updateActiveMeta(`${target.display} · ${preview.width}x${preview.height} · hwnd=${target.hwnd}`);
     setStatus("窗口预览已刷新");
@@ -3832,7 +3837,10 @@ async function saveSnapshot() {
     return;
   }
   try {
-    const result = await invokeBackend("save_window_snapshot", { hwnd: Number(target.hwnd) });
+    const result = await invokeBackend("save_window_snapshot", {
+      hwnd: Number(target.hwnd),
+      expectedWindow: windowIdentityForTarget(target),
+    });
     setStatus(`已保存截图：${result.savedPath}`);
     appendLog("info", `截图保存：${result.savedPath}`);
   } catch (error) {
@@ -5129,7 +5137,9 @@ function requiredBackgroundWindowIdentityIssue(identity) {
   if (!value.hwnd) return "缺少 hwnd";
   if (!value.title) return "缺少窗口标题";
   if (!value.processId) return "缺少进程 PID";
+  if (!value.processName) return "缺少进程名";
   if (!value.clientWidth || !value.clientHeight) return "缺少客户区尺寸";
+  if (typeof value.elevated !== "boolean") return "缺少权限状态";
   return "";
 }
 

@@ -73,6 +73,7 @@
 
 ```powershell
 python scripts\audit_input_safety.py --json
+python scripts\audit_workflow_readiness.py --json
 python scripts\audit_queue_readiness.py --json
 ```
 
@@ -82,10 +83,14 @@ python scripts\audit_queue_readiness.py --json
 cd E:\Project\Common\MHXY-ShiKong-Control
 npm install
 npm run build
+npm run audit:input-safety
+npm run audit:workflow-readiness
 npm run audit:queue-readiness
 cd src-tauri
+cargo fmt --check
 cargo check
 cargo test
+cargo clippy --all-targets -- -D warnings
 ```
 
 打包：

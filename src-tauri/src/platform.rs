@@ -83,6 +83,16 @@ pub fn capture_client_rgb(_hwnd: isize) -> Result<RgbFrame, String> {
 }
 
 #[cfg(windows)]
+pub fn capture_client_rgb_strict(hwnd: isize) -> Result<RgbFrame, String> {
+    windows_impl::capture_client_rgb_strict(hwnd)
+}
+
+#[cfg(not(windows))]
+pub fn capture_client_rgb_strict(_hwnd: isize) -> Result<RgbFrame, String> {
+    Err("strict window capture is only implemented on Windows".to_string())
+}
+
+#[cfg(windows)]
 pub fn current_process_elevated() -> bool {
     windows_impl::current_process_elevated()
 }
@@ -329,6 +339,16 @@ mod windows_impl {
             };
             capture_window_client(hwnd, width, height)
                 .or_else(|_| capture_screen_region(left, top, width, height))
+        }
+    }
+
+    pub fn capture_client_rgb_strict(hwnd: isize) -> Result<RgbFrame, String> {
+        unsafe {
+            let hwnd = HWND(hwnd as *mut c_void);
+            let Some((_, _, width, height)) = client_rect_on_screen(hwnd) else {
+                return Err("window client rect unavailable".to_string());
+            };
+            capture_window_client(hwnd, width, height)
         }
     }
 
