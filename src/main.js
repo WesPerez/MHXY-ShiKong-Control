@@ -188,6 +188,115 @@ const stepBlockPresets = [
   },
 ];
 
+const workflowBlueprints = [
+  {
+    id: "home-vitality",
+    label: "家园活力",
+    category: "家园",
+    defaultPrefix: "家园活力",
+    description: "打开家园/人物相关入口，按 OCR 和图像目标处理活力、打理与确认动作。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开功能面板", target: "ALT+N", command: "mode=hwnd-key", expect: "panel.open" },
+      { type: "delay", name: "等待面板动画", target: "800ms", command: "reason=panel_transition", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认功能面板", target: "家园", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "wait_image", name: "等待家园入口", target: "entry.home", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "进入家园", target: "entry.home", command: "button=left; point=center", expect: "home.panel.ready" },
+      { type: "retry_until", name: "等待家园页面", target: "page.home_yard.ready", command: "interval=700ms", expect: "ready=true", timeoutMs: 7000, retry: 3 },
+      { type: "wait_image", name: "等待打理按钮", target: "button.home_clean", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "执行打理", target: "button.home_clean", command: "button=left; point=center", expect: "action.accepted" },
+      { type: "delay", name: "等待反馈", target: "1000ms", command: "reason=server_response", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认活力状态", target: "活力", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "snapshot", name: "记录家园结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "daily-reward",
+    label: "福利签到",
+    category: "日常",
+    defaultPrefix: "福利签到",
+    description: "进入福利/活动页面，处理签到、确认弹窗和奖励记录。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开活动面板", target: "ALT+N", command: "mode=hwnd-key", expect: "activity.panel.open" },
+      { type: "wait_image", name: "等待福利入口", target: "button.welfare", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "进入福利页", target: "button.welfare", command: "button=left; point=center", expect: "welfare.visible" },
+      { type: "delay", name: "等待切页动画", target: "700ms", command: "reason=page_transition", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认福利标题", target: "福利", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "wait_image", name: "等待签到按钮", target: "button.sign_in", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "点击签到", target: "button.sign_in", command: "button=left; point=center", expect: "reward.popup" },
+      { type: "image_click", name: "确认奖励", target: "button.confirm", command: "button=left; point=center", expect: "popup.closed" },
+      { type: "retry_until", name: "等待福利页稳定", target: "page.welfare.ready", command: "interval=600ms", expect: "ready=true", timeoutMs: 5000, retry: 3 },
+      { type: "snapshot", name: "记录领取结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "bag-item-use",
+    label: "背包物品",
+    category: "背包",
+    defaultPrefix: "背包物品",
+    description: "打开背包，识别目标物品，支持左键选择、右键使用和确认弹窗。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开背包", target: "ALT+E", command: "mode=hwnd-key", expect: "bag.open" },
+      { type: "wait_image", name: "等待背包界面", target: "page.bag.ready", command: "threshold=0.85", expect: "visible" },
+      { type: "ocr_assert", name: "确认背包标题", target: "包裹", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "wait_image", name: "查找目标物品", target: "item.target", command: "threshold=0.88", expect: "visible" },
+      { type: "image_click", name: "选择目标物品", target: "item.target", command: "button=left; point=center", expect: "item.selected" },
+      { type: "image_click", name: "右键使用物品", target: "item.target", command: "button=right; point=center", expect: "action.accepted" },
+      { type: "delay", name: "等待服务器反馈", target: "1000ms", command: "reason=server_response", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认物品提示", target: "使用", command: "lang=zh; roi=dialog", expect: "text_found" },
+      { type: "image_click", name: "确认使用", target: "button.confirm", command: "button=left", expect: "popup.closed" },
+      { type: "snapshot", name: "记录物品结果", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "team-prep",
+    label: "组队准备",
+    category: "组队",
+    defaultPrefix: "组队准备",
+    description: "打开队伍界面，选择活动分类，等待目标活动并尝试申请或确认队伍状态。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开队伍", target: "ALT+T", command: "mode=hwnd-key", expect: "team.panel.open" },
+      { type: "wait_image", name: "等待组队按钮", target: "button.team_up", command: "threshold=0.84", expect: "visible" },
+      { type: "image_click", name: "进入组队", target: "button.team_up", command: "button=left; point=center", expect: "team.list.visible" },
+      { type: "ocr_assert", name: "确认组队标题", target: "组队", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "image_click", name: "选择活动分类", target: "tab.daily_activity", command: "button=left", expect: "activity.filter.ready" },
+      { type: "retry_until", name: "等待目标活动", target: "text.target_activity", command: "interval=800ms", expect: "text_found", timeoutMs: 7000, retry: 4 },
+      { type: "click", name: "点击第一条队伍", target: "list.row.1", command: "button=left; mode=hwnd-message", expect: "team.detail.open" },
+      { type: "image_click", name: "申请加入", target: "button.apply_join", command: "button=left", expect: "apply.sent" },
+      { type: "delay", name: "等待申请反馈", target: "1200ms", command: "reason=server_response", expect: "time.elapsed" },
+      { type: "snapshot", name: "记录队伍状态", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+  {
+    id: "guild-checkin",
+    label: "帮派签到",
+    category: "帮派",
+    defaultPrefix: "帮派签到",
+    description: "进入帮派福利，处理签到、累计奖励、结果确认和恢复。",
+    steps: [
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible" },
+      { type: "hotkey", name: "打开帮派", target: "ALT+B", command: "mode=hwnd-key", expect: "guild.panel.open" },
+      { type: "wait_image", name: "等待帮派页", target: "page.guild.ready", command: "threshold=0.84", expect: "visible" },
+      { type: "image_click", name: "进入帮派福利", target: "button.guild_welfare", command: "button=left", expect: "guild.welfare.ready" },
+      { type: "ocr_assert", name: "确认福利文字", target: "帮派福利", command: "lang=zh; roi=top", expect: "text_found" },
+      { type: "wait_image", name: "等待签到按钮", target: "button.guild_checkin", command: "threshold=0.86", expect: "visible" },
+      { type: "image_click", name: "点击签到", target: "button.guild_checkin", command: "button=left", expect: "reward.popup" },
+      { type: "image_click", name: "领取累计", target: "button.cumulative_reward", command: "button=left", expect: "maybe.reward" },
+      { type: "delay", name: "等待奖励动画", target: "900ms", command: "reason=reward_animation", expect: "time.elapsed" },
+      { type: "ocr_assert", name: "确认领取结果", target: "已领取", command: "lang=zh; roi=panel", expect: "text_found" },
+      { type: "snapshot", name: "记录帮派福利", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+      { type: "restore", name: "恢复主界面", target: "restore.home", command: "safe sequence", expect: "page.home.ready" },
+    ],
+  },
+];
+
 const state = {
   windows: [],
   selected: new Set(),
@@ -528,8 +637,8 @@ function createTargetCatalogFromWorkflows(workflows) {
   const byId = new Map();
   for (const workflow of workflows || []) {
     for (const item of workflow.steps || []) {
-      if (!targetBackedStepTypes.has(item.type) || !isLogicalTargetName(item.target)) continue;
-      const id = item.target.trim();
+      const id = catalogTargetIdForStep(item);
+      if (!id) continue;
       if (byId.has(id)) continue;
       byId.set(
         id,
@@ -591,6 +700,13 @@ function targetKindForStep(item) {
 
 function defaultThresholdForStep(item) {
   return ["image_click", "wait_image", "detect_page"].includes(item.type) ? DEFAULT_IMAGE_THRESHOLD : "";
+}
+
+function catalogTargetIdForStep(item) {
+  if (!targetBackedStepTypes.has(item?.type)) return "";
+  const explicitId = String(item.targetId || item.assetId || "").trim();
+  if (explicitId) return explicitId;
+  return isLogicalTargetName(item.target) ? item.target.trim() : "";
 }
 
 function normalizeAssignments(value, workflows = state.workspace.workflows) {
@@ -684,6 +800,7 @@ function markDirty(reason = "draft") {
   window.clearTimeout(state.saveTimer);
   state.saveTimer = window.setTimeout(saveWorkspaceNow, 500);
   renderWorkflowList();
+  renderQueueWorkflowPicker();
   renderAssignments();
 }
 
@@ -710,6 +827,21 @@ function activeWindow() {
 
 function selectedWindows() {
   return state.windows.filter((item) => state.selected.has(String(item.hwnd)));
+}
+
+function isQueueLocked(hwnd) {
+  return state.sessions[String(hwnd)]?.status === "running";
+}
+
+function selectedEditableWindows() {
+  const skipped = [];
+  const targets = selectedWindows().filter((target) => {
+    if (!isQueueLocked(target.hwnd)) return true;
+    skipped.push(target.display || target.hwnd);
+    return false;
+  });
+  if (skipped.length) appendLog("warn", `已跳过运行中的窗口队列：${skipped.join("，")}`);
+  return targets;
 }
 
 function assignmentForHwnd(hwnd) {
@@ -753,6 +885,38 @@ function queueWorkflowsForTarget(target) {
     .filter(Boolean);
 }
 
+function renumberQueue(queue) {
+  return queue.map((item, index) => normalizeQueueItem({ ...item, order: index + 1 }));
+}
+
+function selectedWorkflowIdsForQueue() {
+  const select = $("#queue-workflow-picker");
+  const selected = select ? [...select.selectedOptions].map((option) => option.value) : [];
+  if (selected.length) return selected;
+  return activeWorkflow()?.id ? [activeWorkflow().id] : [];
+}
+
+function queueItemForWorkflow(workflowId, order = 1) {
+  return normalizeQueueItem({
+    workflowId,
+    order,
+    addedAt: new Date().toISOString(),
+  });
+}
+
+function cloneQueueItems(queue) {
+  return (queue || [])
+    .filter((item) => workflowById(item.workflowId))
+    .map((item, index) =>
+      normalizeQueueItem({
+        workflowId: item.workflowId,
+        enabled: item.enabled,
+        order: index + 1,
+        addedAt: new Date().toISOString(),
+      }),
+    );
+}
+
 function totalQueuedWorkflows() {
   return Object.values(state.workspace.assignments || {}).reduce(
     (sum, assignment) => sum + (assignment.queue?.length || 0),
@@ -761,6 +925,8 @@ function totalQueuedWorkflows() {
 }
 
 function renderAll() {
+  fillWorkflowBlueprintSelect($("#workflow-blueprint-select"));
+  renderQueueWorkflowPicker();
   renderWorkflowList();
   renderWorkflowForm();
   renderSteps();
@@ -837,17 +1003,69 @@ function bindWorkflowInputs() {
   });
 }
 
-function newWorkflow() {
-  const workflow = normalizeWorkflow({
-    id: randomId("wf"),
-    name: "新任务",
-    category: "草稿",
-    description: "从这里开始组合检测、点击、等待和恢复步骤。",
-    steps: [createStep("detect_page"), createStep("hotkey"), createStep("wait_image")],
+function blueprintTargetId(definition, namespace) {
+  if (
+    !targetBackedStepTypes.has(definition.type) ||
+    !isLogicalTargetName(definition.target)
+  ) {
+    return "";
+  }
+  const group = definition.type === "ocr_assert" ? "ocr" : "target";
+  return `${namespace}.${group}.${definition.target.trim()}`;
+}
+
+function createBlueprintStep(definition, namespace) {
+  return normalizeStep({
+    ...definition,
+    id: randomId("step"),
+    targetId: blueprintTargetId(definition, namespace),
   });
+}
+
+function createWorkflowFromBlueprint(blueprintInput, index = 1, namePrefix = "") {
+  const blueprint = typeof blueprintInput === "string" ? workflowBlueprintById(blueprintInput) : blueprintInput;
+  const workflowId = randomId("wf");
+  const namespace = `task.${blueprint.id}.${workflowId}`;
+  const prefix = String(namePrefix || blueprint.defaultPrefix || blueprint.label || "任务").trim();
+  const workflow = normalizeWorkflow({
+    id: workflowId,
+    name: index > 1 ? `${prefix} ${index}` : prefix,
+    category: blueprint.category || "草稿",
+    description: blueprint.description || "",
+    tags: ["蓝图", blueprint.label || blueprint.id],
+    steps: blueprint.steps.map((item) => createBlueprintStep(item, namespace)),
+  });
+  ensureTargetsForSteps(workflow.steps);
+  return workflow;
+}
+
+function createWorkflowBatch(options = {}) {
+  const blueprint = workflowBlueprintById(options.blueprintId || $("#workflow-blueprint-select")?.value);
+  const countInput = Number($("#workflow-batch-count")?.value || 1);
+  const count = Math.max(1, Math.min(10, Math.floor(Number.isFinite(countInput) ? countInput : 1)));
+  const prefix = String(options.namePrefix ?? $("#workflow-name-prefix")?.value ?? "").trim();
+  const workflows = Array.from({ length: count }, (_, index) =>
+    createWorkflowFromBlueprint(blueprint, index + 1, prefix),
+  );
+  state.workspace.workflows.unshift(...workflows);
+  state.workspace.activeWorkflowId = workflows[0]?.id || state.workspace.activeWorkflowId;
+  state.selectedStepId = workflows[0]?.steps[0]?.id || null;
+  selectFirstUnboundCapturedStep(workflows[0]?.steps || []);
+  markDirty("draft");
+  renderAll();
+  appendLog("info", `按蓝图生成 ${workflows.length} 个任务：${blueprint.label}`);
+  if (options.assignToSelected) assignWorkflowsToSelected(workflows);
+  return workflows;
+}
+
+function newWorkflow() {
+  const blueprint = workflowBlueprintById($("#workflow-blueprint-select")?.value);
+  const prefix = String($("#workflow-name-prefix")?.value || blueprint.defaultPrefix || "新任务").trim();
+  const workflow = createWorkflowFromBlueprint(blueprint, 1, prefix);
   state.workspace.workflows.unshift(workflow);
   state.workspace.activeWorkflowId = workflow.id;
   state.selectedStepId = workflow.steps[0]?.id || null;
+  selectFirstUnboundCapturedStep(workflow.steps);
   markDirty("draft");
   renderAll();
 }
@@ -903,6 +1121,48 @@ function fillStepBlockSelect(select) {
       const option = document.createElement("option");
       option.value = preset.id;
       option.textContent = preset.label;
+      return option;
+    }),
+  );
+}
+
+function workflowBlueprintById(id) {
+  return workflowBlueprints.find((item) => item.id === id) || workflowBlueprints[0];
+}
+
+function fillWorkflowBlueprintSelect(select) {
+  if (!select) return;
+  const current = select.value || workflowBlueprints[0]?.id || "";
+  select.replaceChildren(
+    ...workflowBlueprints.map((blueprint) => {
+      const option = document.createElement("option");
+      option.value = blueprint.id;
+      option.textContent = `${blueprint.label} · ${blueprint.steps.length} 步`;
+      return option;
+    }),
+  );
+  select.value = workflowBlueprintById(current)?.id || workflowBlueprints[0]?.id || "";
+  syncWorkflowBlueprintDefaults();
+}
+
+function syncWorkflowBlueprintDefaults(options = {}) {
+  const input = $("#workflow-name-prefix");
+  const blueprint = workflowBlueprintById($("#workflow-blueprint-select")?.value);
+  if (!input || !blueprint) return;
+  if (options.force || !input.value.trim()) input.value = blueprint.defaultPrefix || blueprint.label;
+}
+
+function renderQueueWorkflowPicker() {
+  const select = $("#queue-workflow-picker");
+  if (!select) return;
+  const previous = new Set([...select.selectedOptions].map((option) => option.value));
+  const activeId = activeWorkflow()?.id || "";
+  select.replaceChildren(
+    ...state.workspace.workflows.map((workflow) => {
+      const option = document.createElement("option");
+      option.value = workflow.id;
+      option.textContent = `${workflow.name} · ${workflow.steps.length} 步`;
+      option.selected = previous.size ? previous.has(workflow.id) : workflow.id === activeId;
       return option;
     }),
   );
@@ -1241,8 +1501,8 @@ function selectNextUnboundCapturedStepAfter(stepId) {
 
 function ensureTargetsForSteps(steps) {
   for (const item of steps) {
-    if (!targetBackedStepTypes.has(item.type) || !isLogicalTargetName(item.target)) continue;
-    const id = item.target.trim();
+    const id = catalogTargetIdForStep(item);
+    if (!id) continue;
     if (state.workspace.targets.some((target) => target.id === id)) continue;
     state.workspace.targets.unshift(
       normalizeTarget({
@@ -2184,26 +2444,92 @@ function selectGameWindows() {
 
 function assignWorkflowToSelected() {
   const workflow = activeWorkflow();
-  const targets = selectedWindows();
-  if (!workflow || !targets.length) {
-    setStatus("需要先选择任务和窗口");
+  if (!workflow) {
+    setStatus("需要先选择任务");
     return;
   }
+  assignWorkflowsToSelected([workflow]);
+}
+
+function assignWorkflowsToSelected(workflows) {
+  const validWorkflows = (workflows || []).filter(Boolean);
+  const targets = selectedEditableWindows();
+  if (!validWorkflows.length || !targets.length) {
+    setStatus("需要先选择任务和可编辑窗口");
+    return 0;
+  }
+  appendWorkflowIdsToTargets(
+    validWorkflows.map((workflow) => workflow.id),
+    targets,
+  );
+  setStatus(`已把 ${validWorkflows.length} 个任务追加到 ${targets.length} 个窗口队列`);
+  return targets.length;
+}
+
+function appendPickedWorkflowsToSelected() {
+  const workflowIds = selectedWorkflowIdsForQueue();
+  const targets = selectedEditableWindows();
+  if (!workflowIds.length || !targets.length) {
+    setStatus("需要先选择任务和可编辑窗口");
+    return 0;
+  }
+  appendWorkflowIdsToTargets(workflowIds, targets);
+  setStatus(`已把 ${workflowIds.length} 个任务追加到 ${targets.length} 个窗口队列`);
+  return targets.length;
+}
+
+function appendWorkflowIdsToTargets(workflowIds, targets) {
+  const validIds = workflowIds.filter((workflowId) => workflowById(workflowId));
   for (const target of targets) {
     const assignment = ensureAssignment(target);
-    assignment.queue.push(
-      normalizeQueueItem({
-        workflowId: workflow.id,
-        order: assignment.queue.length + 1,
-        addedAt: new Date().toISOString(),
-      }),
-    );
-    assignment.queue = assignment.queue.map((item, index) => ({ ...item, order: index + 1 }));
+    for (const workflowId of validIds) {
+      assignment.queue.push(queueItemForWorkflow(workflowId, assignment.queue.length + 1));
+    }
+    assignment.queue = renumberQueue(assignment.queue);
+    assignment.updatedAt = new Date().toISOString();
   }
   markDirty("queued");
   renderWindows();
   renderAssignments();
-  setStatus(`已把 ${workflow.name} 追加到 ${targets.length} 个窗口队列`);
+}
+
+function copyActiveQueueToSelectedWindows() {
+  const source = activeWindow();
+  const sourceAssignment = source ? assignmentForHwnd(source.hwnd) : null;
+  const sourceQueue = cloneQueueItems(sourceAssignment?.queue || []);
+  const targets = selectedEditableWindows().filter((target) => String(target.hwnd) !== String(source?.hwnd));
+  if (!source || !sourceQueue.length || !targets.length) {
+    setStatus("需要先选中有队列的源窗口和目标窗口");
+    return 0;
+  }
+  if (!window.confirm(`复制会覆盖 ${targets.length} 个窗口的现有队列，继续？`)) return 0;
+  for (const target of targets) {
+    const assignment = ensureAssignment(target);
+    assignment.queue = cloneQueueItems(sourceQueue);
+    assignment.updatedAt = new Date().toISOString();
+  }
+  markDirty("queued");
+  renderWindows();
+  renderAssignments();
+  setStatus(`已复制当前窗口队列到 ${targets.length} 个窗口`);
+  return targets.length;
+}
+
+function clearSelectedQueues() {
+  const targets = selectedEditableWindows().filter((target) => assignmentForHwnd(target.hwnd)?.queue?.length);
+  if (!targets.length) {
+    setStatus("已选窗口没有可清空的队列");
+    return 0;
+  }
+  if (!window.confirm(`将清空 ${targets.length} 个窗口的任务队列，继续？`)) return 0;
+  for (const target of targets) {
+    delete state.workspace.assignments[String(target.hwnd)];
+  }
+  markDirty("queued");
+  renderWindows();
+  renderAssignments();
+  setStatus(`已清空 ${targets.length} 个窗口队列`);
+  return targets.length;
 }
 
 function renderAssignments() {
@@ -2221,12 +2547,14 @@ function renderAssignments() {
     return;
   }
   for (const [hwnd, assignment] of entries) {
+    const locked = isQueueLocked(hwnd);
     const row = document.createElement("div");
     row.className = "queue-window";
+    row.classList.toggle("running", locked);
     row.innerHTML = `
       <button class="compact-row queue-window-head" type="button">
         <strong>${escapeHtml(assignment.display || hwnd)}</strong>
-        <span>${assignment.queue.length} 个任务 · hwnd=${escapeHtml(hwnd)}</span>
+        <span>${assignment.queue.length} 个任务 · hwnd=${escapeHtml(hwnd)}${locked ? " · 运行中锁定" : ""}</span>
       </button>
       <div class="queue-items"></div>
     `;
@@ -2254,10 +2582,10 @@ function renderAssignments() {
           <small>${queueItem.enabled === false ? "停用" : `${workflow?.steps?.length || 0} 步`}</small>
         </button>
         <div class="queue-item-actions">
-          <button type="button" data-action="toggle">${queueItem.enabled === false ? "启用" : "停用"}</button>
-          <button type="button" data-action="up">上移</button>
-          <button type="button" data-action="down">下移</button>
-          <button type="button" data-action="remove">删除</button>
+          <button type="button" data-action="toggle" ${locked ? "disabled" : ""}>${queueItem.enabled === false ? "启用" : "停用"}</button>
+          <button type="button" data-action="up" ${locked ? "disabled" : ""}>上移</button>
+          <button type="button" data-action="down" ${locked ? "disabled" : ""}>下移</button>
+          <button type="button" data-action="remove" ${locked ? "disabled" : ""}>删除</button>
         </div>
       `;
       itemRow.querySelector(".queue-item-title").addEventListener("click", () => {
@@ -2280,6 +2608,12 @@ function renderAssignments() {
 }
 
 function updateQueueItem(hwnd, queueItemId, action) {
+  if (isQueueLocked(hwnd)) {
+    setStatus("该窗口正在运行，队列已锁定");
+    appendLog("warn", `运行中的窗口队列不可修改：hwnd=${hwnd}`);
+    renderAssignments();
+    return;
+  }
   const assignment = assignmentForHwnd(hwnd);
   const queue = assignment?.queue || [];
   const index = queue.findIndex((item) => item.id === queueItemId);
@@ -3473,6 +3807,7 @@ function escapeHtml(value) {
 fillStepTypeSelect($("#new-step-type"));
 fillStepTypeSelect($("#step-type"));
 fillStepBlockSelect($("#step-block-preset"));
+fillWorkflowBlueprintSelect($("#workflow-blueprint-select"));
 
 $("#refresh-windows").addEventListener("click", refreshWindows);
 $("#launch-game-client").addEventListener("click", launchGameClient);
@@ -3484,6 +3819,12 @@ $("#save-snapshot").addEventListener("click", saveSnapshot);
 $("#load-offline-image").addEventListener("click", loadOfflineImage);
 $("#target-from-roi").addEventListener("click", targetFromRoi);
 $("#assign-selected").addEventListener("click", assignWorkflowToSelected);
+$("#append-picked-workflows").addEventListener("click", appendPickedWorkflowsToSelected);
+$("#copy-active-queue-to-selected").addEventListener("click", copyActiveQueueToSelectedWindows);
+$("#clear-selected-queues").addEventListener("click", clearSelectedQueues);
+$("#workflow-blueprint-select").addEventListener("change", () => syncWorkflowBlueprintDefaults({ force: true }));
+$("#create-workflow-from-blueprint").addEventListener("click", () => createWorkflowBatch());
+$("#create-and-assign-blueprint").addEventListener("click", () => createWorkflowBatch({ assignToSelected: true }));
 $("#new-workflow").addEventListener("click", newWorkflow);
 $("#duplicate-workflow").addEventListener("click", duplicateWorkflow);
 $("#delete-workflow").addEventListener("click", deleteWorkflow);

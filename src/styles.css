@@ -215,7 +215,7 @@ h3 {
 
 .target-rail {
   display: grid;
-  grid-template-rows: minmax(210px, 1fr) minmax(150px, auto) minmax(190px, auto);
+  grid-template-rows: minmax(190px, 0.9fr) minmax(260px, 1.2fr) minmax(170px, auto);
   min-height: 0;
   border-right: 1px solid #2a3034;
   background: rgba(14, 17, 19, 0.75);
@@ -256,8 +256,14 @@ h3 {
 .library-panel {
   grid-area: library;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   border-right: 1px solid #2a3034;
+}
+
+.assignment-panel {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 9px;
 }
 
 .preview-panel {
@@ -466,7 +472,10 @@ h3 {
 #target-from-roi,
 #offline-image-path,
 #load-offline-image,
-#assign-selected {
+#assign-selected,
+#append-picked-workflows,
+#copy-active-queue-to-selected,
+#clear-selected-queues {
   width: 100%;
 }
 
@@ -479,6 +488,58 @@ h3 {
 .library-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 10px;
+}
+
+.workflow-wizard,
+.batch-queue-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #2c3439;
+  border-radius: 8px;
+  background: #11171a;
+  padding: 9px;
+}
+
+.workflow-wizard {
+  margin-bottom: 10px;
+}
+
+.workflow-wizard label,
+.batch-queue-panel label {
+  display: grid;
+  gap: 5px;
+  color: #9da8af;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.wizard-grid {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 7px;
+}
+
+.wizard-actions,
+.queue-action-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.wizard-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.queue-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#clear-selected-queues {
+  grid-column: 1 / -1;
+}
+
+#queue-workflow-picker {
+  height: 96px;
+  padding: 6px;
 }
 
 .workflow-row,
@@ -502,6 +563,10 @@ h3 {
 .queue-window {
   display: grid;
   gap: 7px;
+}
+
+.queue-window.running .queue-window-head {
+  border-color: #665832;
 }
 
 .queue-window-head {
@@ -572,6 +637,11 @@ h3 {
   min-height: 28px;
   padding: 0 6px;
   font-size: 11px;
+}
+
+.queue-item-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .workflow-row.active {
@@ -1290,7 +1360,7 @@ progress::-webkit-progress-value {
 
   .run-panel {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(92px, auto) minmax(110px, 1fr) minmax(110px, 1fr);
+    grid-template-rows: auto auto minmax(92px, auto) minmax(110px, 1fr) minmax(110px, 1fr) minmax(110px, 1fr);
     grid-template-areas:
       "run-title"
       "run-actions"
@@ -1326,6 +1396,8 @@ progress::-webkit-progress-value {
   .target-actions,
   .capture-actions,
   .library-actions,
+  .wizard-actions,
+  .queue-action-grid,
   .run-actions {
     grid-template-columns: minmax(0, 1fr);
   }

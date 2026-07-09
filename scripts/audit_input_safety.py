@@ -126,6 +126,39 @@ COMPLETION_BOARD_TOKENS = [
     ".completion-board",
     ".completion-item.issue",
 ]
+WORKFLOW_BLUEPRINT_TOKENS = [
+    "workflow-blueprint-panel",
+    "workflow-blueprint-select",
+    "workflow-batch-count",
+    "workflow-name-prefix",
+    "create-workflow-from-blueprint",
+    "create-and-assign-blueprint",
+    "workflowBlueprints",
+    "fillWorkflowBlueprintSelect",
+    "workflowBlueprintById",
+    "createWorkflowFromBlueprint",
+    "createWorkflowBatch",
+    "ensureTargetsForSteps(workflow.steps",
+    "selectFirstUnboundCapturedStep",
+    ".workflow-wizard",
+]
+BATCH_QUEUE_TOKENS = [
+    "batch-queue-panel",
+    "queue-workflow-picker",
+    "append-picked-workflows",
+    "copy-active-queue-to-selected",
+    "clear-selected-queues",
+    "selectedWorkflowIdsForQueue",
+    "appendWorkflowIdsToTargets",
+    "copyActiveQueueToSelectedWindows",
+    "clearSelectedQueues",
+    "cloneQueueItems",
+    "selectedEditableWindows",
+    "isQueueLocked",
+    "window.confirm",
+    ".batch-queue-panel",
+    ".queue-action-grid",
+]
 OCR_CONTRACT_TOKENS = [
     "dispatch_ocr_step",
     "recognize_ocr_text",
@@ -167,6 +200,8 @@ def main() -> int:
     paste_auto_step = scan_tokens(files, PASTE_AUTO_STEP_TOKENS)
     runner_semantics = scan_tokens(files, RUNNER_SEMANTIC_TOKENS)
     completion_board = scan_tokens(files, COMPLETION_BOARD_TOKENS)
+    workflow_blueprint = scan_tokens(files, WORKFLOW_BLUEPRINT_TOKENS)
+    batch_queue = scan_tokens(files, BATCH_QUEUE_TOKENS)
     ocr_contract = scan_tokens(files, OCR_CONTRACT_TOKENS)
     ui_stability = scan_tokens(files, UI_STABILITY_TOKENS)
     identity_required = bool(hwnd)
@@ -202,6 +237,14 @@ def main() -> int:
     completion_board_missing = [
         token for token in COMPLETION_BOARD_TOKENS if token not in completion_board_seen
     ]
+    workflow_blueprint_seen = {hit["token"] for hit in workflow_blueprint}
+    workflow_blueprint_missing = [
+        token for token in WORKFLOW_BLUEPRINT_TOKENS if token not in workflow_blueprint_seen
+    ]
+    batch_queue_seen = {hit["token"] for hit in batch_queue}
+    batch_queue_missing = [
+        token for token in BATCH_QUEUE_TOKENS if token not in batch_queue_seen
+    ]
     ocr_contract_seen = {hit["token"] for hit in ocr_contract}
     ocr_contract_missing = [
         token for token in OCR_CONTRACT_TOKENS if token not in ocr_contract_seen
@@ -235,6 +278,10 @@ def main() -> int:
         "runnerSemanticMissing": runner_semantics_missing,
         "completionBoardEvidence": completion_board,
         "completionBoardMissing": completion_board_missing,
+        "workflowBlueprintEvidence": workflow_blueprint,
+        "workflowBlueprintMissing": workflow_blueprint_missing,
+        "batchQueueEvidence": batch_queue,
+        "batchQueueMissing": batch_queue_missing,
         "ocrContractEvidence": ocr_contract,
         "ocrContractMissing": ocr_contract_missing,
         "uiStabilityEvidence": ui_stability,
@@ -250,6 +297,8 @@ def main() -> int:
             and not paste_auto_step_missing
             and not runner_semantics_missing
             and not completion_board_missing
+            and not workflow_blueprint_missing
+            and not batch_queue_missing
             and not ocr_contract_missing
             and not ui_stability_missing
         ),
@@ -258,7 +307,7 @@ def main() -> int:
             "Focus-affecting APIs indicate foreground-control risk. "
             "hwndInputEvidence may be empty when this build has no runtime input dispatcher. "
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
-            "Step editing, validation badge, paste-to-step, runner semantic, and UI stability tokens catch visible UI or modeled-step regressions."
+            "Step editing, validation badge, paste-to-step, runner semantic, workflow blueprint, batch queue, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -285,6 +334,10 @@ def main() -> int:
         print(f"runnerSemanticMissing={len(runner_semantics_missing)}")
         print(f"completionBoardEvidence={len(completion_board)}")
         print(f"completionBoardMissing={len(completion_board_missing)}")
+        print(f"workflowBlueprintEvidence={len(workflow_blueprint)}")
+        print(f"workflowBlueprintMissing={len(workflow_blueprint_missing)}")
+        print(f"batchQueueEvidence={len(batch_queue)}")
+        print(f"batchQueueMissing={len(batch_queue_missing)}")
         print(f"ocrContractEvidence={len(ocr_contract)}")
         print(f"ocrContractMissing={len(ocr_contract_missing)}")
         print(f"uiStabilityEvidence={len(ui_stability)}")
@@ -319,6 +372,12 @@ def main() -> int:
         if completion_board_missing:
             for token in completion_board_missing:
                 print(f"MISSING_COMPLETION_BOARD {token}")
+        if workflow_blueprint_missing:
+            for token in workflow_blueprint_missing:
+                print(f"MISSING_WORKFLOW_BLUEPRINT {token}")
+        if batch_queue_missing:
+            for token in batch_queue_missing:
+                print(f"MISSING_BATCH_QUEUE {token}")
         if ocr_contract_missing:
             for token in ocr_contract_missing:
                 print(f"MISSING_OCR_CONTRACT {token}")

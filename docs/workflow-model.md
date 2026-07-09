@@ -96,6 +96,10 @@
 
 `windowIdentity` 是分配任务时的窗口身份快照。后台运行窗口队列前，前端会先把 assignment 快照和当前窗口列表里的 live 快照做一次比对；如果 hwnd、标题、PID、进程名、client 尺寸或权限状态不匹配，就拒绝启动该窗口队列，要求重新刷新并分配。
 
+批量队列操作是编辑工作区配置，不是运行任务。追加当前任务、追加所选任务、复制当前窗口队列和清空已选窗口队列都只改 `assignments[hwnd].queue[]`，不会截图、点击、发送快捷键或接管前台输入。
+
+复制队列时保留每个目标窗口自己的 `windowIdentity`，只复制队列项里的 `workflowId` 顺序和启用状态，并重新生成 `queue[].id`。清空队列属于本地破坏性操作，需要用户确认；清空后如果窗口没有队列项，可以删除对应 assignment，后续重新分配时再按当前窗口建立身份快照。
+
 ## Workflow
 
 ```json
@@ -121,6 +125,12 @@
 - `targetPolicy.inputMode` 固定表达“目标设计是 hwnd 后台消息”。观察运行不发送输入，后台运行 beta 只投递 hwnd 消息。
 - `targetPolicy.concurrency=per-window-exclusive` 表示同 hwnd 只有一个 active session；窗口内任务队列串行消费，不同 hwnd 可并行。
 - 恢复动作应通过显式 `restore` 步骤表达；旧版 `restorePolicy` 未接入运行器，编辑器不再生成。
+
+## WorkflowBlueprint
+
+蓝图是新建任务时的模板层，不是运行时状态，也不会写入 workspace schema。蓝图负责把常见任务结构展开成普通 `Workflow.steps[]`，例如家园活力、福利签到、背包物品、组队准备和帮派签到。
+
+从蓝图新建任务时，前端会保留用户可读的 `target` 文本，并为图像、页面、点击和 OCR 目标写入带任务命名空间的 `targetId`，避免多个任务共享同一份待采样素材。生成后立即调用目标占位生成逻辑，把需要采样的步骤接入 `Target` 目标库，随后刷新待补全清单，并自动定位到第一个缺图片、缺 ROI 或缺坐标的步骤。这样用户只需要 Ctrl+V 图片、框选 ROI 或补少量 OCR 文本，就能把蓝图草稿变成可执行任务。
 
 ## Step
 

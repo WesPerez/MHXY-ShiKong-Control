@@ -50,6 +50,17 @@
               <span id="assignment-count" class="count">0</span>
             </div>
             <button id="assign-selected" type="button">追加当前任务到已选窗口</button>
+            <div id="batch-queue-panel" class="batch-queue-panel">
+              <label>
+                批量任务
+                <select id="queue-workflow-picker" multiple size="4"></select>
+              </label>
+              <div class="queue-action-grid">
+                <button id="append-picked-workflows" type="button">追加所选任务</button>
+                <button id="copy-active-queue-to-selected" type="button">复制当前队列</button>
+                <button id="clear-selected-queues" type="button" class="danger">清空已选队列</button>
+              </div>
+            </div>
             <div id="assignment-list" class="compact-list"></div>
           </section>
 
@@ -84,6 +95,26 @@
               <button id="new-workflow" type="button">新建</button>
               <button id="duplicate-workflow" type="button">复制</button>
               <button id="delete-workflow" type="button" class="danger">删除</button>
+            </div>
+            <div id="workflow-blueprint-panel" class="workflow-wizard">
+              <label>
+                任务蓝图
+                <select id="workflow-blueprint-select"></select>
+              </label>
+              <div class="wizard-grid">
+                <label>
+                  数量
+                  <input id="workflow-batch-count" type="number" min="1" max="10" value="5" />
+                </label>
+                <label>
+                  名称前缀
+                  <input id="workflow-name-prefix" type="text" />
+                </label>
+              </div>
+              <div class="wizard-actions">
+                <button id="create-workflow-from-blueprint" type="button">生成任务组</button>
+                <button id="create-and-assign-blueprint" type="button">生成并追加</button>
+              </div>
             </div>
             <div id="workflow-list" class="workflow-list"></div>
             <div class="workspace-path">
