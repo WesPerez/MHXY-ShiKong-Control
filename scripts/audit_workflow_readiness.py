@@ -36,6 +36,7 @@ REQUIRED_STEP_TYPES = {
     "condition",
     "retry_until",
     "snapshot",
+    "task_jump",
     "restore",
 }
 REPORT_ONLY_TARGETS = {
@@ -238,23 +239,30 @@ def parse_sample_workflows(source: str) -> list[dict[str, object]]:
     body = extract_function_body(source, "createSampleWorkflows")
     workflows: list[dict[str, object]] = []
     current: dict[str, object] | None = None
-    for line in body.splitlines():
-        workflow_match = re.search(r"\bworkflow\s*\(\s*(\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*')", line)
-        if workflow_match:
-            current = {"id": js_unquote(workflow_match.group(1)), "steps": []}
+    index = 0
+    call_pattern = re.compile(r"\b(workflow|step)\s*\(")
+    while True:
+        match = call_pattern.search(body, index)
+        if not match:
+            break
+        open_index = body.find("(", match.start())
+        close_index = find_matching(body, open_index, "(", ")")
+        args = split_js_args(body[open_index + 1 : close_index])
+        if match.group(1) == "workflow" and args:
+            current = {"id": js_unquote(args[0]), "steps": []}
             workflows.append(current)
-        step_match = re.search(r"\bstep\s*\((.*)\)", line)
-        if step_match and current is not None:
-            args = split_js_args(step_match.group(1))
-            if len(args) >= 6:
-                current["steps"].append(
-                    {
-                        "id": js_unquote(args[0]),
-                        "type": js_unquote(args[1]),
-                        "target": js_unquote(args[3]),
-                        "command": js_unquote(args[4]),
-                    },
-                )
+            index = open_index + 1
+            continue
+        if match.group(1) == "step" and current is not None and len(args) >= 6:
+            current["steps"].append(
+                {
+                    "id": js_unquote(args[0]),
+                    "type": js_unquote(args[1]),
+                    "target": js_unquote(args[3]),
+                    "command": js_unquote(args[4]),
+                },
+            )
+        index = close_index + 1
     return workflows
 
 

@@ -11,6 +11,7 @@ const MAX_SESSION_STEP_RESULTS = 300;
 const MAX_CONTROL_FLOW_TRANSITIONS = 300;
 const MAX_TEXT_INPUT_CHARS = 500;
 const MAX_CONTROL_FLOW_STEPS = 500;
+const MAX_WORKFLOW_JUMPS = 100;
 const targetBackedStepTypes = new Set([
   "image_click",
   "double_click",
@@ -78,6 +79,7 @@ const stepTypes = [
   ["condition", "条件判断"],
   ["retry_until", "重试直到"],
   ["snapshot", "截图记录"],
+  ["task_jump", "任务跳转"],
   ["restore", "恢复状态"],
 ];
 
@@ -191,6 +193,15 @@ const stepDefaults = {
     timeoutMs: 1000,
     retry: 0,
     onFail: "skip",
+  },
+  task_jump: {
+    name: "任务跳转",
+    target: "workflow.next",
+    command: "mode=same-window-queue",
+    expect: "jump.workflow",
+    timeoutMs: 0,
+    retry: 0,
+    onFail: "stop",
   },
   restore: {
     name: "恢复状态",
@@ -737,12 +748,14 @@ function createSampleWorkflows() {
       step("material-09", "delay", "等待整理反馈", "900ms", "reason=server_response", "time.elapsed"),
       step("material-10", "ocr_assert", "确认整理结果", "整理", "lang=zh; roi=panel", "text_found"),
       step("material-11", "snapshot", "记录材料状态", "window.client", "dry-run log only", "snapshot.recorded"),
-      step("material-12", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
+      step("material-12", "task_jump", "演练跳转到每日福利", "workflow.next", "mode=same-window-queue", "jump.workflow", 0, 0, "stop", { jumpWorkflowId: "wf-daily-welfare" }),
+      step("material-13", "restore", "恢复主界面", "restore.home", "safe sequence", "page.home.ready"),
     ]),
   ];
 }
 
 function workflow(id, name, category, description, steps) {
+  const workflowSteps = withDefaultRecoveryReferences(steps);
   return {
     schemaVersion: WORKSPACE_SCHEMA_VERSION,
     id,
@@ -756,7 +769,7 @@ function workflow(id, name, category, description, steps) {
       inputMode: "hwnd-message",
       concurrency: "per-window-exclusive",
     },
-    steps,
+    steps: workflowSteps,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -772,6 +785,7 @@ function step(
   timeoutMs = stepDefaults[type]?.timeoutMs ?? 3000,
   retry = stepDefaults[type]?.retry ?? 0,
   onFail = stepDefaults[type]?.onFail ?? "stop",
+  options = {},
 ) {
   return {
     id,
@@ -785,6 +799,7 @@ function step(
     onFail,
     enabled: true,
     notes: "",
+    ...options,
   };
 }
 
@@ -1411,7 +1426,7 @@ function readinessDetailText(summary) {
 }
 
 function isPlannedSemanticMessage(message) {
-  return /计划态|不会改变真实执行路径|不会执行真实条件分支|不会自动执行恢复/.test(String(message || ""));
+  return /计划态|不会改变真实执行路径|不会执行真实条件分支/.test(String(message || ""));
 }
 
 function isRestorePlanMessage(message) {
@@ -1587,13 +1602,14 @@ function createWorkflowFromBlueprint(blueprintInput, index = 1, namePrefix = "")
   const workflowId = randomId("wf");
   const namespace = `task.${blueprint.id}.${workflowId}`;
   const prefix = String(namePrefix || blueprint.defaultPrefix || blueprint.label || "任务").trim();
+  const steps = withDefaultRecoveryReferences(blueprint.steps.map((item) => createBlueprintStep(item, namespace)));
   const workflow = normalizeWorkflow({
     id: workflowId,
     name: index > 1 ? `${prefix} ${index}` : prefix,
     category: blueprint.category || "草稿",
     description: blueprint.description || "",
     tags: ["蓝图", blueprint.label || blueprint.id],
-    steps: blueprint.steps.map((item) => createBlueprintStep(item, namespace)),
+    steps,
   });
   ensureTargetsForSteps(workflow.steps);
   return workflow;
@@ -2079,7 +2095,10 @@ function renderSteps(validationOverride = null) {
       semanticBadges.push(`<em class="step-badge planned" title="此步骤当前只记录计划语义，不改变真实执行路径">计划态</em>`);
     }
     if (item.onFail === "restore") {
-      semanticBadges.push(`<em class="step-badge planned" title="restore 失败处理当前不会自动执行恢复序列">恢复计划</em>`);
+      const hasRecovery = Boolean(item.recoveryStepId);
+      semanticBadges.push(
+        `<em class="step-badge ${hasRecovery ? "flow" : "planned"}" title="${hasRecovery ? "失败时会跳转到恢复入口，恢复分支结束后停止当前窗口队列" : "未设置恢复入口，失败仍会停止队列"}">${hasRecovery ? "恢复分支" : "恢复待设"}</em>`,
+      );
     }
     row.type = "button";
     row.className = "step-row";
@@ -2087,7 +2106,7 @@ function renderSteps(validationOverride = null) {
     row.classList.toggle("disabled", item.enabled === false);
     row.classList.toggle("has-issue", stepMessages.issues.length > 0);
     row.classList.toggle("has-warning", !stepMessages.issues.length && stepMessages.warnings.length > 0);
-    row.classList.toggle("planned-only", plannedOnlyStepTypes.has(item.type) || item.onFail === "restore");
+    row.classList.toggle("planned-only", plannedOnlyStepTypes.has(item.type) || (item.onFail === "restore" && !item.recoveryStepId));
     row.innerHTML = `
       <span>${String(index + 1).padStart(2, "0")}</span>
       <strong>${escapeHtml(item.name || stepLabels[item.type] || item.type)}</strong>
@@ -2593,6 +2612,7 @@ function renderStepParamPanel(item) {
   $("#param-condition-target").value = item.type === "condition" ? item.target || "" : "";
   $("#param-condition-guard").value = commandValue(item.command, "guard") || "";
   $("#param-control-max-iterations").value = item.maxIterations || "";
+  renderWorkflowJumpSelect(item);
   $("#param-retry-target").value = item.type === "retry_until" ? item.target || "" : "";
   $("#param-retry-interval").value = durationMsFromText(commandValue(item.command, "interval")) ?? "";
 }
@@ -2643,6 +2663,26 @@ function renderControlFlowSelects(item) {
   fill("#param-control-recovery-step", item.recoveryStepId || "", "未设置恢复入口");
 }
 
+function renderWorkflowJumpSelect(item) {
+  const select = $("#param-control-workflow-jump");
+  if (!select) return;
+  const activeId = activeWorkflow()?.id || "";
+  select.replaceChildren();
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "未设置，留在当前队列";
+  select.append(empty);
+  for (const workflow of state.workspace.workflows) {
+    const option = document.createElement("option");
+    option.value = workflow.id;
+    option.textContent = `${workflow.name}${workflow.id === activeId ? " · 当前任务" : ""}`;
+    select.append(option);
+  }
+  select.value = state.workspace.workflows.some((workflow) => workflow.id === item.jumpWorkflowId)
+    ? item.jumpWorkflowId
+    : "";
+}
+
 function paramSummaryForStep(item) {
   const target = targetForStep(item);
   const timing = timingSummaryForStep(item);
@@ -2669,6 +2709,10 @@ function paramSummaryForStep(item) {
     const refs = controlFlowReferenceSummary(item);
     return `${item.target || "状态目标"} · guard=${commandValue(item.command, "guard") || "未设置"}${refs ? ` · ${refs}` : ""}${timing}`;
   }
+  if (item.type === "task_jump") {
+    const refs = controlFlowReferenceSummary(item);
+    return `切到 ${workflowNameById(item.jumpWorkflowId) || "未设置目标任务"}${refs ? ` · ${refs}` : ""}${timing}`;
+  }
   if (item.type === "restore") {
     const refs = controlFlowReferenceSummary(item);
     return `恢复计划${refs ? ` · ${refs}` : ""}${timing}`;
@@ -2686,8 +2730,15 @@ function controlFlowReferenceSummary(item) {
   if (item.targetStepId) parts.push(`true -> ${byId.get(item.targetStepId) || "断链"}`);
   if (item.elseTargetStepId) parts.push(`false -> ${byId.get(item.elseTargetStepId) || "断链"}`);
   if (item.recoveryStepId) parts.push(`restore -> ${byId.get(item.recoveryStepId) || "断链"}`);
+  if (item.jumpWorkflowId) parts.push(`task -> ${workflowNameById(item.jumpWorkflowId) || "断链"}`);
   if (item.maxIterations) parts.push(`max ${item.maxIterations}`);
   return parts.join(" / ");
+}
+
+function workflowNameById(id) {
+  if (!id) return "";
+  const workflow = workflowById(id);
+  return workflow?.name || "";
 }
 
 function timingSummaryForStep(item) {
@@ -2816,6 +2867,11 @@ function bindStepParamEditor() {
   $("#param-control-recovery-step").addEventListener("change", (event) => {
     updateSelectedStepFromParams((item) => {
       item.recoveryStepId = event.target.value;
+    });
+  });
+  $("#param-control-workflow-jump").addEventListener("change", (event) => {
+    updateSelectedStepFromParams((item) => {
+      item.jumpWorkflowId = event.target.value;
     });
   });
   $("#param-control-max-iterations").addEventListener("input", (event) => {
@@ -4592,7 +4648,7 @@ function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
     if (!stepLabels[item.type]) addIssue(`${prefix} 类型未知`, item);
     if (item.enabled === false) continue;
     if (!item.name.trim()) addIssue(`${prefix} 名称为空`, item);
-    if (!item.target.trim() && !["delay", "snapshot", "text_input"].includes(item.type)) {
+    if (!item.target.trim() && !["delay", "snapshot", "text_input", "task_jump"].includes(item.type)) {
       addIssue(`${prefix} 缺少目标`, item);
     }
     if (!Number.isFinite(item.timeoutMs) || item.timeoutMs < 0) addIssue(`${prefix} 超时必须是非负数`, item);
@@ -4633,17 +4689,31 @@ function validateStepControlFlowReferences(workflow, item, prefix, addIssue, add
       addReferenceMessage(`${prefix} ${label} 是后向跳转，必须设置最大循环次数`, options);
     }
   };
-  checkStepReference("targetStepId", "成功分支");
-  checkStepReference("elseTargetStepId", "失败/否则分支");
-  checkStepReference("recoveryStepId", "恢复入口", { executable: false });
-  const jumpWorkflowId = String(item.jumpWorkflowId || "").trim();
-  if (jumpWorkflowId && !workflowIds.has(jumpWorkflowId)) {
-    addReferenceMessage(`${prefix} 任务跳转指向不存在的任务；跨任务跳转尚未接入运行器`);
-  } else if (jumpWorkflowId) {
-    addReferenceMessage(`${prefix} 任务跳转字段已保存，但跨任务跳转尚未接入运行器`);
+  checkStepReference("targetStepId", item.type === "condition" ? "条件 true 分支" : "成功分支");
+  checkStepReference("elseTargetStepId", "条件 false 分支");
+  checkStepReference("recoveryStepId", "恢复入口", { executable: item.onFail === "restore" });
+  if (plannedOnlyStepTypes.has(item.type) && (item.targetStepId || item.elseTargetStepId || item.jumpWorkflowId)) {
+    addReferenceMessage(`${prefix} ${stepLabels[item.type] || item.type} 是计划态步骤，不能驱动成功/条件/任务跳转`, {
+      executable: false,
+    });
   }
-  if (item.recoveryStepId) {
-    addWarning(`${prefix} 恢复入口已保存，但失败后自动恢复仍是计划态`, item);
+  const jumpWorkflowId = String(item.jumpWorkflowId || "").trim();
+  if (item.type === "task_jump" && !jumpWorkflowId) {
+    addReferenceMessage(`${prefix} 任务跳转需要选择目标任务`);
+  }
+  if (jumpWorkflowId && !workflowIds.has(jumpWorkflowId)) {
+    addReferenceMessage(`${prefix} 任务跳转指向不存在的任务`);
+  } else if (jumpWorkflowId) {
+    if (item.targetStepId || item.elseTargetStepId) {
+      addReferenceMessage(`${prefix} 任务跳转不能和同任务成功/条件跳转同时设置`);
+    }
+    if (jumpWorkflowId === workflow.id && !item.maxIterations) {
+      addReferenceMessage(`${prefix} 任务跳转指向当前任务，必须设置最大循环次数`);
+    }
+    addWarning(`${prefix} 任务跳转会在当前 hwnd 会话内切换任务，不改写持久化窗口队列`, item);
+  }
+  if (item.recoveryStepId && item.onFail !== "restore") {
+    addWarning(`${prefix} 恢复入口已保存，但失败处理不是 restore，不会自动使用`, item);
   }
   if (item.maxIterations && (!Number.isInteger(Number(item.maxIterations)) || Number(item.maxIterations) < 0)) {
     addReferenceMessage(`${prefix} 最大循环次数必须是非负整数`);
@@ -4745,7 +4815,10 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
     }
   }
   if (item.onFail === "restore") {
-    addWarning(`${prefix} 失败处理 restore 当前是计划态；不会自动执行恢复序列，失败仍会停止队列`, item);
+    const message = item.recoveryStepId
+      ? `${prefix} 失败处理 restore 会跳转到恢复入口；恢复分支执行结束后仍会停止当前窗口队列并保留失败报告`
+      : `${prefix} 失败处理 restore 未设置恢复入口；失败仍会停止队列`;
+    addWarning(message, item);
   }
   if (plannedOnlyStepTypes.has(item.type)) {
     addWarning(`${prefix} ${stepLabels[item.type] || item.type} 当前只记录计划态，不会改变真实执行路径`, item);
@@ -4990,6 +5063,8 @@ async function startRunForWindow(target, runEntries, mode, source) {
     endedWindowIdentity: null,
     endedWindowIdentityError: "",
     controlFlowCounts: {},
+    workflowJumpCount: 0,
+    workflowJumpRequest: null,
     cancelRequested: false,
   };
   state.sessions[key] = session;
@@ -5001,9 +5076,18 @@ async function startRunForWindow(target, runEntries, mode, source) {
 }
 
 async function runSession(session, runPlan) {
-  for (const entry of runPlan) {
+  const pendingRunPlan = [...runPlan];
+  for (let index = 0; index < pendingRunPlan.length; index += 1) {
+    const entry = pendingRunPlan[index];
+    session.workflowJumpRequest = null;
     const completed = await runWorkflowEntry(session, entry);
     if (!completed) break;
+    const jumpRequest = session.workflowJumpRequest;
+    session.workflowJumpRequest = null;
+    if (jumpRequest?.workflowId) {
+      const inserted = insertWorkflowJumpIntoRunPlan(session, pendingRunPlan, index + 1, jumpRequest);
+      if (!inserted) break;
+    }
   }
   if (session.status !== "failed") {
     session.status = session.cancelRequested ? "stopped" : "done";
@@ -5022,6 +5106,82 @@ async function runSession(session, runPlan) {
     session.status === "done" ? "info" : "warn",
     `${modeLabel(session.mode)} ${session.status}：${session.display}`,
   );
+}
+
+function insertWorkflowJumpIntoRunPlan(session, runPlan, insertIndex, request) {
+  session.workflowJumpCount = Math.max(0, Number(session.workflowJumpCount) || 0) + 1;
+  if (session.workflowJumpCount > MAX_WORKFLOW_JUMPS) {
+    failSession(
+      session,
+      { name: request.fromWorkflowName || session.currentWorkflowName || "" },
+      { name: request.fromStepName || "任务跳转", type: "task_jump" },
+      `任务跳转超过 ${MAX_WORKFLOW_JUMPS} 次预算，已停止当前窗口队列`,
+    );
+    return false;
+  }
+  const workflow = workflowById(request.workflowId);
+  if (!workflow) {
+    failSession(
+      session,
+      { name: request.fromWorkflowName || session.currentWorkflowName || "" },
+      { name: request.fromStepName || "任务跳转", type: "task_jump" },
+      `任务跳转目标不存在：${request.workflowId}`,
+    );
+    return false;
+  }
+  const entry = {
+    workflow: JSON.parse(JSON.stringify(workflow)),
+    queueItem: normalizeQueueItem({
+      id: randomId("queue-jump"),
+      workflowId: workflow.id,
+      order: insertIndex + 1,
+      enabled: true,
+      startDelayMs: 0,
+      afterDelayMs: 0,
+    }),
+  };
+  runPlan.splice(insertIndex, 0, entry);
+  session.workflowIds.splice(insertIndex, 0, workflow.id);
+  session.workflowNames.splice(insertIndex, 0, workflow.name);
+  session.workflowName = session.workflowIds.length === 1 ? session.workflowNames[0] : `${session.workflowIds.length} 个任务`;
+  session.totalSteps += workflow.steps.filter((item) => item.enabled !== false).length;
+  session.queuePlan.splice(insertIndex, 0, {
+    queueItemId: entry.queueItem.id,
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    order: insertIndex + 1,
+    startDelayMs: 0,
+    afterDelayMs: 0,
+    insertedBy: "task_jump",
+    fromWorkflowId: request.fromWorkflowId || "",
+    fromWorkflowName: request.fromWorkflowName || "",
+    fromStepId: request.fromStepId || "",
+    fromStepName: request.fromStepName || "",
+    maxIterations: request.maxIterations || 0,
+    iterationCount: request.iterationCount ?? null,
+  });
+  session.queuePlan.forEach((item, orderIndex) => {
+    item.order = orderIndex + 1;
+  });
+  session.queueEvents.push({
+    workflowId: request.fromWorkflowId || "",
+    workflowName: request.fromWorkflowName || "",
+    phase: "task_jump",
+    delayMs: 0,
+    status: "queued",
+    toWorkflowId: workflow.id,
+    toWorkflowName: workflow.name,
+    fromStepId: request.fromStepId || "",
+    fromStepName: request.fromStepName || "",
+    maxIterations: request.maxIterations || 0,
+    iterationCount: request.iterationCount ?? null,
+    startedAt: new Date().toISOString(),
+    endedAt: new Date().toISOString(),
+    durationMs: 0,
+  });
+  session.logs.unshift(`${request.fromWorkflowName || "任务"} / ${request.fromStepName || "任务跳转"} 插入任务：${workflow.name}`);
+  renderSessions();
+  return true;
 }
 
 async function runWorkflowEntry(session, entry) {
@@ -5071,18 +5231,24 @@ async function runWorkflowEntry(session, entry) {
       return false;
     }
     if (session.mode === "background") {
-      result = await executeBackgroundStepWithRetries(session, item).catch((error) => ({
-        status: "error",
-        action: "backend",
-        detail: String(error),
-        inputSent: false,
-        matched: false,
-      }));
+      const identityIssue = await verifySessionWindowIdentityForStep(session, workflow, item);
+      result = identityIssue
+        ? {
+            status: "error",
+            action: "window_identity",
+            detail: identityIssue,
+            inputSent: false,
+            matched: false,
+          }
+        : await executeBackgroundStepWithRetries(session, item).catch((error) => ({
+            status: "error",
+            action: "backend",
+            detail: String(error),
+            inputSent: false,
+            matched: false,
+          }));
       session.logs.unshift(formatStepLog(session.currentStep - 1, workflow, item, result));
       stopAfterResult = shouldStopAfterResult(item, result);
-      if (stopAfterResult) {
-        failSession(session, workflow, item, result.detail || `${result.status}/${result.action}`);
-      }
     } else {
       result = {
         status: "observed",
@@ -5108,7 +5274,33 @@ async function runWorkflowEntry(session, entry) {
     }
     result = withStepTimingDetail(result, preDelay.elapsedMs, postDelay.elapsedMs);
     recordSessionStepResult(session, workflow, item, result, stepStartedAt, new Date());
-    if (session.status === "failed" || session.cancelRequested || result?.status === "stopped") {
+    if (session.cancelRequested || result?.status === "stopped") {
+      renderSessions();
+      return false;
+    }
+    if (stopAfterResult) {
+      const recovery = recoveryDecisionForFailedStep({
+        session,
+        workflow,
+        steps,
+        stepIndexById,
+        item,
+        currentPc,
+        result,
+      });
+      recordControlFlowTransition(session, recovery.transition);
+      if (recovery.message) session.logs.unshift(recovery.message);
+      renderSessions();
+      if (recovery.recovered) {
+        previousResult = result;
+        pc = recovery.nextPc;
+        continue;
+      }
+      failSession(session, workflow, item, recovery.failureReason || failureReasonFromResult(result));
+      renderSessions();
+      return false;
+    }
+    if (session.status === "failed") {
       renderSessions();
       return false;
     }
@@ -5123,6 +5315,18 @@ async function runWorkflowEntry(session, entry) {
       previousResult,
     });
     recordControlFlowTransition(session, decision.transition);
+    if (decision.workflowJumpId) {
+      session.workflowJumpRequest = {
+        workflowId: decision.workflowJumpId,
+        workflowName: decision.workflowJumpName || "",
+        fromWorkflowId: workflow.id,
+        fromWorkflowName: workflow.name,
+        fromStepId: item.id,
+        fromStepName: item.name || stepLabels[item.type] || item.type,
+        maxIterations: decision.maxIterations || 0,
+        iterationCount: decision.iterationCount ?? null,
+      };
+    }
     previousResult = result;
     if (decision.message) session.logs.unshift(decision.message);
     renderSessions();
@@ -5130,6 +5334,11 @@ async function runWorkflowEntry(session, entry) {
     pc = Number.isInteger(decision.nextPc) ? decision.nextPc : currentPc + 1;
   }
   if (session.cancelRequested || session.status === "failed") return false;
+  if (session.recoveryContext) {
+    completeRecoveryAsFailed(session);
+    renderSessions();
+    return false;
+  }
   if (queueItem.afterDelayMs > 0) {
     const completed = await runQueueDelay(session, workflow, "after", queueItem.afterDelayMs);
     if (!completed) return false;
@@ -5145,9 +5354,150 @@ function failSession(session, workflow, item, reason) {
   session.failedStepName = item?.name || stepLabels[item?.type] || item?.type || "";
 }
 
+function isRecoverableFailureResult(result) {
+  return backgroundFailureStatuses.has(result?.status || "");
+}
+
+function failureReasonFromResult(result) {
+  return result?.detail || `${result?.status || "unknown"}/${result?.action || "unknown"}`;
+}
+
+function recoveryDecisionForFailedStep(context) {
+  const { session, workflow, steps, stepIndexById, item, currentPc, result } = context;
+  const failureReason = failureReasonFromResult(result);
+  const defaultNextPc = currentPc + 1;
+  const targetStepId = String(item.recoveryStepId || "").trim();
+  const buildTransition = (status, nextPc, extra = {}) => {
+    const targetStep = Number.isInteger(nextPc) ? steps[nextPc] : null;
+    return {
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      fromStepId: item.id,
+      fromStepName: item.name || stepLabels[item.type] || item.type,
+      fromStepType: item.type,
+      fromIndex: currentPc,
+      stepOrder: session.currentStep,
+      reason: "failure restore",
+      guardResult: null,
+      guardSupported: null,
+      guardExpression: "",
+      configuredTargetStepId: targetStepId,
+      toStepId: status === "taken" && targetStep ? targetStep.id : "",
+      toStepName: status === "taken" && targetStep ? targetStep.name || stepLabels[targetStep.type] || targetStep.type : "",
+      toStepType: status === "taken" && targetStep ? targetStep.type : "",
+      toIndex: status === "taken" && Number.isInteger(nextPc) ? nextPc : null,
+      defaultNextStepId: steps[defaultNextPc]?.id || "",
+      defaultNextIndex: defaultNextPc < steps.length ? defaultNextPc : null,
+      status,
+      resultStatus: result?.status || "",
+      resultAction: result?.action || "",
+      recovery: true,
+      ...extra,
+    };
+  };
+  if (session.recoveryContext) {
+    return {
+      recovered: false,
+      failureReason: `恢复分支失败：${failureReason}；原失败：${session.recoveryContext.failureReason}`,
+      transition: null,
+    };
+  }
+  if (item.onFail !== "restore") {
+    return { recovered: false, failureReason, transition: null };
+  }
+  if (!isRecoverableFailureResult(result)) {
+    return {
+      recovered: false,
+      failureReason,
+      message: `${workflow.name} / ${item.name} 失败状态 ${result?.status || "unknown"} 不适合自动恢复，已停止`,
+      transition: buildTransition("skipped", defaultNextPc, { skippedReason: "status is not recoverable" }),
+    };
+  }
+  if (!targetStepId) {
+    return {
+      recovered: false,
+      failureReason,
+      message: `${workflow.name} / ${item.name} 设置了 restore 失败处理，但未配置恢复入口`,
+      transition: buildTransition("skipped", defaultNextPc, { skippedReason: "no recoveryStepId configured" }),
+    };
+  }
+  const nextPc = stepIndexById.get(targetStepId);
+  if (!Number.isInteger(nextPc)) {
+    return {
+      recovered: false,
+      failureReason,
+      message: `${workflow.name} / ${item.name} 恢复入口不可用，已停止`,
+      transition: buildTransition("skipped", defaultNextPc, { skippedReason: "recovery step not enabled or missing" }),
+    };
+  }
+  const recoveryStep = steps[nextPc];
+  const backward = nextPc <= currentPc;
+  let iterationCount = null;
+  const maxIterations = Math.max(0, Number(item.maxIterations) || 0);
+  if (backward) {
+    const key = `${workflow.id}:${item.id}:recovery:${targetStepId}`;
+    const currentCount = Number(session.controlFlowCounts?.[key] || 0);
+    if (maxIterations <= 0 || currentCount >= maxIterations) {
+      const limit = maxIterations <= 0 ? "未设置后向恢复上限" : `已达到 maxIterations=${maxIterations}`;
+      return {
+        recovered: false,
+        failureReason,
+        message: `${workflow.name} / ${item.name} 恢复入口 ${stepLabelForExecution(recoveryStep)} 被跳过：${limit}`,
+        transition: buildTransition("skipped", defaultNextPc, {
+          skippedReason: limit,
+          requestedToStepId: targetStepId,
+          requestedToIndex: nextPc,
+          backward: true,
+          maxIterations,
+          iterationCount: currentCount,
+        }),
+      };
+    }
+    session.controlFlowCounts ||= {};
+    session.controlFlowCounts[key] = currentCount + 1;
+    iterationCount = currentCount + 1;
+  }
+  session.recoveryContext = {
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    failedStepId: item.id,
+    failedStepName: item.name || stepLabels[item.type] || item.type,
+    failureReason,
+    resultStatus: result?.status || "",
+    resultAction: result?.action || "",
+    recoveryStepId: recoveryStep.id,
+    recoveryStepName: recoveryStep.name || stepLabels[recoveryStep.type] || recoveryStep.type,
+    startedAt: new Date().toISOString(),
+  };
+  return {
+    recovered: true,
+    nextPc,
+    message: `${workflow.name} / ${item.name} 失败后跳转恢复入口：${stepLabelForExecution(recoveryStep)}`,
+    transition: buildTransition("taken", nextPc, {
+      backward,
+      maxIterations,
+      iterationCount,
+      originalFailureReason: failureReason,
+    }),
+  };
+}
+
+function completeRecoveryAsFailed(session) {
+  const context = session.recoveryContext;
+  if (!context) return;
+  session.status = "failed";
+  session.cancelRequested = true;
+  session.failureReason = `原失败：${context.failureReason}；恢复分支已执行到任务结束，当前窗口队列已停止`;
+  session.failedWorkflowName = context.workflowName;
+  session.failedStepName = context.failedStepName;
+  session.logs.unshift(`${context.workflowName} / 恢复分支完成，原失败仍停止当前窗口队列`);
+  session.recoveryContext = null;
+}
+
 function controlFlowDecisionForStep(context) {
   const { session, workflow, steps, stepIndexById, item, currentPc, result, previousResult } = context;
   let targetStepId = "";
+  let workflowJumpId = "";
   let reason = "";
   let guardResult = null;
   let guardSupported = null;
@@ -5180,6 +5530,67 @@ function controlFlowDecisionForStep(context) {
       ...extra,
     };
   };
+  const buildWorkflowJumpDecision = (jumpReason) => {
+    workflowJumpId = String(item.jumpWorkflowId || "").trim();
+    reason = jumpReason;
+    if (!workflowJumpId) {
+      return {
+        nextPc: defaultNextPc,
+        message: `${workflow.name} / ${item.name} 未设置任务跳转目标，保持顺序执行`,
+        transition: buildTransition("skipped", defaultNextPc, { skippedReason: "no jumpWorkflowId configured" }),
+      };
+    }
+    const targetWorkflow = workflowById(workflowJumpId);
+    if (!targetWorkflow) {
+      return {
+        nextPc: defaultNextPc,
+        message: `${workflow.name} / ${item.name} 任务跳转目标不存在，保持顺序执行`,
+        transition: buildTransition("skipped", defaultNextPc, {
+          skippedReason: "target workflow missing",
+          requestedToWorkflowId: workflowJumpId,
+        }),
+      };
+    }
+    const maxIterations = Math.max(0, Number(item.maxIterations) || 0);
+    const jumpCountKey = `${workflow.id}:${item.id}:task_jump:${workflowJumpId}`;
+    const currentCount = Number(session.controlFlowCounts?.[jumpCountKey] || 0);
+    if ((workflowJumpId === workflow.id || maxIterations > 0) && (maxIterations <= 0 || currentCount >= maxIterations)) {
+      const limit = maxIterations <= 0 ? "未设置任务跳转上限" : `已达到 maxIterations=${maxIterations}`;
+      return {
+        nextPc: defaultNextPc,
+        message: `${workflow.name} / ${item.name} 任务跳转到 ${targetWorkflow.name} 被跳过：${limit}`,
+        transition: buildTransition("skipped", defaultNextPc, {
+          skippedReason: limit,
+          requestedToWorkflowId: workflowJumpId,
+          toWorkflowId: targetWorkflow.id,
+          toWorkflowName: targetWorkflow.name,
+          workflowJump: true,
+          maxIterations,
+          iterationCount: currentCount,
+        }),
+      };
+    }
+    if (workflowJumpId === workflow.id || maxIterations > 0) {
+      session.controlFlowCounts ||= {};
+      session.controlFlowCounts[jumpCountKey] = currentCount + 1;
+    }
+    return {
+      nextPc: steps.length,
+      workflowJumpId,
+      workflowJumpName: targetWorkflow.name,
+      maxIterations,
+      iterationCount: workflowJumpId === workflow.id || maxIterations > 0 ? currentCount + 1 : null,
+      message: `${workflow.name} / ${item.name} 任务跳转到 ${targetWorkflow.name}`,
+      transition: buildTransition("taken", steps.length, {
+        toWorkflowId: targetWorkflow.id,
+        toWorkflowName: targetWorkflow.name,
+        requestedToWorkflowId: workflowJumpId,
+        workflowJump: true,
+        maxIterations,
+        iterationCount: workflowJumpId === workflow.id || maxIterations > 0 ? currentCount + 1 : null,
+      }),
+    };
+  };
   if (item.type === "condition") {
     const guard = evaluateConditionGuard(item, result, previousResult);
     guardResult = guard.passed;
@@ -5195,7 +5606,22 @@ function controlFlowDecisionForStep(context) {
     }
     targetStepId = guard.passed ? item.targetStepId : item.elseTargetStepId;
     reason = `condition ${guard.passed ? "true" : "false"}`;
-  } else if (isSuccessfulStepResult(result) && result?.status !== "planned" && item.targetStepId) {
+    if (guard.passed && !targetStepId && item.jumpWorkflowId) {
+      return buildWorkflowJumpDecision("condition true task_jump");
+    }
+  } else if (
+    isSuccessfulStepResult(result) &&
+    result?.status !== "planned" &&
+    !plannedOnlyStepTypes.has(item.type) &&
+    item.jumpWorkflowId
+  ) {
+    return buildWorkflowJumpDecision(item.type === "task_jump" ? "task_jump" : "success task_jump");
+  } else if (
+    isSuccessfulStepResult(result) &&
+    result?.status !== "planned" &&
+    !plannedOnlyStepTypes.has(item.type) &&
+    item.targetStepId
+  ) {
     targetStepId = item.targetStepId;
     reason = "success";
   }
@@ -5254,6 +5680,15 @@ function controlFlowDecisionForStep(context) {
       iterationCount: null,
     }),
   };
+}
+
+function withDefaultRecoveryReferences(steps) {
+  const recoveryStep = steps.find((item) => item.type === "restore" && item.enabled !== false);
+  if (!recoveryStep) return steps;
+  return steps.map((item) => {
+    if (item.id === recoveryStep.id || item.recoveryStepId || item.onFail !== "restore") return item;
+    return { ...item, recoveryStepId: recoveryStep.id };
+  });
 }
 
 function evaluateConditionGuard(item, result, previousResult) {
@@ -5466,6 +5901,15 @@ async function executeBackgroundStep(session, item) {
       matched: false,
     };
   }
+  if (item.type === "task_jump") {
+    return {
+      status: "ok",
+      action: "task_jump",
+      detail: `same-window queue jump requested: ${workflowNameById(item.jumpWorkflowId) || item.jumpWorkflowId || "missing target"}`,
+      inputSent: false,
+      matched: false,
+    };
+  }
   if (item.type === "retry_until") {
     return executeRetryUntilStep(session, item);
   }
@@ -5592,6 +6036,26 @@ async function currentWindowIdentityForRun(target, mode) {
     return null;
   }
   return current;
+}
+
+async function verifySessionWindowIdentityForStep(session, workflow, item) {
+  if (!session?.windowIdentity?.hwnd) return "缺少启动窗口身份快照";
+  let current = null;
+  try {
+    current = normalizeWindowIdentity(
+      await invokeBackend("current_window_identity", {
+        hwnd: Number(session.hwnd),
+      }),
+    );
+  } catch (error) {
+    return `${workflow?.name || "任务"} / ${item?.name || "步骤"} 执行前窗口身份复核失败：${error}`;
+  }
+  const currentIssue = requiredBackgroundWindowIdentityIssue(current);
+  if (currentIssue) {
+    return `${workflow?.name || "任务"} / ${item?.name || "步骤"} 执行前窗口身份不完整：${currentIssue}`;
+  }
+  const mismatch = windowIdentityMismatchReason(session.windowIdentity, current);
+  return mismatch ? `${workflow?.name || "任务"} / ${item?.name || "步骤"} 执行前窗口身份已变化：${mismatch}` : "";
 }
 
 function requiredBackgroundWindowIdentityIssue(identity) {

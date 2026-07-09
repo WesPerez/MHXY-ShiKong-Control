@@ -37,12 +37,12 @@
 - 复制任务会同步克隆该任务引用的图片、ROI、OCR 和点击目标，保证副本与原任务可以独立改素材、阈值和默认点击点。
 - 目标库支持搜索、类型筛选、重命名、类型/阈值/点击参数/OCR 文本/备注编辑、显示使用位置、绑定/解绑当前步骤，并且只允许删除 0 处使用的目标。
 - 目标库会把蓝图/示例任务中的常见逻辑目标自动接入 `assets/resource/ShiKong/template_mapping.json` 里的内置模板；也可手动点击“接入内置素材”补齐空目标，不覆盖用户自己 Ctrl+V 或 ROI 绑定的素材。
-- 后台执行启动前会用 Rust 重新读取 hwnd 身份；每步再传入启动时窗口身份快照，Rust 端要求快照 hwnd 与命令入参一致，并重新校验 title、pid、process、client size 和权限状态，发现漂移会安全失败。
+- 后台执行启动前会用 Rust 重新读取 hwnd 身份；每个后台步骤执行前前端都会再做一次只读身份复核，输入/OCR/截图步骤还会传入启动时窗口身份快照给 Rust 端二次校验。发现 title、pid、process、client size 或权限状态漂移会安全失败。
 - `image_click` 和 `double_click` 支持用 Ctrl+V 图片或 ROI 裁剪图做轻量模板匹配，匹配后按目标默认点击点点击或双击；点位支持模板中心和四角，并可用 `offsetX/offsetY` 微调。ROI 也可以绑定到后台点击/双击步骤并使用 ROI 中心。
 - Ctrl+V 图片或 ROI 生成目标时，如果当前步骤不适合绑定图片，会自动在当前步骤下方新建可执行步骤，避免误改延迟/热键等步骤语义；如果 WebView 粘贴事件没有带图片文件，会尝试从 Windows 剪贴板 DIB/DIBV5 后端读取截图。
 - 后台 `delay`、步骤前/后等待、队列错峰和任务间隔都使用真实等待时长，等待期间可响应停止请求；`retry_until` 对绑定图片、ROI 或坐标目标执行轻量等待循环，不发送额外输入，纯状态型目标会在后台校验中阻止执行，避免把未实现的状态判断当成功。
 - 工作区 schema v7 已保存 `targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`；复制任务会重映射同任务步骤引用，单步复制会清空控制流引用。
-- 前端运行器已改为带 `MAX_CONTROL_FLOW_STEPS` 预算的指令指针模型：`condition` 会按 guard 选择 true/false 目标，普通成功步骤可用 `targetStepId` 跳到同任务步骤；后向跳转必须设置 `maxIterations`。`restore`、`onFail=restore`、跨任务 `jumpWorkflowId` 和专用 `loop/task_jump` 仍是计划态。
+- 前端运行器已改为带 `MAX_CONTROL_FLOW_STEPS` 预算的指令指针模型：`condition` 会按 guard 选择 true/false 目标，普通成功步骤可用 `targetStepId` 跳到同任务步骤；后向跳转必须设置 `maxIterations`。`onFail=restore` 可跳到同任务 `recoveryStepId` 执行失败恢复分支，`jumpWorkflowId`/`task_jump` 会在当前 hwnd 会话内插入目标任务；`restore` 步骤本身和专用 `loop` 仍是计划态/未落地。
 - 运行状态 pill 和会话卡片会区分 idle/ready/running/blocked/failed，界面日志保留最近 500 条，适合长时间运行时保持可用。
 - 运行结束会写入 `runHistory` 报告，记录队列计划、错峰等待事件、控制流 `controlFlowTransitions`、每步状态、失败点、耗时、启动窗口身份和结束窗口身份，便于排查多窗口长时间运行。
 - `ocr_assert` 会截图、按 ROI 或命名区域裁剪后调用 Windows OCR；识别未命中或系统 OCR/语言包不可用都会明确失败，不会伪装成可识别。
@@ -127,7 +127,7 @@ E:\Project\Common
 
 ## 后续路线
 
-1. 按 [docs/product-plan.md](docs/product-plan.md) 的方案门禁补显式控制流和共享 `restore` 恢复流程。
+1. 按 [docs/product-plan.md](docs/product-plan.md) 的方案门禁补可执行 `restore` 片段、恢复后重试/继续策略和失败报告详情。
 2. 扩展 `targets` 文件化模板、批量导入导出和 OCR 文本目标实测。
 3. 继续完善后台 hwnd 输入执行器：增加 Rust 后端 runner、事件流、停止/失败恢复和真实游戏反馈验证。
 4. 接入 OCR 实测，每补一个真实任务都保留观察运行、运行报告和输入安全审计。

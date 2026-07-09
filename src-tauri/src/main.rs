@@ -402,7 +402,7 @@ fn execute_workflow_step(
                 ),
             ))
         }
-        "delay" | "condition" | "retry_until" | "restore" => Ok(step_result(
+        "delay" | "condition" | "retry_until" | "task_jump" | "restore" => Ok(step_result(
             hwnd,
             &step.step_type,
             "planned",

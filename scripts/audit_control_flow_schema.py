@@ -128,6 +128,7 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append("src/main.js WORKSPACE_SCHEMA_VERSION is not 7")
     if not re.search(r"WORKSPACE_SCHEMA_VERSION:\s*u32\s*=\s*7\b", rust):
         failures.append("src-tauri/src/main.rs WORKSPACE_SCHEMA_VERSION is not 7")
+    require_contains(rust, ["task_jump", "planned", "no_input"], failures, "src-tauri/src/main.rs")
 
     try:
         planned_only = set_literals(main, "plannedOnlyStepTypes")
@@ -174,17 +175,40 @@ def audit(project_root: Path) -> dict[str, object]:
         validation_body = function_body(main, "validateStepControlFlowReferences")
         require_contains(
             validation_body,
-            ["指向不存在的步骤", "指向已停用步骤", "不能指向当前步骤", "后向跳转，必须设置最大循环次数"],
+            [
+                "指向不存在的步骤",
+                "指向已停用步骤",
+                "不能指向当前步骤",
+                "后向跳转，必须设置最大循环次数",
+                "plannedOnlyStepTypes",
+                "不能驱动成功/条件/任务跳转",
+            ],
             failures,
             "validateStepControlFlowReferences",
         )
     except ValueError as error:
         failures.append(str(error))
 
-    require_contains(main, ["MAX_CONTROL_FLOW_STEPS", "MAX_CONTROL_FLOW_TRANSITIONS"], failures, "src/main.js")
+    require_contains(main, ["MAX_CONTROL_FLOW_STEPS", "MAX_CONTROL_FLOW_TRANSITIONS", "MAX_WORKFLOW_JUMPS"], failures, "src/main.js")
     try:
         run_session_body = function_body(main, "runSession")
-        require_contains(run_session_body, ["runWorkflowEntry(session, entry)"], failures, "runSession")
+        require_contains(
+            run_session_body,
+            ["pendingRunPlan", "runWorkflowEntry(session, entry)", "workflowJumpRequest", "insertWorkflowJumpIntoRunPlan"],
+            failures,
+            "runSession",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        jump_insert_body = function_body(main, "insertWorkflowJumpIntoRunPlan")
+        require_contains(
+            jump_insert_body,
+            ["MAX_WORKFLOW_JUMPS", "queuePlan.splice", "insertedBy: \"task_jump\"", "phase: \"task_jump\""],
+            failures,
+            "insertWorkflowJumpIntoRunPlan",
+        )
     except ValueError as error:
         failures.append(str(error))
 
@@ -199,12 +223,45 @@ def audit(project_root: Path) -> dict[str, object]:
                 "controlFlowDecisionForStep",
                 "recordControlFlowTransition",
                 "session.status === \"failed\"",
+                "verifySessionWindowIdentityForStep",
+                "recoveryDecisionForFailedStep",
+                "completeRecoveryAsFailed",
+                "workflowJumpRequest",
+                "verifyStepWindowIdentity",
             ],
             failures,
             "runWorkflowEntry",
         )
         if "for (const item of steps)" in workflow_runner_body:
             failures.append("runWorkflowEntry must use pc, not a linear for...of over steps")
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        identity_body = function_body(main, "verifySessionWindowIdentityForStep")
+        require_contains(
+            identity_body,
+            ["current_window_identity", "requiredBackgroundWindowIdentityIssue", "windowIdentityMismatchReason"],
+            failures,
+            "verifySessionWindowIdentityForStep",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        background_step_body = function_body(main, "executeBackgroundStep")
+        require_contains(
+            background_step_body,
+            ["item.type === \"task_jump\"", "action: \"task_jump\"", "inputSent: false", "matched: false"],
+            failures,
+            "executeBackgroundStep",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        blueprint_body = function_body(main, "createWorkflowFromBlueprint")
+        require_contains(blueprint_body, ["withDefaultRecoveryReferences", "createBlueprintStep"], failures, "createWorkflowFromBlueprint")
     except ValueError as error:
         failures.append(str(error))
 
@@ -226,9 +283,32 @@ def audit(project_root: Path) -> dict[str, object]:
                 "defaultNextIndex",
                 "unsupported guard expression",
                 "result?.status !== \"planned\"",
+                "plannedOnlyStepTypes",
+                "buildWorkflowJumpDecision",
+                "item.jumpWorkflowId",
+                "workflowJumpId",
+                "workflowJump",
+                "toWorkflowId",
             ],
             failures,
             "controlFlowDecisionForStep",
+        )
+    except ValueError as error:
+        failures.append(str(error))
+
+    try:
+        recovery_body = function_body(main, "recoveryDecisionForFailedStep")
+        require_contains(
+            recovery_body,
+            [
+                "isRecoverableFailureResult",
+                "recoveryStepId",
+                "failure restore",
+                "originalFailureReason",
+                "recoveryContext",
+            ],
+            failures,
+            "recoveryDecisionForFailedStep",
         )
     except ValueError as error:
         failures.append(str(error))
@@ -270,6 +350,7 @@ def audit(project_root: Path) -> dict[str, object]:
         "param-control-target-step",
         "param-control-else-step",
         "param-control-recovery-step",
+        "param-control-workflow-jump",
         "param-control-max-iterations",
     ]
     require_contains(html, ui_ids, failures, "index.html")
@@ -277,7 +358,7 @@ def audit(project_root: Path) -> dict[str, object]:
 
     docs_text = "\n".join([workflow_docs, product_docs, readme])
     require_contains(docs_text, ["schema v7", "targetStepId", "elseTargetStepId", "recoveryStepId", "jumpWorkflowId", "maxIterations"], failures, "docs")
-    require_contains(docs_text, ["指令指针", "condition", "后向跳转", "恢复入口仍是计划态", "controlFlowTransitions"], failures, "docs")
+    require_contains(docs_text, ["指令指针", "condition", "后向跳转", "失败恢复", "任务跳转", "controlFlowTransitions"], failures, "docs")
 
     scripts = package.get("scripts", {})
     if scripts.get("audit:control-flow-schema") != "python scripts/audit_control_flow_schema.py":

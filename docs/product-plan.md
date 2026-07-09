@@ -17,16 +17,16 @@
 - 不抢占前台鼠标键盘，不移动真实鼠标，不用 `SendInput`、`SetCursorPos`、`mouse_event` 或 `keybd_event`。
 - 不在权限不足时尝试绕过 Windows 完整性级别；目标窗口高权限而控制器非管理员时只提示和失败。
 - 不把 Maa 的隐式 `JumpBack`、全局状态文件、固定 1280x720 ROI 或识别 hook 里直接执行动作的模式照搬进来。
-- 不在控制流未设计完整前只把 `loop`、`task_jump`、`branch` 加进下拉框。
+- 不在控制流未设计完整前只把 `loop`、`branch` 加进下拉框；`task_jump` 已有当前会话内插队语义后才暴露。
 
 ## 当前基线
 
 - 已有实体：`Workflow`、`Step`、`Target`、`WindowAssignment`、`RunSession`、`runHistory`。
 - 已有运行：观察运行、后台运行 beta、每 hwnd 互斥、不同 hwnd 并行、队列错峰和任务后间隔。
 - 已有后台动作：`hotkey`、`text_input`、`click`、`double_click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
-- 已知缺口：专用 `loop`、跨任务 `task_jump`、显式恢复流程、后端事件流和管理员环境下的双击 live 验收尚未完成。
+- 已知缺口：专用 `loop`、`restore` 步骤自身的真实输入序列、后端事件流和管理员环境下的双击 live 验收尚未完成。
 - 当前安全语义：`unsupported` 和 `error` 强制停止；识图/OCR/缺素材类失败在重试耗尽后默认停止，只有 `onFail=skip` 才继续。
-- 当前 readiness 会校验 v7 同任务跳转引用，后向跳转必须有 `maxIterations`；`restore`、`jumpWorkflowId` 和 `onFail=restore` 仍标记为计划态/恢复计划，避免误报成完整恢复或跨任务跳转。
+- 当前 readiness 会校验 v7 同任务跳转、失败恢复入口和任务跳转引用；后向跳转以及跳回当前任务的 `task_jump` 必须有 `maxIterations`。`restore` 步骤本身仍标记为计划态，避免误报成完整返航动作。
 
 ## 数据方案
 
@@ -52,16 +52,18 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `delay`、pre/post delay、队列等待都必须可取消。
 - `retry_until` 只对图片、ROI 或坐标目标做等待循环；纯状态目标阻止后台运行。
 - 使用 `pc` 指令指针执行，而不是 `for...of`。
-- 设置全局 `MAX_CONTROL_FLOW_STEPS` 和每个 loop 的 `maxIterations`，防止无限循环。
+- 设置全局 `MAX_CONTROL_FLOW_STEPS`，并用每个后向跳转/任务跳回当前任务的 `maxIterations` 防止无限循环。
 - `condition` 根据结构化 guard 和上一步/会话状态决定 true/false 目标。
 - 普通成功步骤可用 `targetStepId` 跳到同一 workflow 内已启用步骤；后向跳转必须有次数上限。
+- `onFail=restore` 可在可恢复失败后跳到同任务 `recoveryStepId`；恢复分支执行到任务末尾后停止当前窗口队列，并在失败报告中保留原失败点。
+- `task_jump` / `jumpWorkflowId` 可在当前 hwnd 会话内插入目标 workflow；插入项只进入本次 `RunSession.queuePlan`，不改写持久化窗口队列，并受 `MAX_WORKFLOW_JUMPS` 与可选 `maxIterations` 保护。
 - 每次控制流决策会写入 `runHistory[].controlFlowTransitions[]`，记录 taken/skipped/fallthrough、guard 结果、目标步骤、后向跳转次数和跳过原因。
 
 未落地的 v7 边界：
 
 - 专用 `loop` 步骤尚未进入下拉框；当前用同任务后向跳转和 `maxIterations` 表达有限循环。
-- `task_jump` 只能保存 `jumpWorkflowId`，尚未接入队列调度。
-- `restore` 应是普通可执行恢复步骤或恢复流程，不应再由 `onFail=restore` 隐式承诺。
+- `restore` 步骤自身仍是计划态；真实返航需要用热键、识图点击、等待和页面确认组成恢复片段。
+- 失败恢复当前是“恢复后停止并报告失败”的保守语义，尚未实现恢复后返回失败点重试或继续后续队列。
 
 ## 双击方案
 
@@ -130,9 +132,9 @@ cargo clippy --all-targets -- -D warnings
 
 1. 继续修 v7 安全和 readiness，确保不会把计划态或失败态当成功。
 2. 用管理员环境补 `double_click` 真实游戏窗口验收，确认游戏对后台双击消息的响应。
-3. 扩展 schema v7 控制流：补专用 loop 和跨任务 task_jump。
-4. 继续完善前端 runner，逐步把恢复流程和任务跳转纳入队列调度。
-5. 实现显式 `restore` 恢复流程和失败恢复报告。
+3. 扩展 schema v7 控制流：补专用 loop，并为恢复后重试/继续队列设计明确语义。
+4. 继续完善前端 runner，把失败恢复从“恢复后停止”扩展到可选择的重试/继续策略。
+5. 实现可执行 `restore` 恢复片段模板和失败恢复报告详情页。
 6. 将 runner 逐步迁到 Rust 事件流，前端只订阅状态和渲染报告。
 
 ## 回滚策略

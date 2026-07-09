@@ -1467,6 +1467,12 @@ h3 {
   color: #aebbc2;
 }
 
+.step-badge.flow {
+  border-color: #3b6f66;
+  background: #142522;
+  color: #8bd6c6;
+}
+
 .step-validation-detail {
   display: grid;
   gap: 6px;
