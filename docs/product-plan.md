@@ -25,7 +25,7 @@
 - 已有运行：观察运行、后台运行 beta、每 hwnd 互斥、不同 hwnd 并行、队列错峰和任务后间隔。
 - 已有后台动作：`hotkey`、`text_input`、`click`、`double_click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
 - 已有报告：运行面板会从 `runHistory` 提取失败/停止报告，显示失败原因、失败步骤、窗口身份、最近步骤轨迹和控制流摘要，并支持定位步骤与复制单条报告 JSON。
-- 已知缺口：`restore` 步骤自身的真实输入序列、恢复后重试/继续策略、后端事件流和管理员环境下的双击 live 验收尚未完成。
+- 已知缺口：默认恢复片段还需要真实窗口 live 验收和更多场景模板，恢复后重试/继续策略、后端事件流和管理员环境下的双击 live 验收尚未完成；计划态 `restore` 步骤自身仍不发送后台输入。
 - 当前安全语义：`unsupported` 和 `error` 强制停止；识图/OCR/缺素材类失败在重试耗尽后默认停止，只有 `onFail=skip` 才继续。
 - 当前 readiness 会校验 v7 同任务跳转、有限 `loop`、失败恢复入口和任务跳转引用；`loop` 必须指向当前任务内更早的步骤并设置 `maxIterations`，跳回当前任务的 `task_jump` 也必须有 `maxIterations`；跨任务环内任意未设上限的 `task_jump` 会阻塞后台运行，直到该跳转补上最大循环次数。`restore` 步骤本身仍标记为计划态，避免误报成完整返航动作。
 
@@ -57,13 +57,13 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `condition` 根据结构化 guard 和上一步/会话状态决定 true/false 目标。
 - 普通成功步骤可用 `targetStepId` 跳到同一 workflow 内已启用步骤；后向跳转必须有次数上限。
 - `loop` 是一等有限循环步骤，只在当前 workflow 内跳到更早的 `targetStepId`，必须设置 `maxIterations`；执行时返回 no-input 结果，不投递后台鼠标键盘消息，达到上限后顺序进入下一步。
-- `onFail=restore` 可在可恢复失败后跳到同任务 `recoveryStepId`；恢复分支执行到任务末尾后停止当前窗口队列，并在失败报告中保留原失败点。
+- `onFail=restore` 可在可恢复失败后跳到同任务 `recoveryStepId`；默认恢复片段模板会展开为普通可执行步骤，并在正常成功路径跳过；恢复分支执行到任务末尾后停止当前窗口队列，并在失败报告中保留原失败点。
 - `task_jump` / `jumpWorkflowId` 可在当前 hwnd 会话内插入目标 workflow；插入项只进入本次 `RunSession.queuePlan`，不改写持久化窗口队列，并受 `MAX_WORKFLOW_JUMPS` 与可选 `maxIterations` 保护；一旦多个任务互跳形成环，环内没有上限的跳转会被后台 readiness 阻止。
 - 每次控制流决策会写入 `runHistory[].controlFlowTransitions[]`，记录 taken/skipped/fallthrough、guard 结果、目标步骤、后向跳转次数和跳过原因。
 
 未落地的 v7 边界：
 
-- `restore` 步骤自身仍是计划态；真实返航需要用热键、识图点击、等待和页面确认组成恢复片段。
+- 默认恢复片段模板已覆盖 `ESC`、等待、页面确认和截图记录；计划态 `restore` 步骤自身仍不发送后台输入，真实返航还需要素材采样、页面确认和 live 验收。
 - 失败恢复当前是“恢复后停止并报告失败”的保守语义，尚未实现恢复后返回失败点重试或继续后续队列。
 
 ## 双击方案
@@ -139,7 +139,7 @@ cargo clippy --all-targets -- -D warnings
 2. 用管理员环境补 `double_click` 真实游戏窗口验收，确认游戏对后台双击消息的响应。
 3. 扩展 schema v7 控制流：继续完善有限 loop 的 UI 演练证据，并为恢复后重试/继续队列设计明确语义。
 4. 继续完善前端 runner，把失败恢复从“恢复后停止”扩展到可选择的重试/继续策略。
-5. 实现可执行 `restore` 恢复片段模板，并扩展失败分析导出、截图证据和恢复后重试/继续策略。
+5. 扩展可执行恢复片段模板的场景覆盖，并补失败分析导出、截图证据和恢复后重试/继续策略。
 6. 将 runner 逐步迁到 Rust 事件流，前端只订阅状态和渲染报告。
 
 ## 回滚策略

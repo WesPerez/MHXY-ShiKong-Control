@@ -40,6 +40,30 @@ REQUIRED_STEP_TYPES = {
     "task_jump",
     "restore",
 }
+RECOVERY_FRAGMENT_STEP_TYPES = {
+    "hotkey",
+    "delay",
+    "detect_page",
+    "wait_image",
+    "image_click",
+    "click",
+    "double_click",
+    "ocr_assert",
+    "retry_until",
+    "snapshot",
+}
+RECOVERY_EXECUTABLE_STEP_TYPES = {
+    "hotkey",
+    "detect_page",
+    "wait_image",
+    "image_click",
+    "click",
+    "double_click",
+    "ocr_assert",
+    "retry_until",
+}
+RECOVERY_VERIFICATION_STEP_TYPES = {"detect_page", "wait_image", "ocr_assert", "retry_until"}
+RECOVERY_FRAGMENT_MARKER = "default-recovery-fragment"
 REPORT_ONLY_TARGETS = {
     "button.sign_in",
     "entry.home",
@@ -306,6 +330,119 @@ def parse_sample_workflows(source: str, step_defaults: dict[str, dict[str, str]]
     return workflows
 
 
+def default_recovery_fragment_steps(id_prefix: str) -> list[dict[str, object]]:
+    return [
+        {
+            "id": f"{id_prefix}-esc",
+            "type": "hotkey",
+            "target": "ESC",
+            "command": "mode=hwnd-key",
+            "expect": "dialog.closed",
+            "onFail": "stop",
+            "notes": RECOVERY_FRAGMENT_MARKER,
+        },
+        {
+            "id": f"{id_prefix}-settle",
+            "type": "delay",
+            "target": "600ms",
+            "command": "reason=recovery_settle",
+            "expect": "time.elapsed",
+            "onFail": "skip",
+            "notes": RECOVERY_FRAGMENT_MARKER,
+        },
+        {
+            "id": f"{id_prefix}-home",
+            "type": "detect_page",
+            "target": "page.home.ready",
+            "command": "threshold=0.86",
+            "expect": "home.visible",
+            "onFail": "stop",
+            "notes": RECOVERY_FRAGMENT_MARKER,
+        },
+        {
+            "id": f"{id_prefix}-snapshot",
+            "type": "snapshot",
+            "target": "window.client",
+            "command": "dry-run log only",
+            "expect": "snapshot.recorded",
+            "onFail": "skip",
+            "notes": RECOVERY_FRAGMENT_MARKER,
+        },
+    ]
+
+
+def is_default_recovery_fragment_step(step: dict[str, object]) -> bool:
+    return str(step.get("notes", "")).strip() == RECOVERY_FRAGMENT_MARKER
+
+
+def with_default_recovery_fragment(workflow: dict[str, object]) -> dict[str, object]:
+    steps = list(workflow.get("steps", []))
+    if any(is_default_recovery_fragment_step(step) for step in steps):
+        workflow["steps"] = with_default_recovery_references(steps)
+        return workflow
+    restore_index = next(
+        (index for index, step in enumerate(steps) if step.get("type") == "restore" and step.get("enabled", True) is not False),
+        -1,
+    )
+    if restore_index < 0:
+        workflow["steps"] = with_default_recovery_references(steps)
+        return workflow
+    id_prefix = f"{workflow.get('id', 'workflow')}-recovery"
+    steps = steps[:restore_index] + default_recovery_fragment_steps(id_prefix) + steps[restore_index:]
+    workflow["steps"] = with_default_recovery_references(steps)
+    return workflow
+
+
+def with_default_recovery_references(steps: list[dict[str, object]]) -> list[dict[str, object]]:
+    recovery_step = next(
+        (step for step in steps if is_default_recovery_fragment_step(step) and step.get("enabled", True) is not False),
+        None,
+    ) or next(
+        (step for step in steps if step.get("type") == "restore" and step.get("enabled", True) is not False),
+        None,
+    )
+    if not recovery_step:
+        return steps
+    recovery_step_id = str(recovery_step.get("id", ""))
+    updated: list[dict[str, object]] = []
+    for step in steps:
+        if step.get("id") == recovery_step_id or step.get("recoveryStepId") or step.get("onFail") != "restore":
+            updated.append(step)
+            continue
+        copy = dict(step)
+        copy["recoveryStepId"] = recovery_step_id
+        updated.append(copy)
+    return updated
+
+
+def recovery_fragment_stats(steps: list[dict[str, object]], start_index: int) -> dict[str, int | bool]:
+    start = max(0, start_index)
+    entry = steps[start] if start < len(steps) else {}
+    entry_is_default = is_default_recovery_fragment_step(entry)
+    stats: dict[str, int | bool] = {
+        "executableCount": 0,
+        "verificationCount": 0,
+        "entryExecutable": entry.get("type") in RECOVERY_EXECUTABLE_STEP_TYPES and entry.get("enabled", True) is not False,
+    }
+    for index in range(start, len(steps)):
+        candidate = steps[index]
+        if candidate.get("enabled", True) is False:
+            continue
+        if index > start and entry_is_default and not is_default_recovery_fragment_step(candidate):
+            break
+        if not entry_is_default and index > start and (
+            candidate.get("type") == "restore" or candidate.get("type") in {"condition", "loop", "task_jump"}
+        ):
+            break
+        if not entry_is_default and index - start >= 4:
+            break
+        if candidate.get("type") in RECOVERY_EXECUTABLE_STEP_TYPES:
+            stats["executableCount"] = int(stats["executableCount"]) + 1
+        if candidate.get("type") in RECOVERY_VERIFICATION_STEP_TYPES:
+            stats["verificationCount"] = int(stats["verificationCount"]) + 1
+    return stats
+
+
 def png_size(path: Path) -> tuple[int, int]:
     with path.open("rb") as handle:
         header = handle.read(24)
@@ -353,7 +490,10 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
     step_defaults = parse_step_defaults(source)
     bindings = parse_bindings(source)
     blueprints = parse_blueprints(source)
-    sample_workflows = parse_sample_workflows(source, step_defaults)
+    sample_workflows = [
+        with_default_recovery_fragment(workflow)
+        for workflow in parse_sample_workflows(source, step_defaults)
+    ]
     exercise_ids = string_literals(extract_array(source, "exerciseSuiteBlueprintIds"))
 
     counts.update(
@@ -443,13 +583,13 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
     sample_backward_limited_jumps = 0
     sample_loop_steps = 0
     sample_bounded_loops = 0
+    sample_executable_recovery_fragments = 0
     for workflow in sample_workflows:
         workflow_id = str(workflow.get("id", ""))
         steps = list(workflow.get("steps", []))
         step_ids = [str(step.get("id", "")) for step in steps]
         step_id_set = set(step_ids)
         step_index = {step_id: index for index, step_id in enumerate(step_ids)}
-        has_restore_step = any(step.get("type") == "restore" for step in steps)
         for index, step in enumerate(steps):
             step_type = str(step.get("type", ""))
             target_step_id = str(step.get("targetStepId", "") or "")
@@ -458,10 +598,17 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
             max_iterations = int_field(step, "maxIterations")
             if step_type == "task_jump" and jump_workflow_id in sample_ids:
                 sample_task_jumps += 1
-            if step.get("onFail") == "restore" and (
-                str(step.get("recoveryStepId", "") or "") in step_id_set or has_restore_step
-            ):
+            if step.get("onFail") == "restore" and str(step.get("recoveryStepId", "") or "") in step_id_set:
                 sample_recovery_sources += 1
+                recovery_index = step_index[str(step.get("recoveryStepId", ""))]
+                fragment = recovery_fragment_stats(steps, recovery_index)
+                if (
+                    fragment["entryExecutable"]
+                    and int(fragment["executableCount"]) > 0
+                    and int(fragment["verificationCount"]) > 0
+                    and steps[recovery_index].get("type") != "restore"
+                ):
+                    sample_executable_recovery_fragments += 1
             if step_type == "condition" and target_step_id in step_id_set and else_step_id in step_id_set:
                 sample_condition_branches += 1
             if step_type == "loop":
@@ -484,12 +631,15 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
             "sampleBackwardLimitedJumps": sample_backward_limited_jumps,
             "sampleLoopSteps": sample_loop_steps,
             "sampleBoundedLoops": sample_bounded_loops,
+            "sampleExecutableRecoveryFragments": sample_executable_recovery_fragments,
         },
     )
     if sample_task_jumps < 1:
         failures.append("sample workflows must include at least one task_jump with a valid target workflow")
     if sample_recovery_sources < 1:
         failures.append("sample workflows must include at least one onFail=restore source with a recovery entry")
+    if sample_executable_recovery_fragments < 1:
+        failures.append("sample workflows must include at least one onFail=restore source pointing to an executable recovery fragment")
     if sample_condition_branches < 1:
         failures.append("sample workflows must include at least one condition with valid true and false branches")
     if sample_success_jumps < 1:

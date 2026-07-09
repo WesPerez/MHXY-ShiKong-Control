@@ -1641,6 +1641,19 @@ label {
   gap: 8px;
 }
 
+.param-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: end;
+  gap: 6px;
+}
+
+.param-actions button {
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
 .step-editor .raw-field {
   order: 20;
 }

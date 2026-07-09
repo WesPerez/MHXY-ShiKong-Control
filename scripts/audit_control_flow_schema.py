@@ -151,6 +151,23 @@ def audit(project_root: Path) -> dict[str, object]:
         "src/main.js",
     )
     require_contains(main, ['["loop", "循环"]', "loop: {", "action: \"loop\"", "bounded loop requested"], failures, "src/main.js loop")
+    require_contains(
+        main,
+        [
+            "recoveryFragmentStepTypes",
+            "defaultRecoveryFragmentSteps",
+            "withDefaultRecoveryFragment",
+            "recoveryFragmentStats",
+            "isDefaultRecoveryFragmentStep",
+            "syncRecoveryActionButtons",
+            "isDefaultRecoveryFragmentStep(item) && !session.recoveryContext",
+            "恢复入口不能只指向计划态 restore",
+            "恢复入口必须指向恢复片段的可执行步骤",
+            "恢复片段需要至少一个可执行步骤",
+        ],
+        failures,
+        "src/main.js recovery fragment",
+    )
 
     try:
         normalize_body = function_body(main, "normalizeStep")
@@ -192,6 +209,10 @@ def audit(project_root: Path) -> dict[str, object]:
                 "循环步骤必须选择循环目标",
                 "循环步骤必须设置最大循环次数",
                 "循环目标应指向当前步骤之前的步骤",
+                "恢复入口不能只指向计划态 restore",
+                "恢复入口必须指向恢复片段的可执行步骤",
+                "恢复片段需要至少一个可执行步骤",
+                "恢复片段需要至少一个页面确认",
                 "plannedOnlyStepTypes",
                 "不能驱动成功/条件/任务跳转",
             ],
@@ -409,6 +430,8 @@ def audit(project_root: Path) -> dict[str, object]:
         "param-control-recovery-step",
         "param-control-workflow-jump",
         "param-control-max-iterations",
+        "insert-recovery-fragment",
+        "mark-recovery-entry",
     ]
     require_contains(html, ui_ids, failures, "index.html")
     require_contains(html, ["data-step-types=\"detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition loop", "循环只在当前任务内跳转"], failures, "index.html loop")
@@ -422,6 +445,7 @@ def audit(project_root: Path) -> dict[str, object]:
         failures,
         "docs",
     )
+    require_contains(docs_text, ["恢复片段", "计划态 restore"], failures, "docs recovery fragment")
     test_control_flow = read_text(project_root / "scripts/test_control_flow_core.mjs")
     require_contains(test_control_flow, ["testLoopStepUsesPlannedNoInputAndBudget", "type: \"loop\"", "循环目标必须位于当前步骤之前"], failures, "scripts/test_control_flow_core.mjs loop")
 

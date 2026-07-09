@@ -181,6 +181,18 @@ LOOP_SEMANTIC_TOKENS = [
     "循环目标应指向当前步骤之前的步骤",
     "循环目标必须位于当前步骤之前",
 ]
+RESTORE_SEMANTIC_TOKENS = [
+    '"delay" | "condition" | "loop" | "retry_until" | "task_jump" | "restore"',
+    '"planned"',
+    '"no_input"',
+    'plannedOnlyStepTypes = new Set(["restore"])',
+    'const DEFAULT_PLANNED_ONLY_STEP_TYPES = new Set(["restore"])',
+    "isDefaultRecoveryFragmentStep(item) && !session.recoveryContext",
+    "恢复入口不能只指向计划态 restore",
+    "恢复入口必须指向恢复片段的可执行步骤",
+    "inputSent: false",
+    "completeRecoveryAsFailed",
+]
 STEP_TIMING_TOKENS = [
     "param-pre-delay-ms",
     "param-post-delay-ms",
@@ -347,6 +359,7 @@ def main() -> int:
     clipboard_fallback = scan_tokens(files, CLIPBOARD_FALLBACK_TOKENS)
     runner_semantics = scan_tokens(files, RUNNER_SEMANTIC_TOKENS)
     loop_semantics = scan_tokens(files, LOOP_SEMANTIC_TOKENS)
+    restore_semantics = scan_tokens(files, RESTORE_SEMANTIC_TOKENS)
     step_timing = scan_tokens(files, STEP_TIMING_TOKENS)
     image_click_point = scan_tokens(files, IMAGE_CLICK_POINT_TOKENS)
     completion_board = scan_tokens(files, COMPLETION_BOARD_TOKENS)
@@ -415,6 +428,10 @@ def main() -> int:
     loop_semantics_seen = {hit["token"] for hit in loop_semantics}
     loop_semantics_missing = [
         token for token in LOOP_SEMANTIC_TOKENS if token not in loop_semantics_seen
+    ]
+    restore_semantics_seen = {hit["token"] for hit in restore_semantics}
+    restore_semantics_missing = [
+        token for token in RESTORE_SEMANTIC_TOKENS if token not in restore_semantics_seen
     ]
     step_timing_seen = {hit["token"] for hit in step_timing}
     step_timing_missing = [
@@ -501,6 +518,8 @@ def main() -> int:
         "runnerSemanticMissing": runner_semantics_missing,
         "loopSemanticEvidence": loop_semantics,
         "loopSemanticMissing": loop_semantics_missing,
+        "restoreSemanticEvidence": restore_semantics,
+        "restoreSemanticMissing": restore_semantics_missing,
         "stepTimingEvidence": step_timing,
         "stepTimingMissing": step_timing_missing,
         "imageClickPointEvidence": image_click_point,
@@ -541,6 +560,7 @@ def main() -> int:
             and not clipboard_fallback_missing
             and not runner_semantics_missing
             and not loop_semantics_missing
+            and not restore_semantics_missing
             and not step_timing_missing
             and not image_click_point_missing
             and not completion_board_missing
@@ -598,6 +618,8 @@ def main() -> int:
         print(f"runnerSemanticMissing={len(runner_semantics_missing)}")
         print(f"loopSemanticEvidence={len(loop_semantics)}")
         print(f"loopSemanticMissing={len(loop_semantics_missing)}")
+        print(f"restoreSemanticEvidence={len(restore_semantics)}")
+        print(f"restoreSemanticMissing={len(restore_semantics_missing)}")
         print(f"stepTimingEvidence={len(step_timing)}")
         print(f"stepTimingMissing={len(step_timing_missing)}")
         print(f"imageClickPointEvidence={len(image_click_point)}")
@@ -664,6 +686,9 @@ def main() -> int:
         if loop_semantics_missing:
             for token in loop_semantics_missing:
                 print(f"MISSING_LOOP_SEMANTIC {token}")
+        if restore_semantics_missing:
+            for token in restore_semantics_missing:
+                print(f"MISSING_RESTORE_SEMANTIC {token}")
         if step_timing_missing:
             for token in step_timing_missing:
                 print(f"MISSING_STEP_TIMING {token}")

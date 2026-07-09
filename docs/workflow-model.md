@@ -145,7 +145,7 @@
 
 - `targetPolicy.inputMode` 固定表达“目标设计是 hwnd 后台消息”。观察运行不发送输入，后台运行 beta 只投递 hwnd 消息。
 - `targetPolicy.concurrency=per-window-exclusive` 表示同 hwnd 只有一个 active session；窗口内任务队列串行消费，不同 hwnd 可并行。
-- 恢复动作应通过显式 `restore` 步骤表达；旧版 `restorePolicy` 未接入运行器，编辑器不再生成。
+- 恢复动作应通过显式恢复入口表达；可执行恢复优先由模板展开为普通步骤，旧版 `restorePolicy` 未接入运行器，编辑器不再生成。
 
 ## WorkflowBlueprint
 
@@ -199,11 +199,11 @@
 - `retry_until`: 重试直到成功；后台模式必须绑定图片、ROI 或坐标目标，纯状态目标会被校验为不可执行。
 - `snapshot`: 截图记录占位。
 - `task_jump`: 任务跳转；前端 runner 会在当前 hwnd 会话内插入目标任务，不改写持久化窗口队列。
-- `restore`: 恢复到稳定页面的计划步骤；`restore` 本身仍不投递后台输入，真实恢复应由 `recoveryStepId` 指向可执行恢复片段。
+- `restore`: 恢复到稳定页面的计划步骤；计划态 restore 类型本身仍不投递后台输入，真实恢复应由 `recoveryStepId` 指向模板生成或用户配置的可执行恢复片段。
 
 Ctrl+V 粘贴图片是目标库入口，不是运行时步骤。粘贴后会生成 `Target` 并绑定到当前步骤；如果当前步骤不是可接收图片的图像类步骤，会在当前步骤下方自动创建 `image_click`，避免误改原步骤语义，并同步目标默认阈值、点击键和点击点。文本输入框、JSON 文本框和其它可编辑控件内的粘贴不会被拦截，避免误创建目标。如果 WebView 的粘贴事件没有带图片文件，前端会调用 Rust 后端读取 Windows 剪贴板里的 DIB/DIBV5 位图，再按同一套目标绑定流程导入。
 
-schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`。导入、保存和复制任务会保留这些字段；复制任务时同任务内 step 引用会重映射到副本步骤，单步复制会清空控制流引用，避免复制出的步骤意外跳到旧上下文。当前前端 runner 使用指令指针执行同任务 `targetStepId/elseTargetStepId`，并用 `MAX_CONTROL_FLOW_STEPS` 和 `maxIterations` 限制后向跳转；一等 `loop` 复用这套字段，但要求目标步骤位于当前步骤之前且 `maxIterations > 0`。跨任务 `task_jump` 如果形成任务环，环内每条未设上限的跳转都会在 readiness 中要求设置 `maxIterations`，避免只靠全局任务跳转预算兜底。执行结果会写入 `runHistory[].controlFlowTransitions[]`。`onFail=restore` 会在可恢复失败后跳到同任务 `recoveryStepId`，恢复分支执行到任务末尾后停止当前窗口队列并保留失败报告。`jumpWorkflowId`/`task_jump` 会在当前 hwnd 会话内插入目标任务，不改写持久化窗口队列。`loop` 本身是 no-input 控制步骤；`restore` 步骤自身的后台输入仍未落地。
+schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTargetStepId`、`recoveryStepId`、`jumpWorkflowId` 和 `maxIterations`。导入、保存和复制任务会保留这些字段；复制任务时同任务内 step 引用会重映射到副本步骤，单步复制会清空控制流引用，避免复制出的步骤意外跳到旧上下文。当前前端 runner 使用指令指针执行同任务 `targetStepId/elseTargetStepId`，并用 `MAX_CONTROL_FLOW_STEPS` 和 `maxIterations` 限制后向跳转；一等 `loop` 复用这套字段，但要求目标步骤位于当前步骤之前且 `maxIterations > 0`。跨任务 `task_jump` 如果形成任务环，环内每条未设上限的跳转都会在 readiness 中要求设置 `maxIterations`，避免只靠全局任务跳转预算兜底。执行结果会写入 `runHistory[].controlFlowTransitions[]`。`onFail=restore` 会在可恢复失败后跳到同任务 `recoveryStepId`，恢复入口可以指向由模板生成的普通可执行步骤；默认片段包含 `ESC`、等待、页面确认和截图记录，正常成功路径会跳过带默认标记的恢复片段。恢复分支执行到任务末尾后停止当前窗口队列并保留失败报告。`jumpWorkflowId`/`task_jump` 会在当前 hwnd 会话内插入目标任务，不改写持久化窗口队列。`loop` 本身是 no-input 控制步骤；计划态 restore 类型自身的后台输入仍未落地。
 
 旧版 `branch` 失败/成功分支字段未接入运行器，编辑器不再生成；后续如果要做状态机，应以显式 `targetStepId` 和 guard 表达式重新设计。
 成功路径默认进入下一启用步骤；如果步骤设置了 `targetStepId` 且执行结果不是失败/停止状态，会跳转到同任务目标步骤。旧版 `onSuccess` 字段已不再由编辑器生成。
@@ -221,7 +221,7 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - `loop`: 循环入口和最大循环次数；入口必须是当前任务内更早的启用步骤，`maxIterations` 控制这条回跳边最多被 taken 几次。
 - `retry_until`: 等待目标和重试间隔；绑定图片、ROI 或坐标后才会在后台轮询，否则阻止后台运行。
 - `task_jump`: 目标任务选择器；执行时只改本次 `RunSession` 的待跑计划，不覆盖窗口队列配置。
-- 失败恢复入口：所有步骤可设置 `recoveryStepId`；只有 `onFail=restore` 时会在可恢复失败后进入该分支。
+- 失败恢复入口：所有步骤可设置 `recoveryStepId`；只有 `onFail=restore` 时会在可恢复失败后进入该分支。编辑器提供默认恢复片段模板，片段步骤只在恢复上下文中执行。
 - 所有步骤都可以设置 `preDelay` 和 `postDelay`，分别表示该步骤执行前/后等待；这些参数继续写入 `command` 字符串，不需要 schema 迁移。
 
 原始 `target/command/expect` 仍保留为兼容入口；旧 `assetId` 会在载入时迁移为 `targetId`。后续迁移到结构化 `params` 时应继续保证旧字段可导入。
@@ -291,7 +291,7 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - `任务链检查`
 - `材料整理`
 
-这些样例覆盖 hotkey、图像等待、图像点击、OCR 确认、后台点击、后台文本输入、延迟、条件、有限 loop、重试、截图记录、任务跳转和恢复状态。新生成的样例会把 `onFail=restore` 步骤指向本任务的恢复入口，用于演练失败恢复报告；其中 `restore` 步骤仍是计划态，不代表已经有真实返航输入序列。`材料整理` 包含一个 `loop` 回查步骤和一个 `task_jump` 演练步骤：前者在当前任务内有限回跳，后者会在当前 hwnd 会话内插入 `每日福利领取`，用于回归 `jumpWorkflowId` 不改写持久化队列的语义。`摊位搜索` 包含 `text_input` 步骤，用于验证 hwnd 定向文本输入链路；其它样例不会默认向聊天框或输入框发送文字。它们用于验证模型覆盖面和 UI 操作流，不代表已经可以直接执行未采样素材的真实游戏任务。
+这些样例覆盖 hotkey、图像等待、图像点击、OCR 确认、后台点击、后台文本输入、延迟、条件、有限 loop、重试、截图记录、任务跳转和失败恢复片段。新生成的样例会把 `onFail=restore` 步骤指向本任务的默认恢复片段入口，用于演练失败恢复报告；计划态 restore 类型本身仍是 no-input，不代表已经有真实返航输入序列。`材料整理` 包含一个 `loop` 回查步骤和一个 `task_jump` 演练步骤：前者在当前任务内有限回跳，后者会在当前 hwnd 会话内插入 `每日福利领取`，用于回归 `jumpWorkflowId` 不改写持久化队列的语义。`摊位搜索` 包含 `text_input` 步骤，用于验证 hwnd 定向文本输入链路；其它样例不会默认向聊天框或输入框发送文字。它们用于验证模型覆盖面和 UI 操作流，不代表已经可以直接执行未采样素材的真实游戏任务。
 
 ## 运行策略
 
@@ -311,7 +311,7 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - 后台运行会做更严格的前端校验：缺 OCR 目标文本、缺图片目标的图像步骤、缺坐标/ROI/图片目标的点击或双击步骤、丢失 `targetId` 的步骤会阻止执行；观察运行仍允许这些抽象样例通过日志演练。
 - `retry_until` 如果没有图片、ROI 或坐标目标，会以缺少可验证目标处理，不再把 Rust 后端的计划态 `no_input` 当成功。`condition` 和 `loop` 会通过前端 runner 改变同任务执行路径；后向跳转没有 `maxIterations` 会阻止后台运行。
 - `task_jump` 或带 `jumpWorkflowId` 的成功步骤会在当前 hwnd 会话中插入目标任务；该插入只写入本次 `queuePlan/queueEvents` 和 `controlFlowTransitions`，不会改写持久化窗口队列。任务跳回当前任务必须设置 `maxIterations`；跨任务形成 A -> B -> A 这类任务环时，环内任意未设上限的跳转都会被后台 readiness 阻塞，直到该跳转设置 `maxIterations`；整个会话仍受 `MAX_WORKFLOW_JUMPS` 保护。
-- `onFail=restore` 只对识图/OCR/缺素材这类可恢复失败生效；`error/unsupported`、窗口身份漂移、权限不足、用户停止不会进入恢复分支。恢复分支执行结束后当前窗口队列会停止，`runHistory` 保留原失败点和恢复 transition。
+- `onFail=restore` 只对识图/OCR/缺素材这类可恢复失败生效；`error/unsupported`、窗口身份漂移、权限不足、用户停止不会进入恢复分支。恢复入口不能只指向计划态 restore，默认恢复片段只在恢复分支执行；恢复分支执行结束后当前窗口队列会停止，`runHistory` 保留原失败点和恢复 transition。
 - readiness 会把已执行的条件分支、任务跳转、失败恢复分支和仍计划态的 `restore` 步骤分开显示。任务没有缺图片、缺坐标或缺 OCR 文本时，仍可能因为 `restore` 步骤显示计划态提醒；这表示输入链路可演练，但该恢复步骤本身没有后台输入动作。
 - 后台运行启动前还会调用 Rust `current_window_identity` 重新读取一次 hwnd 的实时身份；该只读复核通过后，`RunSession.windowIdentity` 才保存为启动时窗口快照：`hwnd/title/processId/processName/clientWidth/clientHeight/elevated`。前端 runner 在每个后台步骤执行前都会再做一次只读身份复核，因此 `delay`、`condition`、`task_jump` 这类无后端输入步骤也不会在 hwnd 漂移后继续推进。每个后台输入/OCR/截图步骤调用 Rust 时还会传入该快照，且 `expectedWindow.hwnd` 必须存在并等于命令入参。
 - Rust 在 `execute_workflow_step` 开头重新读取当前 hwnd 的窗口记录，并逐项比对标题、PID、进程名、client 尺寸和权限状态；不一致时返回错误并停止该窗口会话。`image_click` 在模板匹配或 ROI 解析后、真正投递鼠标消息前会再校验一次窗口身份，避免识图过程中 hwnd 被复用后误点其它窗口。
@@ -322,7 +322,7 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 - `image_click` 和 `double_click` 会截图、匹配模板图，达到阈值后按目标/步骤的点击点点击或双击；点位支持模板中心和四角，并可用 `offsetX/offsetY` 做像素级微调。没有模板但有 ROI/坐标时，点击 fallback 也会应用同一组偏移。
 - `ocr_assert` 使用 `target.texts`、步骤目标、`expect` 或 `command` 里的 `text=/contains=` 作为期望文本；识别命中返回 `matched`，未命中返回 `text_miss`，系统 OCR/语言包不可用返回 `ocr_unavailable`，不会把未识别当成功。
 - 后台步骤返回 `error` 或 `unsupported` 时一律停止窗口会话。`missing_asset`、`below_threshold`、`text_miss`、`ocr_unavailable`、`missing_expect` 等失败状态在重试耗尽后默认停止，只有步骤显式设置 `onFail=skip` 才会继续下一步。
-- `onFail=restore` 会跳到显式 `recoveryStepId`，但只作为失败恢复分支调度；它不会把原失败任务改判为成功，也不会在恢复结束后继续消费后续队列。要真正返回主界面，需要用户把恢复入口配置为可执行的热键、识图点击、等待和确认步骤；单独的 `restore` 类型仍只记录计划语义。
+- `onFail=restore` 会跳到显式 `recoveryStepId`，但只作为失败恢复分支调度；它不会把原失败任务改判为成功，也不会在恢复结束后继续消费后续队列。要真正返回主界面，需要用户把恢复入口配置为可执行的热键、识图点击、等待和确认步骤；默认模板已提供低风险 `ESC + 等待 + 页面确认 + 截图记录` 片段，但真实返航仍依赖用户素材采样、窗口身份稳定和 live 验收。单独的 `restore` 类型仍只记录计划语义。
 
 `runHistory[]` 保存完成后的报告：`mode/source/hwnd/display/workflowIds/workflowNames/queueLength/status/completedSteps/totalSteps/durationMs/failureReason/windowIdentity/endedWindowIdentity/queuePlan/queueEvents/controlFlowTransitions/stepResults/startedAt/endedAt`。运行面板会从这些记录中提取失败/停止报告，展示失败原因、失败步骤、最近步骤轨迹、窗口身份和控制流摘要；如果对应任务和步骤仍在当前任务库中，用户可以直接定位回步骤编辑器，也可以复制单条报告 JSON 作为验收证据。运行中的 `state.sessions` 仍是内存态，后续 Rust 后端 runner 接管后再扩展为事件流。
 

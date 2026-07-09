@@ -54,6 +54,21 @@ const backgroundFailureStatuses = new Set([
   "missing_expect",
 ]);
 const plannedOnlyStepTypes = new Set(["restore"]);
+const recoveryFragmentStepTypes = new Set([
+  "hotkey",
+  "delay",
+  "detect_page",
+  "wait_image",
+  "image_click",
+  "click",
+  "double_click",
+  "ocr_assert",
+  "retry_until",
+  "snapshot",
+]);
+const recoveryExecutableStepTypes = new Set(["hotkey", "detect_page", "wait_image", "image_click", "click", "double_click", "ocr_assert", "retry_until"]);
+const recoveryVerificationStepTypes = new Set(["detect_page", "wait_image", "ocr_assert", "retry_until"]);
+const recoveryFragmentMarker = "default-recovery-fragment";
 const controlFlowStepReferenceFields = ["targetStepId", "elseTargetStepId", "recoveryStepId"];
 const controlFlowWorkflowReferenceFields = ["jumpWorkflowId"];
 const builtinTargetTemplateBindings = [
@@ -288,6 +303,16 @@ const stepBlockPresets = [
       { type: "detect_page", name: "检测当前页面", target: "page.current.ready", command: "threshold=0.86", expect: "ready=true" },
       { type: "condition", name: "判断是否继续", target: "state.can_continue", command: "guard=true", expect: "continue" },
       { type: "snapshot", name: "记录判断现场", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded" },
+    ],
+  },
+  {
+    id: "recovery-fragment",
+    label: "恢复片段 · 4步",
+    steps: [
+      { type: "hotkey", name: "关闭当前弹窗", target: "ESC", command: "mode=hwnd-key", expect: "dialog.closed", timeoutMs: 800, retry: 0, onFail: "stop", notes: "default-recovery-fragment" },
+      { type: "delay", name: "等待界面回稳", target: "600ms", command: "reason=recovery_settle", expect: "time.elapsed", timeoutMs: 600, retry: 0, onFail: "skip", notes: "default-recovery-fragment" },
+      { type: "detect_page", name: "确认主界面", target: "page.home.ready", command: "threshold=0.86", expect: "home.visible", timeoutMs: 3000, retry: 1, onFail: "stop", notes: "default-recovery-fragment" },
+      { type: "snapshot", name: "记录恢复现场", target: "window.client", command: "dry-run log only", expect: "snapshot.recorded", timeoutMs: 1000, retry: 0, onFail: "skip", notes: "default-recovery-fragment" },
     ],
   },
   {
@@ -792,7 +817,7 @@ function createSampleWorkflows() {
 }
 
 function workflow(id, name, category, description, steps) {
-  const workflowSteps = withDefaultRecoveryReferences(steps);
+  const workflowSteps = withDefaultRecoveryReferences(withDefaultRecoveryFragment(steps, `${id}-recovery`));
   return {
     schemaVersion: WORKSPACE_SCHEMA_VERSION,
     id,
@@ -1632,7 +1657,8 @@ function createWorkflowFromBlueprint(blueprintInput, index = 1, namePrefix = "")
   const workflowId = randomId("wf");
   const namespace = `task.${blueprint.id}.${workflowId}`;
   const prefix = String(namePrefix || blueprint.defaultPrefix || blueprint.label || "任务").trim();
-  const steps = withDefaultRecoveryReferences(blueprint.steps.map((item) => createBlueprintStep(item, namespace)));
+  const blueprintSteps = blueprint.steps.map((item) => createBlueprintStep(item, namespace));
+  const steps = withDefaultRecoveryReferences(withDefaultRecoveryFragment(blueprintSteps, `${workflowId}-recovery`));
   const workflow = normalizeWorkflow({
     id: workflowId,
     name: index > 1 ? `${prefix} ${index}` : prefix,
@@ -2572,6 +2598,75 @@ function createStepBlock(presetId) {
   };
 }
 
+function defaultRecoveryFragmentSteps(idPrefix = randomId("recovery")) {
+  return [
+    normalizeStep({
+      id: `${idPrefix}-esc`,
+      type: "hotkey",
+      name: "关闭当前弹窗",
+      target: "ESC",
+      command: "mode=hwnd-key",
+      expect: "dialog.closed",
+      timeoutMs: 800,
+      retry: 0,
+      onFail: "stop",
+      notes: recoveryFragmentMarker,
+    }),
+    normalizeStep({
+      id: `${idPrefix}-settle`,
+      type: "delay",
+      name: "等待界面回稳",
+      target: "600ms",
+      command: "reason=recovery_settle",
+      expect: "time.elapsed",
+      timeoutMs: 600,
+      retry: 0,
+      onFail: "skip",
+      notes: recoveryFragmentMarker,
+    }),
+    normalizeStep({
+      id: `${idPrefix}-home`,
+      type: "detect_page",
+      name: "确认主界面",
+      target: "page.home.ready",
+      command: "threshold=0.86",
+      expect: "home.visible",
+      timeoutMs: 3000,
+      retry: 1,
+      onFail: "stop",
+      notes: recoveryFragmentMarker,
+    }),
+    normalizeStep({
+      id: `${idPrefix}-snapshot`,
+      type: "snapshot",
+      name: "记录恢复现场",
+      target: "window.client",
+      command: "dry-run log only",
+      expect: "snapshot.recorded",
+      timeoutMs: 1000,
+      retry: 0,
+      onFail: "skip",
+      notes: recoveryFragmentMarker,
+    }),
+  ];
+}
+
+function hasDefaultRecoveryFragment(steps) {
+  return (steps || []).some(isDefaultRecoveryFragmentStep);
+}
+
+function isDefaultRecoveryFragmentStep(item) {
+  return String(item?.notes || "").trim() === recoveryFragmentMarker;
+}
+
+function withDefaultRecoveryFragment(steps, idPrefix = randomId("recovery")) {
+  if (!Array.isArray(steps) || hasDefaultRecoveryFragment(steps)) return steps;
+  const restoreIndex = steps.findIndex((item) => item.type === "restore" && item.enabled !== false);
+  if (restoreIndex < 0) return steps;
+  const fragment = defaultRecoveryFragmentSteps(idPrefix);
+  return [...steps.slice(0, restoreIndex), ...fragment, ...steps.slice(restoreIndex)];
+}
+
 function insertStepBlock() {
   const workflow = activeWorkflow();
   if (!workflow) return;
@@ -2586,6 +2681,68 @@ function insertStepBlock() {
   }
   appendLog("info", `插入片段：${preset.label}（${inserted.length} 步）`);
   setStatus(`已插入片段：${preset.label}`);
+}
+
+function insertRecoveryFragmentForSelectedStep() {
+  const workflow = activeWorkflow();
+  const source = selectedStep();
+  const sourceIndex = selectedStepIndex(workflow);
+  if (!workflow || !source || sourceIndex < 0) {
+    setStatus("需要先选择一个会触发恢复的步骤");
+    return;
+  }
+  const restoreIndex = workflow.steps.findIndex((item) => item.type === "restore" && item.enabled !== false);
+  const insertIndex = restoreIndex >= 0 ? restoreIndex : workflow.steps.length;
+  const inserted = insertStepsAt(defaultRecoveryFragmentSteps(randomId("recovery")), insertIndex);
+  if (!inserted?.length) return;
+  source.onFail = "restore";
+  source.recoveryStepId = inserted[0].id;
+  markDirty("recovery fragment");
+  state.selectedStepId = source.id;
+  renderSteps();
+  renderStepEditor();
+  renderTargets();
+  appendLog("info", `已为 ${source.name || stepLabels[source.type] || source.type} 插入恢复片段：${inserted[0].name}`);
+  setStatus("已插入恢复片段并绑定到当前步骤");
+}
+
+function markSelectedStepAsRecoveryEntry() {
+  const workflow = activeWorkflow();
+  const entry = selectedStep();
+  if (!workflow || !entry) {
+    setStatus("需要先选择恢复入口步骤");
+    return;
+  }
+  if (entry.enabled === false) {
+    setStatus("停用步骤不能作为恢复入口");
+    return;
+  }
+  if (plannedOnlyStepTypes.has(entry.type) || !recoveryExecutableStepTypes.has(entry.type)) {
+    setStatus("恢复入口应选择热键、图像等待、图像点击、OCR 或页面确认等可执行步骤");
+    return;
+  }
+  const candidates = workflow.steps.filter((item) => item.id !== entry.id && item.onFail === "restore");
+  if (!candidates.length) {
+    setStatus("当前任务没有 onFail=restore 的失败步骤");
+    return;
+  }
+  let changed = 0;
+  for (const item of candidates) {
+    const currentEntryType = workflow.steps.find((step) => step.id === item.recoveryStepId)?.type || "";
+    if (!item.recoveryStepId || plannedOnlyStepTypes.has(currentEntryType)) {
+      item.recoveryStepId = entry.id;
+      changed += 1;
+    }
+  }
+  if (!changed) {
+    setStatus("没有需要改绑的失败步骤");
+    return;
+  }
+  markDirty("recovery entry");
+  renderSteps();
+  renderStepEditor();
+  appendLog("info", `已把 ${entry.name || stepLabels[entry.type] || entry.type} 设为 ${changed} 个失败步骤的恢复入口`);
+  setStatus("已设置恢复入口");
 }
 
 function moveSelectedStep(direction) {
@@ -2656,6 +2813,31 @@ function renderStepParamPanel(item) {
   $("#param-retry-target").value = item.type === "retry_until" ? item.target || "" : "";
   $("#param-retry-interval").value = durationMsFromText(commandValue(item.command, "interval")) ?? "";
   syncStepAdvancedPanels(item);
+  syncRecoveryActionButtons(item);
+}
+
+function syncRecoveryActionButtons(item) {
+  const workflow = activeWorkflow();
+  const insertButton = $("#insert-recovery-fragment");
+  const markButton = $("#mark-recovery-entry");
+  const canInsert = Boolean(workflow && item && item.enabled !== false && !plannedOnlyStepTypes.has(item.type));
+  const needsRecoveryEntry = (workflow?.steps || []).some((candidate) => {
+    if (candidate.id === item?.id || candidate.onFail !== "restore") return false;
+    const currentEntryType = workflow.steps.find((step) => step.id === candidate.recoveryStepId)?.type || "";
+    return !candidate.recoveryStepId || plannedOnlyStepTypes.has(currentEntryType);
+  });
+  const canMark = Boolean(
+    workflow &&
+      item &&
+      item.enabled !== false &&
+      recoveryExecutableStepTypes.has(item.type) &&
+      !plannedOnlyStepTypes.has(item.type) &&
+      needsRecoveryEntry,
+  );
+  insertButton.disabled = !canInsert;
+  insertButton.title = canInsert ? "为当前失败步骤插入默认恢复片段" : "请选择启用的非计划态步骤";
+  markButton.disabled = !canMark;
+  markButton.title = canMark ? "把当前可执行步骤设为缺失恢复入口的失败步骤入口" : "请选择可执行步骤，且任务中需要有待设置入口的 onFail=restore 步骤";
 }
 
 function syncStepAdvancedPanels(item) {
@@ -2968,6 +3150,8 @@ function bindStepParamEditor() {
       item.recoveryStepId = event.target.value;
     });
   });
+  $("#insert-recovery-fragment").addEventListener("click", insertRecoveryFragmentForSelectedStep);
+  $("#mark-recovery-entry").addEventListener("click", markSelectedStepAsRecoveryEntry);
   $("#param-control-workflow-jump").addEventListener("change", (event) => {
     updateSelectedStepFromParams((item) => {
       item.jumpWorkflowId = event.target.value;
@@ -4809,13 +4993,17 @@ function validateWorkflow(workflow = activeWorkflow(), mode = "definition") {
     }
     if (!Number.isFinite(item.timeoutMs) || item.timeoutMs < 0) addIssue(`${prefix} 超时必须是非负数`, item);
     if (!Number.isFinite(item.retry) || item.retry < 0) addIssue(`${prefix} 重试必须是非负数`, item);
-    if (item.type === "hotkey" && !/[+]/.test(item.target)) {
+    if (item.type === "hotkey" && !/[+]/.test(item.target) && !isSingleKeyHotkey(item.target)) {
       addWarning(`${prefix} 快捷键建议使用 ALT+N 这类组合格式`, item);
     }
     validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode, jumpCycleFindings);
     validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode);
   }
   return result;
+}
+
+function isSingleKeyHotkey(value) {
+  return ["ESC", "ESCAPE", "ENTER", "RETURN", "TAB", "SPACE", "BACKSPACE"].includes(String(value || "").trim().toUpperCase());
 }
 
 function validateStepControlFlowReferences(workflow, item, prefix, addIssue, addWarning, mode, jumpCycleFindings = []) {
@@ -4863,6 +5051,24 @@ function validateStepControlFlowReferences(workflow, item, prefix, addIssue, add
     }
   }
   checkStepReference("recoveryStepId", "恢复入口", { executable: item.onFail === "restore" });
+  if (item.onFail === "restore" && item.recoveryStepId) {
+    const recoveryStep = byId.get(item.recoveryStepId);
+    const recoveryIndex = steps.findIndex((step) => step.id === item.recoveryStepId);
+    if (recoveryStep && plannedOnlyStepTypes.has(recoveryStep.type)) {
+      addReferenceMessage(`${prefix} 恢复入口不能只指向计划态 restore；请指向热键、等待、页面确认等恢复片段第一步`);
+    } else if (recoveryStep && recoveryIndex >= 0) {
+      const fragment = recoveryFragmentStats(steps, recoveryIndex);
+      if (!fragment.entryExecutable) {
+        addReferenceMessage(`${prefix} 恢复入口必须指向恢复片段的可执行步骤`);
+      }
+      if (fragment.executableCount < 1) {
+        addReferenceMessage(`${prefix} 恢复片段需要至少一个可执行步骤，不能只靠控制流或计划态步骤`);
+      }
+      if (fragment.verificationCount < 1) {
+        addReferenceMessage(`${prefix} 恢复片段需要至少一个页面确认、等待图像、OCR、重试等待或截图记录步骤`);
+      }
+    }
+  }
   const jumpWorkflowId = String(item.jumpWorkflowId || "").trim();
   if (item.type === "task_jump" && !jumpWorkflowId) {
     addReferenceMessage(`${prefix} 任务跳转需要选择目标任务`);
@@ -4909,6 +5115,28 @@ function validateStepControlFlowReferences(workflow, item, prefix, addIssue, add
       addReferenceMessage(`${prefix} 循环步骤不能同时设置任务跳转`);
     }
   }
+}
+
+function recoveryFragmentStats(steps, startIndex) {
+  const stats = { executableCount: 0, verificationCount: 0, entryExecutable: false };
+  const start = Math.max(0, startIndex);
+  const entry = steps[start];
+  const entryIsDefaultFragment = isDefaultRecoveryFragmentStep(entry);
+  stats.entryExecutable = Boolean(entry && entry.enabled !== false && recoveryExecutableStepTypes.has(entry.type));
+  for (let index = start; index < steps.length; index += 1) {
+    const stepItem = steps[index];
+    if (!stepItem || stepItem.enabled === false) continue;
+    if (index > start && entryIsDefaultFragment && !isDefaultRecoveryFragmentStep(stepItem)) break;
+    if (!entryIsDefaultFragment && index > start && (plannedOnlyStepTypes.has(stepItem.type) || ["condition", "loop", "task_jump"].includes(stepItem.type))) break;
+    if (!entryIsDefaultFragment && index - start >= 4) break;
+    if (!plannedOnlyStepTypes.has(stepItem.type) && recoveryExecutableStepTypes.has(stepItem.type)) {
+      stats.executableCount += 1;
+    }
+    if (!plannedOnlyStepTypes.has(stepItem.type) && recoveryVerificationStepTypes.has(stepItem.type)) {
+      stats.verificationCount += 1;
+    }
+  }
+  return stats;
 }
 
 function buildStepValidationIndex(workflow, validation) {
@@ -5333,6 +5561,10 @@ async function runWorkflowEntry(session, entry) {
       return false;
     }
     const item = steps[pc];
+    if (isDefaultRecoveryFragmentStep(item) && !session.recoveryContext) {
+      pc += 1;
+      continue;
+    }
     const currentPc = pc;
     executedSteps += 1;
     session.currentStep += 1;
@@ -5506,7 +5738,9 @@ function controlFlowDecisionForStep(context) {
 }
 
 function withDefaultRecoveryReferences(steps) {
-  const recoveryStep = steps.find((item) => item.type === "restore" && item.enabled !== false);
+  const recoveryStep =
+    steps.find((item) => isDefaultRecoveryFragmentStep(item) && item.enabled !== false) ||
+    steps.find((item) => item.type === "restore" && item.enabled !== false);
   if (!recoveryStep) return steps;
   return steps.map((item) => {
     if (item.id === recoveryStep.id || item.recoveryStepId || item.onFail !== "restore") return item;

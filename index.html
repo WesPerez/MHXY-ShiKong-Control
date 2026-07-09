@@ -412,6 +412,10 @@
                         失败恢复入口
                         <select id="param-control-recovery-step"></select>
                       </label>
+                      <div class="param-actions recovery-actions" aria-label="恢复片段操作">
+                        <button id="insert-recovery-fragment" type="button">插入恢复片段</button>
+                        <button id="mark-recovery-entry" type="button">设当前可执行步为入口</button>
+                      </div>
                     </div>
                     <details id="step-flow-advanced" class="advanced-fields flow-advanced" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition loop retry_until snapshot task_jump">
                       <summary>跨任务 / 循环保护</summary>
@@ -442,7 +446,7 @@
                     <p class="hint" data-step-types="task_jump">任务跳转会结束当前任务余下步骤，并把目标任务插入本次 hwnd 会话的下一项；不改写持久化窗口队列。跳回当前任务必须设置最大循环次数。</p>
                     <p class="hint" data-step-types="double_click">双击会向目标 hwnd 投递后台鼠标双击消息，不移动真实鼠标。</p>
                     <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
-                    <p class="hint" data-step-types="snapshot restore">此类型当前不发送鼠标键盘输入；失败恢复只会在失败步骤同时配置 onFail=restore 和恢复入口时生效。</p>
+                    <p class="hint" data-step-types="snapshot restore">此类型当前不发送鼠标键盘输入；失败恢复应指向由热键、等待、页面确认和截图记录组成的恢复片段，默认片段只在恢复分支执行。</p>
                   </section>
                   <details id="step-compat-fields" class="advanced-fields compat-fields">
                     <summary>高级兼容字段</summary>
