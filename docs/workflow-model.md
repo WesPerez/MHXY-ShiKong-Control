@@ -260,6 +260,20 @@ schema v7 新增的控制流字段是定义态字段：`targetStepId`、`elseTar
 
 这样多个任务可以引用同一个 `button.confirm`、`page.home.ready`，而不是每个任务复制一份图片和点击逻辑。当前仍把模板图片内联为 data URL；内置模板接入后会记录 `source.type = "builtin-template"`、模板 key、替换路径和来源 ROI。后续目标库需要扩展文件化模板、模板多尺度和 OCR 文本。
 
+目标库可以独立导出为便携 JSON 包，格式固定为：
+
+```json
+{
+  "kind": "mhxy-target-library",
+  "schemaVersion": 7,
+  "exportedAt": "2026-07-10T00:00:00.000Z",
+  "targetCount": 0,
+  "targets": []
+}
+```
+
+导入目标库时也接受完整 workspace JSON，只读取其中 `targets[]`。合并策略必须保守：不存在的目标直接新增；已有目标只补齐缺失的图片、ROI、OCR 文本、来源和尺寸；仅当已有目标仍是空占位时同步导入的匹配/点击参数；已有用户采样和手工备注不被覆盖。这个策略用于支持“通用素材包 + 用户采样覆盖”的后续资源 overlay，而不是替代完整 workspace 导入。
+
 ## 样例任务
 
 首次启动生成 10 个样例任务，每个任务 10 步以上：

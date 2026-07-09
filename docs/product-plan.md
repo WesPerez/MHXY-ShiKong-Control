@@ -99,6 +99,7 @@ schema v7 继续使用结构化 JSON + 原子写入：
 - `targets[]` 是长期共享素材库；步骤只引用 `targetId`。
 - `Ctrl+V` 导入图片时，如果当前步骤支持图片目标就绑定当前步骤，否则在下方插入可执行图像步骤。
 - 目标应支持 ROI、默认点击点、offset、阈值、OCR 文本和备注。
+- 目标库应能独立导出/导入：`mhxy-target-library` JSON 包只携带 `targets[]`，导入时新增不存在的目标，并只补齐已有目标的缺失字段，不覆盖用户手工采样。
 - 内置素材模板只能补齐空目标，不覆盖用户采样。
 - 后续文件化模板需要 manifest：目标 id、来源、分辨率、适用窗口尺寸、阈值、版本、冲突策略。
 
@@ -109,6 +110,7 @@ schema v7 继续使用结构化 JSON + 原子写入：
 ```powershell
 node --check src\main.js
 npm run test:control-flow
+npm run test:target-library
 npm run audit:input-safety
 npm run audit:control-flow-schema
 npm run audit:workflow-readiness

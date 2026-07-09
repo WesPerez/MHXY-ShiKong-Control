@@ -1692,13 +1692,14 @@ label {
 
 .target-tools {
   display: grid;
-  grid-template-columns: minmax(0, 128px) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
 }
 
 .target-tools .meta {
+  grid-column: 1 / -1;
   min-width: 0;
   overflow: hidden;
   color: #87949c;

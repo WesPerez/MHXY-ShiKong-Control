@@ -13,6 +13,12 @@ import {
   stepLabelForExecution as stepLabelForExecutionCore,
   unboundedWorkflowJumpCycleFindings,
 } from "./control-flow-core.js";
+import {
+  mergeImportedTargetLibrary as mergeImportedTargetLibraryCore,
+  normalizeTarget as normalizeTargetCore,
+  targetLibraryExportPayload as targetLibraryExportPayloadCore,
+  targetLibraryTargetsFromPayload as targetLibraryTargetsFromPayloadCore,
+} from "./target-library-core.js";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
@@ -948,29 +954,10 @@ function sanitizeStepControlFlowForType(item) {
 }
 
 function normalizeTarget(value) {
-  const threshold = normalizedThreshold(value?.match?.threshold ?? value?.threshold, DEFAULT_IMAGE_THRESHOLD);
-  return {
-    id: String(value?.id || randomId("target")),
-    name: String(value?.name || "未命名目标"),
-    kind: String(value?.kind || (value?.dataUrl ? "image" : value?.roi ? "roi" : "unknown")),
-    createdAt: String(value?.createdAt || new Date().toISOString()),
-    updatedAt: String(value?.updatedAt || value?.createdAt || new Date().toISOString()),
-    dataUrl: value?.dataUrl ? String(value.dataUrl) : "",
-    roi: value?.roi || null,
-    match: {
-      threshold,
-      scope: String(value?.match?.scope || (value?.roi ? "roi" : "window")),
-    },
-    texts: Array.isArray(value?.texts) ? value.texts.map(String).filter(Boolean) : [],
-    click: {
-      button: normalizedTargetButton(value?.click?.button || value?.button || "left"),
-      point: String(value?.click?.point || value?.point || "center"),
-    },
-    source: value?.source || null,
-    width: Number(value?.width || 0),
-    height: Number(value?.height || 0),
-    note: String(value?.note || ""),
-  };
+  return normalizeTargetCore(value, {
+    defaultImageThreshold: DEFAULT_IMAGE_THRESHOLD,
+    randomId,
+  });
 }
 
 function mergeTargetCatalog(targets, workflows) {
@@ -3053,6 +3040,8 @@ function bindTargetEditor() {
   $("#unbind-step-target").addEventListener("click", unbindCurrentStepTarget);
   $("#delete-target").addEventListener("click", deleteSelectedTarget);
   $("#apply-builtin-templates").addEventListener("click", applyBuiltinTemplatesToTargets);
+  $("#export-target-library").addEventListener("click", exportTargetLibrary);
+  $("#import-target-library").addEventListener("click", importTargetLibrary);
 }
 
 function updateClickPointFromParams() {
@@ -3506,6 +3495,59 @@ function deleteSelectedTarget() {
   renderStepEditor();
   appendLog("info", `删除未使用目标：${target.name}`);
   setStatus(`已删除目标：${target.name}`);
+}
+
+function targetLibraryExportPayload(targets = state.workspace.targets) {
+  return targetLibraryExportPayloadCore(targets, {
+    schemaVersion: WORKSPACE_SCHEMA_VERSION,
+    defaultImageThreshold: DEFAULT_IMAGE_THRESHOLD,
+    randomId,
+  });
+}
+
+function exportTargetLibrary() {
+  const payload = targetLibraryExportPayload();
+  const json = JSON.stringify(payload, null, 2);
+  $("#workspace-json").value = json;
+  navigator.clipboard?.writeText(json).catch(() => {});
+  appendLog("info", `目标库已导出：${payload.targetCount} 个目标`);
+  setStatus("目标库 JSON 已导出并尝试复制");
+}
+
+async function importTargetLibrary() {
+  try {
+    const parsed = JSON.parse($("#workspace-json").value);
+    const importedTargets = targetLibraryTargetsFromPayload(parsed);
+    const result = mergeImportedTargetLibrary(importedTargets);
+    if (result.total === 0) {
+      setStatus("目标库 JSON 没有可导入目标");
+      return;
+    }
+    if (result.added || result.updated) {
+      markDirty("target-library import");
+      await saveWorkspaceNow();
+    }
+    renderAll();
+    appendLog(
+      "info",
+      `目标库合并：新增 ${result.added}，补齐 ${result.updated}，保留 ${result.skipped}，来源 ${result.total}`,
+    );
+    setStatus(`目标库已合并：新增 ${result.added}，补齐 ${result.updated}，保留 ${result.skipped}`);
+  } catch (error) {
+    setStatus(`目标库 JSON 合并失败：${error.message}`);
+    appendLog("error", `目标库 JSON 合并失败：${error.message}`);
+  }
+}
+
+function targetLibraryTargetsFromPayload(value) {
+  return targetLibraryTargetsFromPayloadCore(value, {
+    defaultImageThreshold: DEFAULT_IMAGE_THRESHOLD,
+    randomId,
+  });
+}
+
+function mergeImportedTargetLibrary(importedTargets) {
+  return mergeImportedTargetLibraryCore(state.workspace.targets, importedTargets);
 }
 
 function targetMatchesBuiltinBinding(targetId, logicalTargetId) {

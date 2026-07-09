@@ -36,6 +36,7 @@
 - 识别目标已升级为 `targets[]` 目标库，步骤通过 `targetId` 复用目标，并保留旧 `assetId` 导入兼容。
 - 复制任务会同步克隆该任务引用的图片、ROI、OCR 和点击目标，保证副本与原任务可以独立改素材、阈值和默认点击点。
 - 目标库支持搜索、类型筛选、重命名、类型/阈值/点击参数/OCR 文本/备注编辑、显示使用位置、绑定/解绑当前步骤，并且只允许删除 0 处使用的目标。
+- 目标库可单独导出为 `mhxy-target-library` JSON 包，也可从完整工作区 JSON 或目标库包中合并导入；导入只补缺失字段或新增目标，不覆盖用户已有采样。
 - 目标库会把蓝图/示例任务中的常见逻辑目标自动接入 `assets/resource/ShiKong/template_mapping.json` 里的内置模板；也可手动点击“接入内置素材”补齐空目标，不覆盖用户自己 Ctrl+V 或 ROI 绑定的素材。
 - 后台执行启动前会用 Rust 重新读取 hwnd 身份；每个后台步骤执行前前端都会再做一次只读身份复核，输入/OCR/截图步骤还会传入启动时窗口身份快照给 Rust 端二次校验。发现 title、pid、process、client size 或权限状态漂移会安全失败。
 - `image_click` 和 `double_click` 支持用 Ctrl+V 图片或 ROI 裁剪图做轻量模板匹配，匹配后按目标默认点击点点击或双击；点位支持模板中心和四角，并可用 `offsetX/offsetY` 微调。ROI 也可以绑定到后台点击/双击步骤并使用 ROI 中心。
@@ -89,6 +90,7 @@ cd E:\Project\Common\MHXY-ShiKong-Control
 npm install
 npm run build
 npm run test:control-flow
+npm run test:target-library
 npm run audit:input-safety
 npm run audit:control-flow-schema
 npm run audit:workflow-readiness

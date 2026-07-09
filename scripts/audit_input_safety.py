@@ -132,6 +132,18 @@ TARGET_FILTER_UI_TOKENS = [
     "targetThumbLabel",
     "待贴图",
 ]
+TARGET_PORTABILITY_TOKENS = [
+    "export-target-library",
+    "import-target-library",
+    "targetLibraryExportPayload",
+    "TARGET_LIBRARY_KIND",
+    "targetLibraryTargetsFromPayload",
+    "mergeImportedTargetLibrary",
+    "mergeImportedTargetIntoExisting",
+    "targetNoteIsGeneric",
+    "目标库已导出",
+    "目标库已合并",
+]
 PASTE_AUTO_STEP_TOKENS = [
     "capturedImageStepTypes",
     "ensureCapturedTargetStep",
@@ -318,6 +330,7 @@ def main() -> int:
     targets = scan_tokens(files, TARGET_TOKENS)
     target_crud = scan_tokens(files, TARGET_CRUD_TOKENS)
     target_filter_ui = scan_tokens(files, TARGET_FILTER_UI_TOKENS)
+    target_portability = scan_tokens(files, TARGET_PORTABILITY_TOKENS)
     step_edit = scan_tokens(files, STEP_EDIT_TOKENS)
     step_validation = scan_tokens(files, STEP_VALIDATION_TOKENS)
     paste_auto_step = scan_tokens(files, PASTE_AUTO_STEP_TOKENS)
@@ -363,6 +376,10 @@ def main() -> int:
     target_filter_ui_seen = {hit["token"] for hit in target_filter_ui}
     target_filter_ui_missing = [
         token for token in TARGET_FILTER_UI_TOKENS if token not in target_filter_ui_seen
+    ]
+    target_portability_seen = {hit["token"] for hit in target_portability}
+    target_portability_missing = [
+        token for token in TARGET_PORTABILITY_TOKENS if token not in target_portability_seen
     ]
     step_edit_seen = {hit["token"] for hit in step_edit}
     step_edit_missing = [
@@ -455,6 +472,8 @@ def main() -> int:
         "targetCrudMissing": target_crud_missing,
         "targetFilterUiEvidence": target_filter_ui,
         "targetFilterUiMissing": target_filter_ui_missing,
+        "targetPortabilityEvidence": target_portability,
+        "targetPortabilityMissing": target_portability_missing,
         "stepEditEvidence": step_edit,
         "stepEditMissing": step_edit_missing,
         "stepValidationEvidence": step_validation,
@@ -498,6 +517,7 @@ def main() -> int:
             and not image_click_recheck_pattern_missing
             and not target_crud_missing
             and not target_filter_ui_missing
+            and not target_portability_missing
             and not step_edit_missing
             and not step_validation_missing
             and not paste_auto_step_missing
@@ -523,7 +543,7 @@ def main() -> int:
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
             "expectedWindow.hwnd must be required and checked before dispatch. "
             "image_click must recheck expectedWindow after matching and before posting a click. "
-            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, step timing, image click point controls, workflow blueprint, independent workflow duplicate targets, batch queue, queue timing, run report, text input, double click, and UI stability tokens catch visible UI or modeled-step regressions."
+            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, step timing, image click point controls, workflow blueprint, independent workflow duplicate targets, target library import/export, batch queue, queue timing, run report, text input, double click, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -546,6 +566,8 @@ def main() -> int:
         print(f"targetCrudMissing={len(target_crud_missing)}")
         print(f"targetFilterUiEvidence={len(target_filter_ui)}")
         print(f"targetFilterUiMissing={len(target_filter_ui_missing)}")
+        print(f"targetPortabilityEvidence={len(target_portability)}")
+        print(f"targetPortabilityMissing={len(target_portability_missing)}")
         print(f"stepEditEvidence={len(step_edit)}")
         print(f"stepEditMissing={len(step_edit_missing)}")
         print(f"stepValidationEvidence={len(step_validation)}")
@@ -604,6 +626,9 @@ def main() -> int:
         if target_filter_ui_missing:
             for token in target_filter_ui_missing:
                 print(f"MISSING_TARGET_FILTER_UI {token}")
+        if target_portability_missing:
+            for token in target_portability_missing:
+                print(f"MISSING_TARGET_PORTABILITY {token}")
         if step_edit_missing:
             for token in step_edit_missing:
                 print(f"MISSING_STEP_EDIT {token}")
