@@ -121,8 +121,28 @@ pub fn post_mouse_click(
     windows_impl::post_mouse_click(hwnd, point, button)
 }
 
+#[cfg(windows)]
+pub fn post_mouse_double_click(
+    hwnd: isize,
+    point: HwndPoint,
+    button: &str,
+) -> Result<HwndInputResult, String> {
+    windows_impl::post_mouse_double_click(hwnd, point, button)
+}
+
 #[cfg(not(windows))]
 pub fn post_mouse_click(
+    hwnd: isize,
+    _point: HwndPoint,
+    _button: &str,
+) -> Result<HwndInputResult, String> {
+    Err(format!(
+        "hwnd mouse input is only implemented on Windows: {hwnd}"
+    ))
+}
+
+#[cfg(not(windows))]
+pub fn post_mouse_double_click(
     hwnd: isize,
     _point: HwndPoint,
     _button: &str,
@@ -188,8 +208,9 @@ mod windows_impl {
                 EnumWindows, GetClientRect, GetWindow, GetWindowLongW, GetWindowRect,
                 GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindow,
                 IsWindowVisible, PostMessageW, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL, WM_CHAR,
-                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDOWN,
-                WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE,
+                WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+                WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
             },
         },
     };
@@ -380,6 +401,23 @@ mod windows_impl {
         point: HwndPoint,
         button: &str,
     ) -> Result<HwndInputResult, String> {
+        post_mouse_click_count(hwnd, point, button, 1)
+    }
+
+    pub fn post_mouse_double_click(
+        hwnd: isize,
+        point: HwndPoint,
+        button: &str,
+    ) -> Result<HwndInputResult, String> {
+        post_mouse_click_count(hwnd, point, button, 2)
+    }
+
+    fn post_mouse_click_count(
+        hwnd: isize,
+        point: HwndPoint,
+        button: &str,
+        click_count: u8,
+    ) -> Result<HwndInputResult, String> {
         unsafe {
             let hwnd = checked_hwnd(hwnd)?;
             let (_, _, width, height) = client_rect_on_screen(hwnd)
@@ -387,13 +425,23 @@ mod windows_impl {
             validate_client_point(&point, width, height)?;
             let button = parse_mouse_button(button)?;
             let lparam = point_lparam(point.x, point.y)?;
+            let messages = click_messages(button, click_count)?;
             post(hwnd, WM_MOUSEMOVE, WPARAM(0), lparam)?;
-            post(hwnd, button.down, WPARAM(button.wparam as usize), lparam)?;
-            post(hwnd, button.up, WPARAM(0), lparam)?;
+            for (message, wparam) in &messages {
+                post(hwnd, *message, WPARAM(*wparam as usize), lparam)?;
+            }
+            let label = if click_count == 2 {
+                "double click"
+            } else {
+                "click"
+            };
             Ok(HwndInputResult {
                 hwnd: hwnd.0 as isize,
-                sent_messages: 3,
-                detail: format!("posted {} click at {},{}", button.label, point.x, point.y),
+                sent_messages: (messages.len() + 1) as u32,
+                detail: format!(
+                    "posted {} {} at {},{}",
+                    button.label, label, point.x, point.y
+                ),
             })
         }
     }
@@ -477,6 +525,7 @@ mod windows_impl {
     struct MouseButton {
         down: u32,
         up: u32,
+        double_click: u32,
         wparam: u32,
         label: &'static str,
     }
@@ -486,16 +535,31 @@ mod windows_impl {
             "" | "left" | "l" | "primary" => Ok(MouseButton {
                 down: WM_LBUTTONDOWN,
                 up: WM_LBUTTONUP,
+                double_click: WM_LBUTTONDBLCLK,
                 wparam: MK_LBUTTON_FLAG,
                 label: "left",
             }),
             "right" | "r" | "secondary" => Ok(MouseButton {
                 down: WM_RBUTTONDOWN,
                 up: WM_RBUTTONUP,
+                double_click: WM_RBUTTONDBLCLK,
                 wparam: MK_RBUTTON_FLAG,
                 label: "right",
             }),
             other => Err(format!("unsupported mouse button: {other}")),
+        }
+    }
+
+    fn click_messages(button: MouseButton, click_count: u8) -> Result<Vec<(u32, u32)>, String> {
+        match click_count {
+            1 => Ok(vec![(button.down, button.wparam), (button.up, 0)]),
+            2 => Ok(vec![
+                (button.down, button.wparam),
+                (button.up, 0),
+                (button.double_click, button.wparam),
+                (button.up, 0),
+            ]),
+            other => Err(format!("unsupported mouse click count: {other}")),
         }
     }
 
@@ -891,11 +955,43 @@ mod windows_impl {
 
         #[test]
         fn parses_supported_mouse_buttons() {
-            assert_eq!(parse_mouse_button("left").unwrap().label, "left");
+            let left = parse_mouse_button("left").unwrap();
+            let right = parse_mouse_button("right").unwrap();
+            assert_eq!(left.label, "left");
             assert_eq!(parse_mouse_button("primary").unwrap().label, "left");
-            assert_eq!(parse_mouse_button("right").unwrap().label, "right");
+            assert_eq!(right.label, "right");
             assert_eq!(parse_mouse_button("secondary").unwrap().label, "right");
+            assert_eq!(left.double_click, WM_LBUTTONDBLCLK);
+            assert_eq!(right.double_click, WM_RBUTTONDBLCLK);
             assert!(parse_mouse_button("middle").is_err());
+        }
+
+        #[test]
+        fn builds_single_and_double_click_messages() {
+            let left = parse_mouse_button("left").unwrap();
+            let single = click_messages(left, 1).expect("single click messages");
+            assert_eq!(
+                single,
+                vec![(WM_LBUTTONDOWN, MK_LBUTTON_FLAG), (WM_LBUTTONUP, 0)]
+            );
+
+            let double = click_messages(left, 2).expect("double click messages");
+            assert_eq!(
+                double,
+                vec![
+                    (WM_LBUTTONDOWN, MK_LBUTTON_FLAG),
+                    (WM_LBUTTONUP, 0),
+                    (WM_LBUTTONDBLCLK, MK_LBUTTON_FLAG),
+                    (WM_LBUTTONUP, 0),
+                ]
+            );
+        }
+
+        #[test]
+        fn rejects_unsupported_mouse_click_counts() {
+            let left = parse_mouse_button("left").unwrap();
+            assert!(click_messages(left, 0).is_err());
+            assert!(click_messages(left, 3).is_err());
         }
 
         #[test]

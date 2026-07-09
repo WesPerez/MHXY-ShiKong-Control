@@ -299,13 +299,13 @@
                       <strong>常用参数</strong>
                       <span id="step-param-summary">按步骤类型同步到目标和动作参数</span>
                     </div>
-                    <div class="param-grid" data-step-types="image_click wait_image detect_page click ocr_assert">
+                    <div class="param-grid" data-step-types="image_click double_click wait_image detect_page click ocr_assert">
                       <label class="wide">
                         目标库
                         <select id="param-target-select"></select>
                       </label>
                     </div>
-                    <div class="param-grid" data-step-types="detect_page wait_image image_click ocr_assert click hotkey text_input delay condition retry_until snapshot restore">
+                    <div class="param-grid" data-step-types="detect_page wait_image image_click double_click ocr_assert click hotkey text_input delay condition retry_until snapshot restore">
                       <label>
                         前等待 ms
                         <input id="param-pre-delay-ms" type="number" min="0" step="100" />
@@ -327,7 +327,7 @@
                         <input id="param-text-value" type="text" maxlength="500" placeholder="要发给目标窗口的文本" />
                       </label>
                     </div>
-                    <div class="param-grid" data-step-types="click">
+                    <div class="param-grid" data-step-types="click double_click">
                       <label>
                         X
                         <input id="param-click-x" type="number" min="0" step="1" />
@@ -344,19 +344,19 @@
                         </select>
                       </label>
                     </div>
-                    <div class="param-grid" data-step-types="image_click wait_image detect_page">
+                    <div class="param-grid" data-step-types="image_click double_click wait_image detect_page">
                       <label>
                         匹配阈值
                         <input id="param-image-threshold" type="number" min="0" max="1" step="0.01" />
                       </label>
-                      <label data-param-for="image_click">
+                      <label data-param-for="image_click double_click">
                         点击键
                         <select id="param-image-button">
                           <option value="left">左键</option>
                           <option value="right">右键</option>
                         </select>
                       </label>
-                      <label data-param-for="image_click">
+                      <label data-param-for="image_click double_click">
                         点击点
                         <select id="param-image-point">
                           <option value="center">模板中心</option>
@@ -366,11 +366,11 @@
                           <option value="bottom-right">模板右下</option>
                         </select>
                       </label>
-                      <label data-param-for="image_click">
+                      <label data-param-for="image_click double_click">
                         偏移 X
                         <input id="param-image-offset-x" type="number" step="1" />
                       </label>
-                      <label data-param-for="image_click">
+                      <label data-param-for="image_click double_click">
                         偏移 Y
                         <input id="param-image-offset-y" type="number" step="1" />
                       </label>
@@ -410,6 +410,7 @@
                       </label>
                     </div>
                     <p class="hint" data-step-types="ocr_assert">OCR 会截图识别目标文字，不发送鼠标或键盘输入。</p>
+                    <p class="hint" data-step-types="double_click">双击会向目标 hwnd 投递后台鼠标双击消息，不移动真实鼠标。</p>
                     <p class="hint" data-step-types="text_input">文本输入会向目标 hwnd 投递 WM_CHAR 消息，不抢占前台焦点。</p>
                     <p class="hint" data-step-types="snapshot restore">此类型当前没有可直接投递的后台输入；会保留在任务编排和日志中。</p>
                   </section>

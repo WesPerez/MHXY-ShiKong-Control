@@ -27,6 +27,7 @@ REQUIRED_STEP_TYPES = {
     "detect_page",
     "wait_image",
     "image_click",
+    "double_click",
     "ocr_assert",
     "click",
     "hotkey",

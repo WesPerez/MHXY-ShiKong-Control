@@ -744,6 +744,7 @@ h3 {
 }
 
 .blueprint-chip.type-image_click,
+.blueprint-chip.type-double_click,
 .blueprint-chip.type-wait_image,
 .blueprint-chip.type-detect_page {
   border-color: rgba(215, 169, 75, 0.42);

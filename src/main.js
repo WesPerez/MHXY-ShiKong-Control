@@ -9,8 +9,16 @@ const WINDOW_CLIENT_SIZE_TOLERANCE = 2;
 const MAX_LOG_ROWS = 500;
 const MAX_SESSION_STEP_RESULTS = 300;
 const MAX_TEXT_INPUT_CHARS = 500;
-const targetBackedStepTypes = new Set(["image_click", "wait_image", "detect_page", "click", "ocr_assert", "retry_until"]);
-const capturedImageStepTypes = new Set(["image_click", "wait_image", "detect_page", "retry_until"]);
+const targetBackedStepTypes = new Set([
+  "image_click",
+  "double_click",
+  "wait_image",
+  "detect_page",
+  "click",
+  "ocr_assert",
+  "retry_until",
+]);
+const capturedImageStepTypes = new Set(["image_click", "double_click", "wait_image", "detect_page", "retry_until"]);
 const stepFailActions = new Set(["stop", "retry", "skip", "restore"]);
 const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
 const workflowConcurrencyOptions = new Set(["per-window-exclusive"]);
@@ -57,6 +65,7 @@ const stepTypes = [
   ["detect_page", "检测页面"],
   ["wait_image", "等待图像"],
   ["image_click", "图像点击"],
+  ["double_click", "后台双击"],
   ["ocr_assert", "OCR 确认"],
   ["click", "后台点击"],
   ["hotkey", "快捷键"],
@@ -97,6 +106,15 @@ const stepDefaults = {
     timeoutMs: 2600,
     retry: 1,
     onFail: "retry",
+  },
+  double_click: {
+    name: "后台双击",
+    target: "button.target",
+    command: "button=left; point=center; mode=hwnd-message",
+    expect: "double_click.accepted",
+    timeoutMs: 1800,
+    retry: 0,
+    onFail: "stop",
   },
   ocr_assert: {
     name: "OCR 确认",
@@ -302,7 +320,7 @@ const workflowBlueprints = [
       { type: "wait_image", name: "等待背包界面", target: "page.bag.ready", command: "threshold=0.85", expect: "visible" },
       { type: "ocr_assert", name: "确认背包标题", target: "包裹", command: "lang=zh; roi=top", expect: "text_found" },
       { type: "wait_image", name: "查找目标物品", target: "item.target", command: "threshold=0.88", expect: "visible" },
-      { type: "image_click", name: "选择目标物品", target: "item.target", command: "button=left; point=center", expect: "item.selected" },
+      { type: "double_click", name: "双击目标物品", target: "item.target", command: "button=left; point=center", expect: "item.opened" },
       { type: "image_click", name: "右键使用物品", target: "item.target", command: "button=right; point=center", expect: "action.accepted" },
       { type: "delay", name: "等待服务器反馈", target: "1000ms", command: "reason=server_response", expect: "time.elapsed" },
       { type: "ocr_assert", name: "确认物品提示", target: "使用", command: "lang=zh; roi=dialog", expect: "text_found" },
@@ -429,7 +447,7 @@ const workflowBlueprints = [
       { type: "wait_image", name: "等待任务列表", target: "page.quest.ready", command: "threshold=0.84", expect: "visible" },
       { type: "ocr_assert", name: "确认任务标题", target: "任务", command: "lang=zh; roi=top", expect: "text_found" },
       { type: "wait_image", name: "查找当前任务", target: "item.current_quest", command: "threshold=0.84", expect: "visible" },
-      { type: "image_click", name: "选择当前任务", target: "item.current_quest", command: "button=left; point=center", expect: "quest.detail.open" },
+      { type: "double_click", name: "双击当前任务", target: "item.current_quest", command: "button=left; point=center", expect: "quest.detail.open" },
       { type: "ocr_assert", name: "确认任务说明", target: "目标", command: "lang=zh; roi=panel", expect: "text_found" },
       { type: "condition", name: "判断是否可自动寻路", target: "state.quest_auto_path", command: "guard=true", expect: "continue" },
       { type: "image_click", name: "点击自动寻路", target: "button.auto_path", command: "button=left; point=center", expect: "path.started" },
@@ -609,7 +627,7 @@ function createSampleWorkflows() {
       step("map-04", "ocr_assert", "确认背包标题", "包裹", "lang=zh; roi=top", "text_found"),
       step("map-05", "condition", "背包是否已满", "state.bag_full", "guard=false", "continue"),
       step("map-06", "wait_image", "查找藏宝图", "item.treasure_map", "threshold=0.88", "visible"),
-      step("map-07", "image_click", "选择藏宝图", "item.treasure_map", "button=left; point=center", "item.selected"),
+      step("map-07", "double_click", "双击藏宝图", "item.treasure_map", "button=left; point=center", "map.dialog"),
       step("map-08", "click", "使用物品", "button.use_item", "button=right; mode=hwnd-message", "map.dialog"),
       step("map-09", "ocr_assert", "确认藏宝图提示", "藏宝图", "lang=zh; roi=dialog", "text_found"),
       step("map-10", "image_click", "确认使用", "button.confirm", "button=left", "action.accepted"),
@@ -695,7 +713,7 @@ function createSampleWorkflows() {
       step("quest-03", "wait_image", "等待任务列表", "page.quest.ready", "threshold=0.84", "visible"),
       step("quest-04", "ocr_assert", "确认任务标题", "任务", "lang=zh; roi=top", "text_found"),
       step("quest-05", "wait_image", "查找当前任务", "item.current_quest", "threshold=0.84", "visible"),
-      step("quest-06", "image_click", "选择当前任务", "item.current_quest", "button=left; point=center", "quest.detail.open"),
+      step("quest-06", "double_click", "双击当前任务", "item.current_quest", "button=left; point=center", "quest.detail.open"),
       step("quest-07", "ocr_assert", "确认任务说明", "目标", "lang=zh; roi=panel", "text_found"),
       step("quest-08", "condition", "判断是否可自动寻路", "state.quest_auto_path", "guard=true", "continue"),
       step("quest-09", "image_click", "点击自动寻路", "button.auto_path", "button=left; point=center", "path.started"),
@@ -968,11 +986,14 @@ function targetKindForStep(item) {
   if (item.type === "condition" || item.type === "retry_until") return "state";
   if (item.type === "detect_page") return "page";
   if (item.type === "click") return "click_target";
+  if (item.type === "double_click") return parsePointText(item.target) ? "click_target" : "image";
   return "image";
 }
 
 function defaultThresholdForStep(item) {
-  return ["image_click", "wait_image", "detect_page"].includes(item.type) ? DEFAULT_IMAGE_THRESHOLD : "";
+  return ["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)
+    ? DEFAULT_IMAGE_THRESHOLD
+    : "";
 }
 
 function catalogTargetIdForStep(item) {
@@ -1946,11 +1967,12 @@ function renderBlueprintGallery() {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "blueprint-card";
+      const visualActions = (counts.image_click || 0) + (counts.double_click || 0);
       button.classList.toggle("active", blueprint.id === activeId);
       button.innerHTML = `
         <span>${escapeHtml(blueprint.category)}</span>
         <strong>${escapeHtml(blueprint.label)}</strong>
-        <small>${blueprint.steps.length} 步 · 热键 ${counts.hotkey || 0} · 识图 ${counts.image_click || 0} · OCR ${counts.ocr_assert || 0}</small>
+        <small>${blueprint.steps.length} 步 · 热键 ${counts.hotkey || 0} · 识图动作 ${visualActions} · OCR ${counts.ocr_assert || 0}</small>
       `;
       button.addEventListener("click", () => {
         select.value = blueprint.id;
@@ -2261,7 +2283,7 @@ function completionFocusSelector(item, stepItem) {
   if (item.message.includes("快捷键")) return "#param-hotkey";
   if (item.message.includes("阈值")) return "#param-image-threshold";
   if (item.message.includes("鼠标键")) {
-    return stepItem?.type === "image_click" ? "#param-image-button" : "#param-click-button";
+    return ["image_click", "double_click"].includes(stepItem?.type) ? "#param-image-button" : "#param-click-button";
   }
   if (item.message.includes("延迟") || item.message.includes("间隔")) {
     return stepItem?.type === "retry_until" ? "#param-retry-interval" : "#param-delay-ms";
@@ -2499,7 +2521,7 @@ function renderStepParamPanel(item) {
   $("#param-image-point").value = commandValue(item.command, "point") || boundDefaults.point;
   $("#param-image-offset-x").value = commandIntegerValue(item.command, "offsetX") ?? "";
   $("#param-image-offset-y").value = commandIntegerValue(item.command, "offsetY") ?? "";
-  $("#param-image-target").value = ["image_click", "wait_image", "detect_page"].includes(item.type)
+  $("#param-image-target").value = ["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)
     ? item.target || ""
     : "";
 
@@ -2532,14 +2554,19 @@ function renderTargetSelect(item) {
 function paramSummaryForStep(item) {
   const target = targetForStep(item);
   const timing = timingSummaryForStep(item);
-  if (["image_click", "wait_image", "detect_page"].includes(item.type)) {
+  const point = parsePointText(item.target) || parsePointText(item.command);
+  if (item.type === "double_click" && !target?.dataUrl && (point || target?.roi)) {
+    const base = point ? `双击 ${point.x},${point.y}` : "双击绑定 ROI 中心";
+    return `${base}${timing}`;
+  }
+  if (["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)) {
     const threshold = commandValue(item.command, "threshold") || target?.match?.threshold || DEFAULT_IMAGE_THRESHOLD;
-    const offset = item.type === "image_click" ? clickOffsetSummary(item) : "";
+    const offset = ["image_click", "double_click"].includes(item.type) ? clickOffsetSummary(item) : "";
     const base = target ? `${target.name} · threshold ${threshold}` : `未绑定图片目标 · threshold ${threshold}`;
-    return `${base}${offset}${timing}`;
+    const action = item.type === "double_click" ? "双击" : "";
+    return `${action}${base}${offset}${timing}`;
   }
   if (item.type === "click") {
-    const point = parsePointText(item.target) || parsePointText(item.command);
     const base = point ? `点击 ${point.x},${point.y}` : target?.roi ? "点击绑定 ROI 中心" : "需要坐标或 ROI";
     return `${base}${timing}`;
   }
@@ -2576,7 +2603,9 @@ function bindStepParamEditor() {
     }
     state.selectedTargetId = target.id;
     updateSelectedStepFromParams((item) => {
-      bindTargetToStep(item, target, { preserveClick: item.type === "click" });
+      bindTargetToStep(item, target, {
+        preserveClick: item.type === "click" || (item.type === "double_click" && !target.dataUrl),
+      });
     });
     renderTargets();
   });
@@ -3120,13 +3149,13 @@ function syncTargetDefaultsToBoundSteps(target, options = {}) {
   for (const workflow of state.workspace.workflows || []) {
     for (const item of workflow.steps || []) {
       if (stepTargetId(item) !== target.id) continue;
-      if (options.threshold && ["image_click", "wait_image", "detect_page"].includes(item.type)) {
+      if (options.threshold && ["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)) {
         item.command = commandWithValues(item.command, { threshold: updates.threshold });
       }
-      if (options.clickButton && ["image_click", "click"].includes(item.type)) {
+      if (options.clickButton && ["image_click", "double_click", "click"].includes(item.type)) {
         item.command = commandWithValues(item.command, { button: updates.button });
       }
-      if (options.clickPoint && item.type === "image_click") {
+      if (options.clickPoint && ["image_click", "double_click"].includes(item.type)) {
         item.command = commandWithValues(item.command, { point: updates.point });
       }
     }
@@ -3139,11 +3168,14 @@ function bindSelectedTargetToStep() {
     setStatus("需要先选择目标");
     return;
   }
-  if (!selectedStep()) {
+  const item = selectedStep();
+  if (!item) {
     setStatus("需要先选择步骤");
     return;
   }
-  bindTargetToSelectedStep(target, { preserveClick: true });
+  bindTargetToSelectedStep(target, {
+    preserveClick: item.type === "click" || (item.type === "double_click" && !target.dataUrl),
+  });
   markDirty("target");
   renderTargets();
   renderSteps();
@@ -4003,16 +4035,17 @@ function captureClickPointFromPreview(event) {
   renderStepEditor();
   renderTargets();
   updatePreviewClickCaptureUi(point);
+  const actionLabel = destination.step.type === "double_click" ? "后台双击" : "后台点击";
   appendLog(
     "info",
-    `${destination.created ? "已自动新增" : "已更新"}后台点击步骤：${point.x},${point.y} · ${state.previewClickButton}`,
+    `${destination.created ? "已自动新增" : "已更新"}${actionLabel}步骤：${point.x},${point.y} · ${state.previewClickButton}`,
   );
-  setStatus(`${destination.created ? "已新增" : "已更新"}后台点击：${point.x},${point.y}`);
+  setStatus(`${destination.created ? "已新增" : "已更新"}${actionLabel}：${point.x},${point.y}`);
 }
 
 function ensurePreviewClickStep() {
   const current = selectedStep();
-  if (current?.type === "click") return { step: current, created: false };
+  if (["click", "double_click"].includes(current?.type)) return { step: current, created: false };
   const workflow = activeWorkflow();
   if (!workflow) return { step: null, created: false };
   const item = createStep("click");
@@ -4022,16 +4055,20 @@ function ensurePreviewClickStep() {
 }
 
 function applyClickPointToStep(item, point, button = "left") {
-  item.type = "click";
-  item.name = item.name || "后台点击";
+  const isDoubleClick = item.type === "double_click";
+  item.type = isDoubleClick ? "double_click" : "click";
+  item.name = item.name || (isDoubleClick ? "后台双击" : "后台点击");
   item.target = `x=${point.x},y=${point.y}`;
   item.command = commandWithValues(item.command, {
     button: normalizedTargetButton(button),
     mode: "hwnd-message",
   });
-  item.expect = item.expect || "click.accepted";
-  item.timeoutMs = item.timeoutMs || stepDefaults.click.timeoutMs;
-  item.onFail = normalizeStepFailAction(item.onFail, stepDefaults.click.onFail);
+  item.expect = item.expect || (isDoubleClick ? "double_click.accepted" : "click.accepted");
+  item.timeoutMs = item.timeoutMs || (isDoubleClick ? stepDefaults.double_click.timeoutMs : stepDefaults.click.timeoutMs);
+  item.onFail = normalizeStepFailAction(
+    item.onFail,
+    isDoubleClick ? stepDefaults.double_click.onFail : stepDefaults.click.onFail,
+  );
   unbindStepTarget(item);
 }
 
@@ -4041,7 +4078,7 @@ function ensureCapturedTargetStep(targetItem) {
   if (hasTemplateImage && current && capturedImageStepTypes.has(current.type)) {
     return { step: current, created: false };
   }
-  if (!hasTemplateImage && current?.type === "click") {
+  if (!hasTemplateImage && ["click", "double_click"].includes(current?.type)) {
     return { step: current, created: false };
   }
   const workflow = activeWorkflow();
@@ -4203,7 +4240,7 @@ function bindTargetToStep(item, targetItem, options = {}) {
   item.targetId = targetItem.id;
   item.target = targetItem.id;
   const commandDefaults = targetCommandDefaults(targetItem, item.command);
-  if (item.type === "click" && options.preserveClick) {
+  if (["click", "double_click"].includes(item.type) && options.preserveClick) {
     item.command = commandWithValues(item.command, {
       button: commandDefaults.button,
       mode: "hwnd-message",
@@ -4217,7 +4254,7 @@ function bindTargetToStep(item, targetItem, options = {}) {
     item.expect = item.expect || "text_found";
     return;
   }
-  if (!["image_click", "wait_image", "detect_page"].includes(item.type)) {
+  if (!["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)) {
     item.type = "image_click";
     item.name = "图像点击";
     item.expect = "screen.changed";
@@ -4471,7 +4508,7 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
     }
   }
   const clickPoint = commandValue(item.command, "point");
-  if (item.type === "image_click" && clickPoint && !imageClickPointOptions.has(clickPoint)) {
+  if (["image_click", "double_click"].includes(item.type) && clickPoint && !imageClickPointOptions.has(clickPoint)) {
     addIssue(`${prefix} 图像点击点只支持 center/top-left/top-right/bottom-left/bottom-right`, item);
   }
   const point = parsePointText(item.target) || parsePointText(item.command);
@@ -4482,16 +4519,16 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
   if (targetId && !targetItem) {
     addIssue(`${prefix} 绑定的识别目标已不存在`, item);
   }
-  if (item.type === "click" && !point && !hasRoi) {
-    const message = `${prefix} 后台点击需要 x/y 坐标或绑定 ROI 目标`;
+  if (["click", "double_click"].includes(item.type) && !point && !hasRoi && !(item.type === "double_click" && hasImage)) {
+    const message = `${prefix} ${item.type === "double_click" ? "后台双击" : "后台点击"}需要 x/y 坐标、绑定 ROI 或图片目标`;
     mode === "background" ? addIssue(message, item) : addWarning(message, item);
   }
   if (["image_click", "wait_image", "detect_page"].includes(item.type) && !hasImage) {
     const message = `${prefix} 图像步骤需要 Ctrl+V 图片或 ROI 裁剪图`;
     mode === "background" ? addIssue(message, item) : addWarning(message, item);
   }
-  if (item.type === "image_click" && !hasImage && (point || hasRoi)) {
-    addWarning(`${prefix} 没有图片时会退化为直接点击坐标/ROI，请确认这是有意行为`, item);
+  if (["image_click", "double_click"].includes(item.type) && !hasImage && (point || hasRoi)) {
+    addWarning(`${prefix} 没有图片时会退化为直接${item.type === "double_click" ? "双击" : "点击"}坐标/ROI，请确认这是有意行为`, item);
   }
   if (item.type === "ocr_assert") {
     validateOcrStepRuntimeFields(item, prefix, addIssue, addWarning, mode);
@@ -5087,7 +5124,7 @@ function retryUntilHasVisualTarget(item) {
 
 function shouldRetryBackgroundStep(item, result) {
   if (!["below_threshold", "text_miss", "ocr_unavailable"].includes(result.status)) return false;
-  return item.onFail === "retry" || ["wait_image", "detect_page", "image_click", "ocr_assert"].includes(item.type);
+  return item.onFail === "retry" || ["wait_image", "detect_page", "image_click", "double_click", "ocr_assert"].includes(item.type);
 }
 
 function backgroundRetryDelay(item) {
@@ -5211,10 +5248,10 @@ function backendStepPayload(item) {
 function effectiveCommandForStep(item, targetItem = targetForStep(item)) {
   if (!targetItem) return item.command || "";
   const defaults = targetCommandDefaults(targetItem, item.command);
-  if (["image_click", "wait_image", "detect_page"].includes(item.type)) {
+  if (["image_click", "double_click", "wait_image", "detect_page"].includes(item.type)) {
     return commandWithMissingValues(item.command, defaults);
   }
-  if (item.type === "click") {
+  if (["click", "double_click"].includes(item.type)) {
     return commandWithMissingValues(item.command, {
       button: defaults.button,
       mode: "hwnd-message",

@@ -23,8 +23,8 @@
 
 - 已有实体：`Workflow`、`Step`、`Target`、`WindowAssignment`、`RunSession`、`runHistory`。
 - 已有运行：观察运行、后台运行 beta、每 hwnd 互斥、不同 hwnd 并行、队列错峰和任务后间隔。
-- 已有后台动作：`hotkey`、`text_input`、`click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
-- 已知缺口：`double_click`、真实 `condition`、`loop`、`task_jump`、显式恢复流程和后端事件流尚未完成。
+- 已有后台动作：`hotkey`、`text_input`、`click`、`double_click`、`image_click`、`wait_image`、`detect_page`、`ocr_assert`、`snapshot`、`delay`、`retry_until` 的视觉目标等待。
+- 已知缺口：真实 `condition`、`loop`、`task_jump`、显式恢复流程、后端事件流和管理员环境下的双击 live 验收尚未完成。
 - 当前安全语义：`unsupported` 和 `error` 强制停止；识图/OCR/缺素材类失败在重试耗尽后默认停止，只有 `onFail=skip` 才继续。
 
 ## 数据方案
@@ -70,12 +70,12 @@ v7 控制流：
 
 ## 双击方案
 
-`double_click` 应先作为原子输入动作进入 Rust：
+`double_click` 已按 v6 原子输入动作进入 Rust；后续只在真实游戏验收后微调消息兼容模式：
 
 - 坐标/ROI 双击复用 `click` 的 hwnd、客户区坐标、鼠标键和权限校验。
 - 图片双击复用 `image_click` 的严格截图路径，匹配后、投递前再次校验 `expectedWindow`。
 - 后端只通过 hwnd `PostMessageW` 投递消息；不新增真实鼠标 API。
-- 测试覆盖按钮解析、次数限制、非法坐标、权限不足和窗口身份漂移。
+- 测试覆盖按钮解析、双击消息序列、非法坐标、权限不足和窗口身份漂移。
 
 ## UI 工作台
 
@@ -134,7 +134,7 @@ cargo clippy --all-targets -- -D warnings
 ## 实施顺序
 
 1. 继续修 v6 安全和 readiness，确保不会把计划态或失败态当成功。
-2. 增加 `double_click` 原子动作，前端、Rust、审计和测试一起落地。
+2. 用管理员环境补 `double_click` 真实游戏窗口验收，确认游戏对后台双击消息的响应。
 3. 设计并升级 schema v7，加入结构化控制流字段和迁移。
 4. 把前端 runner 改成带预算的指令指针模型，先支持同任务内 `condition/loop/task_jump`。
 5. 实现显式 `restore` 恢复流程和失败恢复报告。

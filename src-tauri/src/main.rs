@@ -8,7 +8,8 @@ use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
     capture_client_rgb, capture_client_rgb_strict, current_process_elevated, list_windows,
-    post_hotkey, post_mouse_click, post_text, window_for_hwnd, HwndPoint, RgbFrame,
+    post_hotkey, post_mouse_click, post_mouse_double_click, post_text, window_for_hwnd, HwndPoint,
+    RgbFrame,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -374,9 +375,20 @@ fn execute_workflow_step(
     let mut result = match step_type.as_str() {
         "hotkey" => dispatch_hotkey_step(hwnd, &step),
         "text_input" => dispatch_text_input_step(hwnd, &step),
-        "click" => dispatch_click_step(hwnd, &step),
-        "image_click" => dispatch_image_step(hwnd, &step, true, expected_window),
-        "wait_image" | "detect_page" => dispatch_image_step(hwnd, &step, false, None),
+        "click" => dispatch_click_step(hwnd, &step, MouseDispatchMode::Click),
+        "double_click" => {
+            if template_data_url(&step).is_some() || step.roi.is_some() {
+                dispatch_image_step(hwnd, &step, MouseDispatchMode::DoubleClick, expected_window)
+            } else {
+                dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick)
+            }
+        }
+        "image_click" => {
+            dispatch_image_step(hwnd, &step, MouseDispatchMode::Click, expected_window)
+        }
+        "wait_image" | "detect_page" => {
+            dispatch_image_step(hwnd, &step, MouseDispatchMode::MatchOnly, None)
+        }
         "snapshot" => {
             let frame = capture_client_rgb(hwnd)?;
             Ok(step_result(
@@ -747,6 +759,43 @@ fn non_empty_option(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|value| !value.is_empty())
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MouseDispatchMode {
+    MatchOnly,
+    Click,
+    DoubleClick,
+}
+
+impl MouseDispatchMode {
+    fn sends_input(self) -> bool {
+        !matches!(self, Self::MatchOnly)
+    }
+
+    fn image_action(self) -> &'static str {
+        match self {
+            Self::MatchOnly => "image_match",
+            Self::Click => "image_click",
+            Self::DoubleClick => "image_double_click",
+        }
+    }
+
+    fn roi_action(self) -> &'static str {
+        match self {
+            Self::MatchOnly => "roi_match",
+            Self::Click => "roi_click",
+            Self::DoubleClick => "roi_double_click",
+        }
+    }
+
+    fn click_action(self) -> &'static str {
+        match self {
+            Self::MatchOnly => "image_match",
+            Self::Click => "click",
+            Self::DoubleClick => "double_click",
+        }
+    }
+}
+
 fn dispatch_hotkey_step(
     hwnd: isize,
     step: &WorkflowStepInput,
@@ -785,17 +834,24 @@ fn dispatch_text_input_step(
 fn dispatch_click_step(
     hwnd: isize,
     step: &WorkflowStepInput,
+    mode: MouseDispatchMode,
 ) -> Result<StepDispatchResult, String> {
     let point = point_from_step(step).ok_or_else(|| {
-        "click step requires target x=...,y=... or an ROI-bound asset".to_string()
+        format!(
+            "{} step requires target x=...,y=... or an ROI-bound asset",
+            mode.click_action()
+        )
     })?;
     let button = command_value(&step.command, "button").unwrap_or("left");
-    let result = post_mouse_click(hwnd, point.clone(), button)?;
+    let result = match mode {
+        MouseDispatchMode::DoubleClick => post_mouse_double_click(hwnd, point.clone(), button)?,
+        _ => post_mouse_click(hwnd, point.clone(), button)?,
+    };
     let mut output = step_result_with_input(
         hwnd,
         &step.step_type,
         "sent",
-        "click",
+        mode.click_action(),
         result.detail,
         true,
         None,
@@ -808,13 +864,13 @@ fn dispatch_click_step(
 fn dispatch_image_step(
     hwnd: isize,
     step: &WorkflowStepInput,
-    execute_click: bool,
+    mode: MouseDispatchMode,
     expected_window: Option<&ExpectedWindowInput>,
 ) -> Result<StepDispatchResult, String> {
     let button = command_value(&step.command, "button").unwrap_or("left");
     let threshold = image_threshold(step)?;
     if let Some(data_url) = template_data_url(step) {
-        let frame = if execute_click {
+        let frame = if mode.sends_input() {
             capture_client_rgb_strict(hwnd)?
         } else {
             capture_client_rgb(hwnd)?
@@ -827,7 +883,7 @@ fn dispatch_image_step(
             hwnd,
             &step.step_type,
             if matched.score >= threshold {
-                if execute_click {
+                if mode.sends_input() {
                     "sent"
                 } else {
                     "matched"
@@ -835,11 +891,7 @@ fn dispatch_image_step(
             } else {
                 "below_threshold"
             },
-            if execute_click {
-                "image_click"
-            } else {
-                "image_match"
-            },
+            mode.image_action(),
             format!(
                 "best score {:.3} at {},{} size {}x{} threshold {:.3}",
                 matched.score, matched.x, matched.y, matched.width, matched.height, threshold
@@ -850,9 +902,14 @@ fn dispatch_image_step(
         output.matched = matched.score >= threshold;
         output.x = Some(click_point.x);
         output.y = Some(click_point.y);
-        if execute_click && matched.score >= threshold {
+        if mode.sends_input() && matched.score >= threshold {
             validate_expected_window(hwnd, expected_window)?;
-            let result = post_mouse_click(hwnd, click_point, button)?;
+            let result = match mode {
+                MouseDispatchMode::DoubleClick => {
+                    post_mouse_double_click(hwnd, click_point, button)?
+                }
+                _ => post_mouse_click(hwnd, click_point, button)?,
+            };
             output.input_sent = true;
             output.detail = format!("{}; {}", output.detail, result.detail);
         }
@@ -860,14 +917,19 @@ fn dispatch_image_step(
     }
 
     if let Some(point) = point_from_step_with_offset(step)? {
-        if execute_click {
+        if mode.sends_input() {
             validate_expected_window(hwnd, expected_window)?;
-            let result = post_mouse_click(hwnd, point.clone(), button)?;
+            let result = match mode {
+                MouseDispatchMode::DoubleClick => {
+                    post_mouse_double_click(hwnd, point.clone(), button)?
+                }
+                _ => post_mouse_click(hwnd, point.clone(), button)?,
+            };
             let mut output = step_result_with_input(
                 hwnd,
                 &step.step_type,
                 "sent",
-                "roi_click",
+                mode.roi_action(),
                 result.detail,
                 true,
                 None,
@@ -881,7 +943,7 @@ fn dispatch_image_step(
             hwnd,
             &step.step_type,
             "planned",
-            "roi_match",
+            mode.roi_action(),
             "ROI target is available, but no template image is bound for visual matching",
         );
         output.matched = true;
@@ -894,11 +956,7 @@ fn dispatch_image_step(
         hwnd,
         &step.step_type,
         "missing_asset",
-        if execute_click {
-            "image_click"
-        } else {
-            "image_match"
-        },
+        mode.image_action(),
         "image step requires a pasted image asset or ROI target",
     ))
 }
@@ -2272,8 +2330,61 @@ mod tests {
             w: 4,
             h: 4,
         });
-        let error = dispatch_image_step(42, &step, true, None).unwrap_err();
+        let error = dispatch_image_step(42, &step, MouseDispatchMode::Click, None).unwrap_err();
         assert!(error.contains("expected window identity is required"));
+    }
+
+    #[test]
+    fn image_double_click_requires_identity_recheck_before_point_click() {
+        let mut step = image_step("x=10;y=20;button=left");
+        step.step_type = "double_click".to_string();
+        step.roi = Some(RoiRect {
+            x: 10,
+            y: 20,
+            w: 4,
+            h: 4,
+        });
+        let error =
+            dispatch_image_step(42, &step, MouseDispatchMode::DoubleClick, None).unwrap_err();
+        assert!(error.contains("expected window identity is required"));
+    }
+
+    #[test]
+    fn double_click_mode_reports_distinct_actions() {
+        assert_eq!(
+            MouseDispatchMode::DoubleClick.click_action(),
+            "double_click"
+        );
+        assert_eq!(
+            MouseDispatchMode::DoubleClick.image_action(),
+            "image_double_click"
+        );
+        assert_eq!(
+            MouseDispatchMode::DoubleClick.roi_action(),
+            "roi_double_click"
+        );
+    }
+
+    #[test]
+    fn double_click_requires_point_or_bound_target() {
+        let step = WorkflowStepInput {
+            step_type: "double_click".to_string(),
+            target: String::new(),
+            command: "button=left".to_string(),
+            expect: String::new(),
+            target_id: None,
+            target_kind: None,
+            target_data_url: None,
+            asset_id: None,
+            asset_kind: None,
+            asset_data_url: None,
+            roi: None,
+            target_texts: Vec::new(),
+            ocr_language: None,
+            ocr_region: None,
+        };
+        let error = dispatch_click_step(42, &step, MouseDispatchMode::DoubleClick).unwrap_err();
+        assert!(error.contains("double_click step requires target"));
     }
 
     #[test]

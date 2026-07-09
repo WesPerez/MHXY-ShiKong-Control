@@ -25,8 +25,10 @@ FORBIDDEN_TOKENS = [
 ]
 HWND_TOKENS = [
     "PostMessageW",
+    "WM_LBUTTONDBLCLK",
     "WM_LBUTTONDOWN",
     "WM_LBUTTONUP",
+    "WM_RBUTTONDBLCLK",
     "WM_RBUTTONDOWN",
     "WM_RBUTTONUP",
     "WM_MOUSEMOVE",
@@ -65,15 +67,15 @@ IMAGE_CLICK_RECHECK_TOKENS = [
 IMAGE_CLICK_RECHECK_PATTERNS = [
     (
         "image_click dispatch passes expected_window",
-        '"image_click"=>dispatch_image_step(hwnd,&step,true,expected_window)',
+        '"image_click"=>{dispatch_image_step(hwnd,&step,MouseDispatchMode::Click,expected_window)}',
     ),
     (
         "template image_click revalidates before click",
-        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,click_point,button)?;",
+        "ifmode.sends_input()&&matched.score>=threshold{validate_expected_window(hwnd,expected_window)?;letresult=matchmode",
     ),
     (
         "roi image_click revalidates before click",
-        "validate_expected_window(hwnd,expected_window)?;letresult=post_mouse_click(hwnd,point.clone(),button)?;",
+        "ifmode.sends_input(){validate_expected_window(hwnd,expected_window)?;letresult=matchmode",
     ),
 ]
 TARGET_TOKENS = [
@@ -283,6 +285,17 @@ TEXT_INPUT_TOKENS = [
     "mode=hwnd-char",
     "文本输入会向目标 hwnd 投递 WM_CHAR",
 ]
+DOUBLE_CLICK_TOKENS = [
+    "double_click",
+    "post_mouse_double_click",
+    "dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick)",
+    "MouseDispatchMode::DoubleClick",
+    "WM_LBUTTONDBLCLK",
+    "WM_RBUTTONDBLCLK",
+    "data-step-types=\"click double_click\"",
+    "data-param-for=\"image_click double_click\"",
+    "后台双击",
+]
 
 
 def main() -> int:
@@ -319,6 +332,7 @@ def main() -> int:
     ui_stability = scan_tokens(files, UI_STABILITY_TOKENS)
     run_report = scan_tokens(files, RUN_REPORT_TOKENS)
     text_input = scan_tokens(files, TEXT_INPUT_TOKENS)
+    double_click = scan_tokens(files, DOUBLE_CLICK_TOKENS)
     identity_required = bool(hwnd)
     identity_seen = {hit["token"] for hit in identity}
     identity_missing = [
@@ -414,6 +428,10 @@ def main() -> int:
     text_input_missing = [
         token for token in TEXT_INPUT_TOKENS if token not in text_input_seen
     ]
+    double_click_seen = {hit["token"] for hit in double_click}
+    double_click_missing = [
+        token for token in DOUBLE_CLICK_TOKENS if token not in double_click_seen
+    ]
     report = {
         "version": 1,
         "projectRoot": str(project_root),
@@ -467,6 +485,8 @@ def main() -> int:
         "runReportMissing": run_report_missing,
         "textInputEvidence": text_input,
         "textInputMissing": text_input_missing,
+        "doubleClickEvidence": double_click,
+        "doubleClickMissing": double_click_missing,
         "passed": (
             not forbidden
             and not focus
@@ -492,6 +512,7 @@ def main() -> int:
             and not ui_stability_missing
             and not run_report_missing
             and not text_input_missing
+            and not double_click_missing
         ),
         "note": (
             "Forbidden tokens indicate real cursor/keyboard injection risk. "
@@ -500,7 +521,7 @@ def main() -> int:
             "When hwnd input exists, expectedWindow identity evidence must also be present. "
             "expectedWindow.hwnd must be required and checked before dispatch. "
             "image_click must recheck expectedWindow after matching and before posting a click. "
-            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, step timing, image click point controls, workflow blueprint, independent workflow duplicate targets, batch queue, queue timing, run report, text input, and UI stability tokens catch visible UI or modeled-step regressions."
+            "Step editing, validation badge, paste-to-step, clipboard fallback, runner semantic, step timing, image click point controls, workflow blueprint, independent workflow duplicate targets, batch queue, queue timing, run report, text input, double click, and UI stability tokens catch visible UI or modeled-step regressions."
         ),
     }
     if args.json:
@@ -555,6 +576,8 @@ def main() -> int:
         print(f"runReportMissing={len(run_report_missing)}")
         print(f"textInputEvidence={len(text_input)}")
         print(f"textInputMissing={len(text_input_missing)}")
+        print(f"doubleClickEvidence={len(double_click)}")
+        print(f"doubleClickMissing={len(double_click_missing)}")
         if forbidden:
             for hit in forbidden:
                 print(f"FORBIDDEN {hit['path']}:{hit['line']} {hit['token']}")
@@ -624,6 +647,9 @@ def main() -> int:
         if text_input_missing:
             for token in text_input_missing:
                 print(f"MISSING_TEXT_INPUT {token}")
+        if double_click_missing:
+            for token in double_click_missing:
+                print(f"MISSING_DOUBLE_CLICK {token}")
     return 0 if report["passed"] else 2
 
 
