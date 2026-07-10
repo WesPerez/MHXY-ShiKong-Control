@@ -88,6 +88,7 @@ python scripts\audit_control_flow_schema.py --json
 npm run test:failure-evidence
 npm run audit:failure-evidence
 npm run audit:live-validation
+npm run audit:live-validation-import
 npm run test:step-params
 npm run audit:step-params
 npm run audit:quick-steps
@@ -108,10 +109,12 @@ npm run test:failure-evidence
 npm run test:step-params
 npm run test:control-flow
 npm run test:target-library
+npm run test:live-validation
 npm run live:hotkey:preflight
 npm run validate:live-hotkey
 npm run audit:failure-evidence
 npm run audit:live-validation
+npm run audit:live-validation-import
 npm run audit:step-params
 npm run audit:quick-steps
 npm run audit:completion-action-dock
@@ -139,6 +142,8 @@ npm run live:hotkey:allow-both
 ```
 
 这些命令只会通过 Rust ignored live tests 走 hwnd 后台热键路径，并且只在 `--allow-input` 分支里给子进程设置 `MHXY_LIVE_GAME_TEST=1`。`--require-executed` 下如果因为未授权、权限不足或缺少两个 live 游戏窗口而没有真正执行，脚本返回退出码 `2`，并在报告中写入 `input_not_allowed` 或 `blocked_by_privilege_or_setup`；真实执行失败返回 `1`，普通预检或通过返回 `0`。
+
+应用运行面板的 `导入 live 报告` 会读取工作区文本框中的 `live-background-hotkey-*.json`，把轻量摘要写入 `runHistory` 和失败报告，不会发送后台输入，也不会内联完整命令输出或完整进程快照。完整 JSON/Markdown 仍作为 `externalEvidence` 指向 `assets/resource/ShiKong/reports/live-background-hotkey-*` 附件。
 
 打包：
 

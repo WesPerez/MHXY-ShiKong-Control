@@ -35,6 +35,11 @@ import {
   failureEvidenceSummaryText,
   failureStepFromReport as failureStepFromReportCore,
 } from "./failure-evidence-core.js";
+import {
+  isLiveValidationEvidence,
+  liveValidationRunHistoryEntry,
+  mergeLiveValidationRunHistory,
+} from "./live-validation-core.js";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
@@ -6725,6 +6730,11 @@ function syncRunActionButtons() {
   }
 }
 
+function appendRunHistoryRecord(record, reason = "run logged") {
+  state.workspace.runHistory = [record, ...(state.workspace.runHistory || []).filter((item) => item?.id !== record?.id)].slice(0, 80);
+  markDirty(reason);
+}
+
 async function runSession(session, runPlan) {
   const pendingRunPlan = [...runPlan];
   for (let index = 0; index < pendingRunPlan.length; index += 1) {
@@ -6759,9 +6769,7 @@ async function runSession(session, runPlan) {
     endedAt: session.endedAt,
     timestamp: session.endedAt,
   });
-  state.workspace.runHistory.unshift(runHistoryEntryFromSession(session));
-  state.workspace.runHistory = state.workspace.runHistory.slice(0, 80);
-  markDirty("run logged");
+  appendRunHistoryRecord(runHistoryEntryFromSession(session), "run logged");
   renderSessions();
   syncRunState();
   appendLog(
@@ -7571,6 +7579,7 @@ function shouldStopAfterResult(item, result) {
 }
 
 function modeLabel(mode) {
+  if (mode === "live_validation") return "Live 验收";
   return mode === "background" ? "后台运行" : "观察运行";
 }
 
@@ -7732,6 +7741,13 @@ function renderRunHistory(container) {
       reason.textContent = record.failureReason;
       lane.append(reason);
     }
+    const liveLine = liveValidationHistoryLine(record);
+    if (liveLine) {
+      const live = document.createElement("small");
+      live.className = "history-detail";
+      live.textContent = liveLine;
+      lane.append(live);
+    }
     if (record.endedWindowIdentityError) {
       const identity = document.createElement("small");
       identity.textContent = `结束窗口身份读取失败：${record.endedWindowIdentityError}`;
@@ -7746,6 +7762,19 @@ function renderRunHistory(container) {
     }
     container.append(lane);
   }
+}
+
+function liveValidationHistoryLine(record) {
+  const live = record?.liveValidation;
+  if (!live) return "";
+  const evidence = Array.isArray(record.externalEvidence) ? record.externalEvidence.find((item) => item.kind === "live-json") : null;
+  return [
+    `live=${live.status || "unknown"}`,
+    `admin=${Boolean(live.admin)}`,
+    `allowInput=${Boolean(live.allowInput)}`,
+    live.git?.head ? `git=${live.git.head}` : "",
+    evidence?.path ? `report=${evidence.path}` : "",
+  ].filter(Boolean).join(" · ");
 }
 
 function renderFailureReports() {
@@ -7872,9 +7901,23 @@ function failureReportDetailHtml(report, failedStep, identity) {
     failureDetailGroupHtml("运行事件", runEvents.slice(-8).map(formatFailureRunEvent)),
     failureDetailGroupHtml("控制流", transitions.slice(-6).map(formatHistoryTransition)),
     failureDetailGroupHtml("暂停", pauseEvents.slice(-6).map(formatHistoryPauseEvent)),
+    failureDetailGroupHtml("Live 验收", liveValidationDetailItems(report)),
     failureDetailGroupHtml("最近步骤", steps.slice(-8).map(formatFailureStepResult)),
   ].filter(Boolean);
   return `<div class="failure-report-detail" aria-label="失败报告详情">${groups.join("")}</div>`;
+}
+
+function liveValidationDetailItems(report) {
+  const live = report?.liveValidation;
+  if (!live) return [];
+  const evidence = Array.isArray(report.externalEvidence) ? report.externalEvidence : [];
+  const git = live.git || {};
+  return [
+    `状态：${live.status || "unknown"} · admin=${Boolean(live.admin)} · allowInput=${Boolean(live.allowInput)} · requireExecuted=${Boolean(live.requireExecuted)}`,
+    git.head ? `Git：${git.branch || "-"} @ ${git.head}${git.statusShort ? " · 生成时有未提交改动" : ""}` : "",
+    `进程快照：${live.processSnapshotStatus || "-"} · ${live.processSnapshotCount || 0} 个相关进程`,
+    ...evidence.map((item) => `${item.kind}: ${item.path}`),
+  ].filter(Boolean);
 }
 
 function failureDetailGroupHtml(title, items) {
@@ -8018,6 +8061,27 @@ async function importWorkspace() {
   }
 }
 
+async function importLiveValidationReport() {
+  try {
+    const parsed = JSON.parse($("#workspace-json").value);
+    if (!isLiveValidationEvidence(parsed)) {
+      throw new Error("文本框内容不是 live-background-hotkey JSON 报告");
+    }
+    const record = liveValidationRunHistoryEntry(parsed);
+    state.workspace.runHistory = mergeLiveValidationRunHistory(state.workspace.runHistory, record, { limit: 80 });
+    markDirty("live validation imported");
+    await saveWorkspaceNow();
+    renderSessions();
+    renderOpsDashboard();
+    const summary = record.failureReason || record.liveValidation?.status || record.status;
+    setStatus(`已导入 live 验收报告到运行历史：${summary}`);
+    appendLog("info", `已导入 live 验收报告：${record.id} · ${summary}`);
+  } catch (error) {
+    setStatus(`live 验收报告导入失败：${error.message}`);
+    appendLog("error", `live 验收报告导入失败：${error.message}`);
+  }
+}
+
 function readBlobAsDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -8128,6 +8192,7 @@ $("#resume-runs").addEventListener("click", resumeRuns);
 $("#stop-dry-run").addEventListener("click", stopDryRun);
 $("#export-workspace").addEventListener("click", exportWorkspace);
 $("#import-workspace").addEventListener("click", importWorkspace);
+$("#import-live-report").addEventListener("click", importLiveValidationReport);
 $("#failure-report-board").addEventListener("click", handleFailureReportAction);
 $("#preview-click-capture").addEventListener("click", togglePreviewClickCapture);
 $("#preview-click-button").addEventListener("change", (event) => setPreviewClickButton(event.target.value));

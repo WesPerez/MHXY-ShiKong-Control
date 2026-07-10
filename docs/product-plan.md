@@ -155,6 +155,8 @@ cargo clippy --all-targets -- -D warnings
 
 `npm run live:hotkey:preflight` 和兼容旧入口 `npm run validate:live-hotkey` 只能作为默认安全预检和报告生成入口，不设置 `MHXY_LIVE_GAME_TEST`，不会默认发送后台输入。真实后台输入验收必须显式运行 `npm run live:hotkey:allow-input` 或 `npm run live:hotkey:allow-both`，并且只在用户确认的窗口和管理员权限匹配后执行。报告写入 `assets/resource/ShiKong/reports`，并用 `input_not_allowed`、`blocked_by_privilege_or_setup`、`passed`、`failed` 和退出码 `0/1/2` 区分预检、通过、失败和未真正执行。
 
+应用内运行面板应能把这些 live JSON 报告导入 `runHistory`，让预检、权限阻断和真实执行结果都进入同一套最近运行/失败报告/证据包链路。导入只保存轻量摘要和 `externalEvidence` 路径，不内联完整进程快照和 cargo 输出。
+
 ## 实施顺序
 
 1. 继续修 v9 安全和 readiness，确保不会把计划态或失败态当成功。

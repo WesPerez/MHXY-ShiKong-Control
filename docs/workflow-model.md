@@ -357,6 +357,8 @@ schema v9 继续保留 v7 的控制流定义态字段：`targetStepId`、`elseTa
 
 live 后台热键验收通过 `scripts/live_background_hotkey_validation.py` 生成独立 JSON/Markdown 证据。`npm run live:hotkey:preflight` 和兼容旧入口 `npm run validate:live-hotkey` 默认只记录计划命令、git 状态和进程快照，不设置 `MHXY_LIVE_GAME_TEST`，也不运行会发送输入的 ignored Rust 测试；只有显式 `--allow-input` 的 `npm run live:hotkey:allow-input` 或 `npm run live:hotkey:allow-both` 才会设置 `MHXY_LIVE_GAME_TEST=1`。脚本报告落在 `assets/resource/ShiKong/reports`，状态区分 `preflight_only`、`input_not_allowed`、`blocked_by_privilege_or_setup`、`passed`、`failed`，并用退出码 `2` 表示 `--require-executed` 下因权限、窗口或未授权而没有真正执行。
 
+运行面板的 `导入 live 报告` 会把 `live-background-hotkey-*.json` 适配为 `runHistory` 记录：`preflight_only/passed` 进入最近运行报告，`input_not_allowed/blocked_by_privilege_or_setup/failed` 同时进入失败报告。导入记录的 `source` 为 `live-validation`，`mode` 为 `live_validation`，并保存 `liveValidation` 轻量摘要和 `externalEvidence` 报告路径；完整 `runs[].output`、完整 `processSnapshot` 和 Markdown 内容不进入工作区，只保留在 `assets/resource/ShiKong/reports/live-background-hotkey-*` 附件中，避免 `workspace.json` 膨胀或泄露本机命令行。
+
 ## 输入安全原则
 
 默认运行路径必须满足：
