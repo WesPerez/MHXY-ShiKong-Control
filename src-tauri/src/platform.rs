@@ -112,7 +112,10 @@ fn captured_frame(
 
 fn assess_target_frame_health(rgb: &RgbFrame) -> CaptureReliability {
     // Keep assessment self-contained so platform unit tests do not depend on runtime module wiring.
-    if rgb.width == 0 || rgb.height == 0 || rgb.pixels.len() < (rgb.width as usize * rgb.height as usize * 3) {
+    if rgb.width == 0
+        || rgb.height == 0
+        || rgb.pixels.len() < (rgb.width as usize * rgb.height as usize * 3)
+    {
         return CaptureReliability::TargetWindowUnverified;
     }
     let mut min_luma: u8 = 255;
@@ -120,7 +123,9 @@ fn assess_target_frame_health(rgb: &RgbFrame) -> CaptureReliability {
     let mut black_pixels: u64 = 0;
     let sample_count = (rgb.width as u64).saturating_mul(rgb.height as u64).max(1);
     for pixel in rgb.pixels.chunks_exact(3) {
-        let luma = ((u16::from(pixel[0]) * 30) + (u16::from(pixel[1]) * 59) + (u16::from(pixel[2]) * 11)) / 100;
+        let luma =
+            ((u16::from(pixel[0]) * 30) + (u16::from(pixel[1]) * 59) + (u16::from(pixel[2]) * 11))
+                / 100;
         let luma = luma.min(255) as u8;
         min_luma = min_luma.min(luma);
         max_luma = max_luma.max(luma);
@@ -137,6 +142,7 @@ fn assess_target_frame_health(rgb: &RgbFrame) -> CaptureReliability {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn capture_with_policy(
     purpose: CapturePurpose,
     providers: &[(CaptureProvider, &dyn Fn() -> Result<RgbFrame, String>)],
@@ -362,7 +368,11 @@ mod capture_policy_tests {
         for y in 0..8u32 {
             for x in 0..12u32 {
                 let value = ((x * 17 + y * 31) % 200 + 30) as u8;
-                pixels.extend_from_slice(&[value, value.saturating_add(20), value.saturating_add(40)]);
+                pixels.extend_from_slice(&[
+                    value,
+                    value.saturating_add(20),
+                    value.saturating_add(40),
+                ]);
             }
         }
         RgbFrame {
@@ -519,10 +529,10 @@ mod windows_impl {
             UI::WindowsAndMessaging::{
                 EnumWindows, GetClientRect, GetWindow, GetWindowLongW, GetWindowRect,
                 GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindow,
-                IsWindowVisible, PostMessageW, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL,
-                WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
-                WM_MOUSEMOVE, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN,
-                WM_SYSKEYUP, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
+                IsWindowVisible, PostMessageW, GWL_EXSTYLE, GW_OWNER, SW_SHOWNORMAL, WM_CHAR,
+                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE,
+                WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+                WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
             },
         },
     };
@@ -538,7 +548,6 @@ mod windows_impl {
     const VK_F1: u16 = 0x70;
     const MK_LBUTTON_FLAG: u32 = 0x0001;
     const MK_RBUTTON_FLAG: u32 = 0x0002;
-
 
     #[link(name = "user32")]
     extern "system" {

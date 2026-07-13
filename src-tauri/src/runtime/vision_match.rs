@@ -109,7 +109,10 @@ pub fn estimate_search_budget(
     })
 }
 
-pub fn enforce_search_budget(report: &SearchBudgetReport, has_explicit_roi: bool) -> Result<(), String> {
+pub fn enforce_search_budget(
+    report: &SearchBudgetReport,
+    has_explicit_roi: bool,
+) -> Result<(), String> {
     if report.within_budget() {
         return Ok(());
     }

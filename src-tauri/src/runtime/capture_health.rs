@@ -3,6 +3,7 @@
 //! Control input may only proceed when a target-window frame is health-verified.
 //! Black, near-uniform, size-mismatch, and stale/repeated frames stay blocked.
 
+#![allow(dead_code)]
 use crate::platform::{CaptureProvider, CaptureReliability, CapturedFrame, RgbFrame};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,10 +78,14 @@ pub fn analyze_rgb_frame(frame: &RgbFrame) -> CaptureHealthReport {
     let mut min_luma: u8 = 255;
     let mut max_luma: u8 = 0;
     let mut black_pixels: u64 = 0;
-    let sample_count = (frame.width as u64).saturating_mul(frame.height as u64).max(1);
+    let sample_count = (frame.width as u64)
+        .saturating_mul(frame.height as u64)
+        .max(1);
 
     for pixel in frame.pixels.chunks_exact(3) {
-        let luma = ((u16::from(pixel[0]) * 30) + (u16::from(pixel[1]) * 59) + (u16::from(pixel[2]) * 11)) / 100;
+        let luma =
+            ((u16::from(pixel[0]) * 30) + (u16::from(pixel[1]) * 59) + (u16::from(pixel[2]) * 11))
+                / 100;
         let luma = luma.min(255) as u8;
         sum += u64::from(luma);
         min_luma = min_luma.min(luma);
@@ -171,7 +176,9 @@ pub fn apply_health_to_captured_frame(
     expected_height: Option<u32>,
     previous: Option<&FrameHealthSample>,
 ) -> CapturedFrame {
-    if captured.metadata.provider == CaptureProvider::DesktopVisibleGdi || captured.metadata.fallback_used {
+    if captured.metadata.provider == CaptureProvider::DesktopVisibleGdi
+        || captured.metadata.fallback_used
+    {
         captured.metadata.reliability = CaptureReliability::PreviewOnly;
         return captured;
     }
@@ -219,7 +226,11 @@ mod tests {
         for y in 0..height {
             for x in 0..width {
                 let value = ((x * 17 + y * 31) % 220 + 20) as u8;
-                pixels.extend_from_slice(&[value, value.saturating_add(10), value.saturating_add(20)]);
+                pixels.extend_from_slice(&[
+                    value,
+                    value.saturating_add(10),
+                    value.saturating_add(20),
+                ]);
             }
         }
         RgbFrame {
@@ -233,7 +244,10 @@ mod tests {
     fn black_frame_is_rejected() {
         let report = analyze_rgb_frame(&rgb_frame(8, 8, [0, 0, 0]));
         assert_eq!(report.issue, Some(CaptureHealthIssue::BlackFrame));
-        assert_eq!(report.reliability, CaptureReliability::TargetWindowUnverified);
+        assert_eq!(
+            report.reliability,
+            CaptureReliability::TargetWindowUnverified
+        );
     }
 
     #[test]
@@ -266,9 +280,13 @@ mod tests {
             height: 8,
             captured_at_ms: 1_000,
         };
-        let report = classify_control_frame(&frame, Some(12), Some(8), Some(&previous), "same", 2_000);
+        let report =
+            classify_control_frame(&frame, Some(12), Some(8), Some(&previous), "same", 2_000);
         assert_eq!(report.issue, Some(CaptureHealthIssue::StaleFrame));
-        assert_eq!(report.reliability, CaptureReliability::TargetWindowUnverified);
+        assert_eq!(
+            report.reliability,
+            CaptureReliability::TargetWindowUnverified
+        );
     }
 
     #[test]
@@ -286,7 +304,10 @@ mod tests {
             },
         };
         let verified = apply_health_to_captured_frame(captured, None, None, None);
-        assert_eq!(verified.metadata.reliability, CaptureReliability::PreviewOnly);
+        assert_eq!(
+            verified.metadata.reliability,
+            CaptureReliability::PreviewOnly
+        );
         assert!(!verified.metadata.permits_control_decision());
     }
 }

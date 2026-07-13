@@ -1000,13 +1000,17 @@ fn dispatch_image_step(
             w: roi.w,
             h: roi.h,
         });
-        let matched = match_template_budgeted(
-            frame,
-            &template,
-            search_roi,
-            has_explicit_roi,
-            || control.checkpoint(),
-        )?;
+        let matched =
+            match_template_budgeted(frame, &template, search_roi, has_explicit_roi, || {
+                control.checkpoint()
+            })?;
+        let matched = TemplateMatch {
+            x: matched.x,
+            y: matched.y,
+            width: matched.width,
+            height: matched.height,
+            score: matched.score,
+        };
         control.checkpoint()?;
         let click_point = image_click_point(&matched, step, frame.width, frame.height)?;
         let mut output = step_result_with_input(
@@ -1936,6 +1940,7 @@ fn load_image_data_url_rgb(data_url: &str) -> Result<RgbFrame, String> {
     })
 }
 
+#[allow(dead_code)]
 fn match_template(
     frame: &RgbFrame,
     template: &RgbFrame,
