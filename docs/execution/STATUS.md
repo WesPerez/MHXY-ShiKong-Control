@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:ba410ca4c5d6efd06e1141347779016cfbd8cee2997fa0fa0799b6d9800a977d -->
+<!-- state-digest: sha256:bc0f6451cb6bc7ca6efdd143b06ed023eb9d18aa34f085e4225d393ad638c917 -->
 <!-- checkpoint-id: CP-0020 -->
 # 长任务执行状态
 
@@ -8,26 +8,26 @@
 
 ## 恢复首屏
 
-- 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-13T07:43:44Z`
-- 更新时间（北京时间）：`2026-07-13T15:43:44+08:00`
+- 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
+- 更新时间（UTC）：`2026-07-13T07:43:46Z`
+- 更新时间（北京时间）：`2026-07-13T15:43:46+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P2`
 - 当前切片：`P2-S2` - 五视口真实渲染与检查器交互验收
-- 阶段状态：`verified`；切片状态：`verified`；动作状态：`running`
+- 阶段状态：`verified`；切片状态：`verified`；动作状态：`succeeded`
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
-- 当前工作：未决动作 `ACT-COMMIT-P2S2-FINAL-LEDGER-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：P2-S2 final HEAD rebind: core regression（EVD-0086，当前工作区绑定有效）
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P2S2-FINAL-LEDGER-001；结果明确前禁止重放
+- 当前工作：当前没有副作用动作在执行，停在下一动作之前
+- 最新当前有效证据：最近事件：副作用动作 ACT-COMMIT-P2S2-FINAL-LEDGER-001 -> succeeded（EVT-0247；不是当前验收通过证据）
+- 唯一下一动作：Start P3 health-verified capture provider work
 - 当前切片执行 blocker：缺少本地预览进程启动与只读 UI 测试授权
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
 - 最新 checkpoint：`CP-0020`；safeToResume=`true`；safeToRunLiveInput=`false`
-- 当前允许：只读审计、连续性元数据对账。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`133014s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`133016s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -83,15 +83,11 @@
 
 ## 当前动作
 
-- actionId：`ACT-COMMIT-P2S2-FINAL-LEDGER-001`
-- 类型：`git_commit`
-- 目标：`final P2-S2 ledger on HEAD 60b5e75`
-- 副作用级别：`git_commit`
-- 状态：`running`
+- 当前没有未决副作用动作。
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P2S2-FINAL-LEDGER-001；结果明确前禁止重放
+- 唯一下一动作：Start P3 health-verified capture provider work
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -107,10 +103,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`60b5e7500d3e20c6d4fecf30ecf92dc300b594e8`
+- observed HEAD：`cc03c5f9bf908f21c5041deb610d0c97dae567bf`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:2e5306ca29ed241054c62b1cb2031a961bdcde038e5cec2cbb4a775651f8d9d7`
+- working tree fingerprint：`sha256:8ee2a10dfd22e048ceacbae4a89a1163fccea63b632f027b33b4cac9edeec22b`
 - 最新 checkpoint：`CP-0020` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -118,9 +114,7 @@
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0020-p2-s2-final-head.json`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -157,15 +151,14 @@
 | `EVD-0081` | `test` | `passed` | `stale` | P2-S2 rebind on HEAD: Playwright 10/10 five-viewport verification<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0082` | `build` | `passed` | `stale` | P2-S2 rebind on HEAD: Vite production build<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0083` | `test` | `passed` | `stale` | P2-S2 rebind on HEAD: full core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0084` | `test` | `passed` | `valid` | P2-S2 final HEAD rebind: Playwright 10/10<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0085` | `build` | `passed` | `valid` | P2-S2 final HEAD rebind: Vite build<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0086` | `test` | `passed` | `valid` | P2-S2 final HEAD rebind: core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0084` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: Playwright 10/10<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0085` | `build` | `passed` | `stale` | P2-S2 final HEAD rebind: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0086` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 237 | `2026-07-13T07:40:41Z` | `test_run` | P2-S2 rebind on HEAD: Vite production build |
 | 238 | `2026-07-13T07:41:30Z` | `test_run` | P2-S2 rebind on HEAD: full core regression |
 | 239 | `2026-07-13T07:41:54Z` | `checkpoint` | 创建 CP-0019：Rebound P2-S2 evidence to HEAD 1f99f57 |
 | 240 | `2026-07-13T07:42:06Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P2S2-REBIND-001 |
@@ -175,6 +168,7 @@
 | 244 | `2026-07-13T07:43:27Z` | `test_run` | P2-S2 final HEAD rebind: core regression |
 | 245 | `2026-07-13T07:43:43Z` | `checkpoint` | 创建 CP-0020：Final P2-S2 evidence rebound to HEAD 60b5e75 |
 | 246 | `2026-07-13T07:43:44Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P2S2-FINAL-LEDGER-001 |
+| 247 | `2026-07-13T07:43:45Z` | `action_result` | 副作用动作 ACT-COMMIT-P2S2-FINAL-LEDGER-001 -> succeeded |
 
 ## 异常恢复
 
