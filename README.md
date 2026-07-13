@@ -1,6 +1,24 @@
 # 时空任务编排器
 
-`MHXY-ShiKong-Control` 是放在 `E:\Project\Common` 下的独立 Tauri/Rust 项目。当前阶段已经从 Maa 迁移接管台转成面向“梦幻西游：时空”多窗口宏流程的本地任务编排器。
+`mhxy-shikong-control` 是放在 `E:\Project\Common` 下的独立 Tauri/Rust 项目。当前阶段已经从 Maa 迁移接管台转成面向“梦幻西游：时空”多窗口宏流程的本地任务编排器。
+
+## 长任务入口
+
+- 当前人类可读进度：[docs/execution/STATUS.md](docs/execution/STATUS.md)
+- 长任务执行与异常恢复协议：[docs/execution/PROTOCOL.md](docs/execution/PROTOCOL.md)
+- 项目现状审计与完整实施总方案：[docs/project-audit-and-master-plan.md](docs/project-audit-and-master-plan.md)
+- 当前真实进度与会话交接：[docs/current-progress-and-handoff.md](docs/current-progress-and-handoff.md)
+- 可直接放入 Codex Goal 的下一 Agent 提示词：[docs/next-agent-goal-prompt.md](docs/next-agent-goal-prompt.md)
+
+恢复中断任务时先运行：
+
+```powershell
+npm run execution:resume-check
+npm run audit:execution-state
+git status --short --ignored
+```
+
+`execution:resume-check` 严格只读：通过 `npm run` 使用时，`0` 表示可恢复，任何非 `0` 都必须停止副作用并阅读输出；需要区分 `2`（先对账/刷新现场）和 `3`（完整性阻塞）时，直接运行 `python -B scripts/execution_progress.py resume-check --json`。`STATUS.md` 由 `scripts/execution_progress.py` 生成，不要手工修改。当前源码、Git、测试和实际运行结果高于线程历史与旧进度描述。
 
 历史保留已经推到 GitHub：
 
@@ -11,7 +29,9 @@
 - `95d815c`：删除旧 Maa 迁移、验收、OCR/runtime 死代码。
 - `bcd62c4`：移除未实现的全局串行策略入口，窗口策略只保留当前真实支持的 per-window-exclusive。
 
-## 当前能力
+## 源码表面能力
+
+本节只表示当前源码中存在相应入口，不等于当前 commit 已构建、当前版本已启动或真实游戏闭环已通过。真实可用性以 [执行状态九个验收轴](docs/execution/STATUS.md) 为准。
 
 - 应用标题和托盘提示为“时空任务编排器”。
 - Windows bundle 图标、任务栏图标、标题栏图标、托盘图标已配置。
@@ -97,12 +117,14 @@ npm run test:control-flow
 python scripts\audit_workflow_readiness.py --json
 python scripts\audit_readiness_taxonomy.py --json
 python scripts\audit_queue_readiness.py --json
+npm run execution:resume-check
+npm run audit:execution-state
 ```
 
 ## 开发命令
 
 ```powershell
-cd E:\Project\Common\MHXY-ShiKong-Control
+cd E:\Project\Common\mhxy-shikong-control
 npm install
 npm run build
 npm run test:failure-evidence
@@ -123,6 +145,8 @@ npm run audit:control-flow-schema
 npm run audit:workflow-readiness
 npm run audit:readiness-taxonomy
 npm run audit:queue-readiness
+npm run execution:resume-check
+npm run audit:execution-state
 cd src-tauri
 cargo fmt --check
 cargo check
@@ -148,7 +172,7 @@ npm run live:hotkey:allow-both
 打包：
 
 ```powershell
-cd E:\Project\Common\MHXY-ShiKong-Control
+cd E:\Project\Common\mhxy-shikong-control
 npm run tauri:build
 ```
 
@@ -170,7 +194,7 @@ src-tauri\target\release\bundle\nsis\时空任务编排器_0.1.0_x64-setup.exe
 E:\Project\Common
 ├─ Maa_MHXY_MG              # 原 Maa 项目，仅作为历史参考/迁移来源
 ├─ screen-watch-ocr-tauri   # OCRRUST 参考项目
-└─ MHXY-ShiKong-Control     # 当前项目
+└─ mhxy-shikong-control     # 当前项目
 ```
 
 ## 后续路线

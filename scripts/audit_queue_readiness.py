@@ -161,6 +161,8 @@ def audit(project_root: Path) -> dict[str, object]:
     css_path = project_root / "src/styles.css"
     index_path = project_root / "index.html"
     package_path = project_root / "package.json"
+    dispatch_core_path = project_root / "src/run-dispatch-core.js"
+    dispatch_test_path = project_root / "scripts/test_run_dispatch_core.mjs"
     if not main_path.is_file():
         return {"passed": False, "failures": [f"missing {main_path}"], "warnings": warnings, "counts": counts}
     if not css_path.is_file():
@@ -169,11 +171,17 @@ def audit(project_root: Path) -> dict[str, object]:
         failures.append("missing index.html")
     if not package_path.is_file():
         failures.append("missing package.json")
+    if not dispatch_core_path.is_file():
+        failures.append("missing src/run-dispatch-core.js")
+    if not dispatch_test_path.is_file():
+        failures.append("missing scripts/test_run_dispatch_core.mjs")
 
     source = read_text(main_path)
     css = read_text(css_path) if css_path.is_file() else ""
     index_html = read_text(index_path) if index_path.is_file() else ""
     package = json.loads(read_text(package_path)) if package_path.is_file() else {}
+    dispatch_core = read_text(dispatch_core_path) if dispatch_core_path.is_file() else ""
+    dispatch_test = read_text(dispatch_test_path) if dispatch_test_path.is_file() else ""
 
     bodies: dict[str, str] = {}
     for name in REQUIRED_FUNCTIONS:
@@ -411,10 +419,18 @@ def audit(project_root: Path) -> dict[str, object]:
     )
     require_contains(failures, run_selected, "validateWorkflowQueue(workflows, mode)", "runSelected must validate each queue")
     require_contains(failures, run_selected, "startRunForWindow(target, runEntries, mode, source)", "runSelected must start per target")
+    require_contains(failures, run_selected, "if (!assignment?.queue?.length)", "runSelected must skip windows without an explicit queue")
+    require_contains(failures, run_selected, "不会回退执行当前任务", "runSelected must explain that empty queues never fall back")
+    if "activeWorkflowRunEntry" in source:
+        failures.append("run dispatch must not keep the implicit active-workflow fallback")
 
     require_contains(failures, start_run, "isActiveSession(state.sessions[key])", "startRunForWindow must enforce same-hwnd lock")
     require_contains(failures, start_run, "currentWindowIdentityForRun(target, mode)", "startRunForWindow must refresh identity")
-    require_contains(failures, start_run, "queuePlan", "startRunForWindow must record queue plan")
+    require_contains(failures, start_run, "reserveStartingSession(state.sessions", "startRunForWindow must reserve a starting session")
+    require_contains(failures, start_run, "activateStartingSession(state.sessions", "startRunForWindow must activate only its own reservation")
+    require_contains(failures, start_run, "releaseStartingSession(state.sessions", "startRunForWindow must release only its own failed reservation")
+    if start_run.find("reserveStartingSession(state.sessions") > start_run.find("await currentWindowIdentityForRun(target, mode)"):
+        failures.append("startRunForWindow must reserve the starting session before its first identity await")
     require_contains(failures, start_run, "void runSession(session, runPlan)", "startRunForWindow must launch independent session")
     require_contains(
         failures,
@@ -424,6 +440,22 @@ def audit(project_root: Path) -> dict[str, object]:
     )
 
     require_contains(failures, active_runs, "isActiveSession(session)", "activeRunSessions must treat running and paused sessions as active")
+    for needle in ["starting", "queuePlan", "source: \"queue\"", "ACTIVE_SESSION_STATUSES", "sessions[key] = session"]:
+        require_contains(failures, dispatch_core, needle, f"run dispatch core missing {needle}")
+    for needle in [
+        "testAssignedQueueNeverFallsBackToAnActiveWorkflow",
+        "testStartingReservationIsAtomicPerHwnd",
+        "testStartingReservationActivatesOrReleasesOnlyItsOwnSlot",
+    ]:
+        require_contains(failures, dispatch_test, needle, f"run dispatch test missing {needle}")
+    require_contains(failures, sync_buttons, '#background-run-selected', "starting reservation must disable the background run button")
+    require_contains(failures, sync_buttons, '#dry-run-selected', "starting reservation must disable the dry run button")
+    require_contains(failures, sync_buttons, "launchPending", "run buttons must stay disabled while a starting session exists")
+    scripts = package.get("scripts", {})
+    if scripts.get("test:run-dispatch") != "node scripts/test_run_dispatch_core.mjs":
+        failures.append("package.json missing test:run-dispatch script")
+    if "npm run test:run-dispatch" not in scripts.get("test:all-core", ""):
+        failures.append("test:all-core must include test:run-dispatch")
     require_contains(failures, pause_runs, "pauseRequested = true", "pauseRuns must request a session pause")
     require_contains(
         failures,
@@ -452,10 +484,10 @@ def audit(project_root: Path) -> dict[str, object]:
     require_contains(failures, source, "cancellableSleep(session, ms, { workflow, phase })", "queue delays must be pause-aware")
     require_contains(failures, source, "cancellableSleep(session, ms, { workflow, item, phase: key })", "step delays must be pause-aware")
     require_contains(failures, source, "cancellableSleep(session, backgroundRetryDelay(item), { item, phase: \"retry_wait\" })", "retry waits must be pause-aware")
-    require_contains(failures, source, "pauseRequested: false", "sessions must initialize pauseRequested")
-    require_contains(failures, source, "pausedDurationMs: 0", "sessions must initialize pausedDurationMs")
-    require_contains(failures, source, "pauseCount: 0", "sessions must initialize pauseCount")
-    require_contains(failures, source, "runEvents: []", "sessions must initialize append-only run events")
+    require_contains(failures, dispatch_core, "pauseRequested: false", "sessions must initialize pauseRequested")
+    require_contains(failures, dispatch_core, "pausedDurationMs: 0", "sessions must initialize pausedDurationMs")
+    require_contains(failures, dispatch_core, "pauseCount: 0", "sessions must initialize pauseCount")
+    require_contains(failures, dispatch_core, "runEvents: []", "sessions must initialize append-only run events")
     require_contains(failures, source, 'recordRunEvent(session, "session_start"', "runner must record session start events")
     require_contains(failures, source, 'recordRunEvent(session, "workflow_start"', "runner must record workflow start events")
     require_contains(failures, source, 'recordRunEvent(session, "step_start"', "runner must record step start events")

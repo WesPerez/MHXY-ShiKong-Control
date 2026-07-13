@@ -1,0 +1,758 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0005",
+  "createdAt": "2026-07-11T07:49:43Z",
+  "type": "state_snapshot",
+  "reason": "P0 v6 数据保护与迁移基线五项验收全部通过",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f47be-d3fe-7853-89c5-d8208c7555ce",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P0",
+  "slice": {
+    "id": "P0-S1",
+    "title": "保护真实 v6 工作区并建立迁移基线",
+    "status": "verified",
+    "startedAt": null,
+    "scope": [
+      "只读核对真实 workspace.json 与 workspace.json.bak 的身份、schema、数量和哈希",
+      "为主文件和旧备份分别创建不覆盖源文件的独立备份",
+      "建立匿名 schema v6 migration fixture，并验证 5 个任务、63 个步骤、27 个目标及引用完整性"
+    ],
+    "nonGoals": [
+      "本切片不启动当前 HEAD 的新应用",
+      "本切片不向游戏窗口发送输入",
+      "本切片不重构 UI、runner、OCR 或识图",
+      "本切片不清理历史构建、报告、截图或缓存"
+    ],
+    "safetyBoundaries": [
+      "独立备份成功且哈希证据落盘前，不启动会自动迁移真实工作区的新版本",
+      "备份目标必须使用新文件名并验证不存在，禁止覆盖 workspace.json 或现有 workspace.json.bak",
+      "真实数据 fixture 必须匿名化，不把用户数据或截图提交到公开仓库",
+      "任何 AppData 写入前先登记 action intent；中断后先对账，不盲目重做"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P0-S1-C1",
+        "text": "workspace.json 的独立备份存在，源与备份 SHA-256 相同，源文件未被覆盖",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0029"
+        ],
+        "requiredEvidenceCategories": [
+          "appdata_backup"
+        ]
+      },
+      {
+        "id": "P0-S1-C2",
+        "text": "旧 workspace.json.bak 的独立备份存在，源与备份 SHA-256 相同，旧备份未被覆盖",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0030"
+        ],
+        "requiredEvidenceCategories": [
+          "appdata_backup"
+        ]
+      },
+      {
+        "id": "P0-S1-C3",
+        "text": "匿名 schema v6 fixture 保持 5 个任务、63 个步骤、27 个目标",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0031",
+          "EVD-0032",
+          "EVD-0034",
+          "EVD-0036"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P0-S1-C4",
+        "text": "v6 到当前 schema 的迁移测试保持任务、步骤、目标和引用完整",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0031",
+          "EVD-0032",
+          "EVD-0034",
+          "EVD-0036"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P0-S1-C5",
+        "text": "备份和 fixture 建立期间未启动新控制器、未停止旧控制器、未发送真实游戏输入",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0033",
+          "EVD-0035",
+          "EVD-0037"
+        ],
+        "requiredEvidenceCategories": [
+          "cleanup_audit",
+          "source_audit"
+        ]
+      }
+    ],
+    "nextAction": "只读审计 P1 运行安全硬化的首个最小纵向切片，并在不启动应用的前提下开始代码修复"
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "AGENTS.md",
+      "README.md",
+      "docs/execution/PROTOCOL.md",
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "docs/project-audit-and-master-plan.md",
+      "package.json",
+      "scripts/anonymize_workspace_fixture.py",
+      "scripts/audit_execution_state.py",
+      "scripts/audit_p0_safety_boundary.py",
+      "scripts/audit_workspace_migration.py",
+      "scripts/execution_progress.py",
+      "scripts/fixtures/workspace-v6-anonymized.json",
+      "scripts/preflight_p0_workspace.py",
+      "scripts/test_execution_progress.py",
+      "scripts/test_workspace_migration_core.mjs",
+      "scripts/verify_p0_workspace_backup.py",
+      "src/main.js",
+      "src/workspace-normalization-core.js"
+    ],
+    "dirtyStatus": [
+      "?? AGENTS.md",
+      " M README.md",
+      "?? docs/execution/PROTOCOL.md",
+      "?? docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "?? docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "?? docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "?? docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "?? docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "?? docs/execution/events.jsonl",
+      "?? docs/execution/evidence.jsonl",
+      "?? docs/execution/state.json",
+      "?? docs/project-audit-and-master-plan.md",
+      " M package.json",
+      "?? scripts/anonymize_workspace_fixture.py",
+      "?? scripts/audit_execution_state.py",
+      "?? scripts/audit_p0_safety_boundary.py",
+      " M scripts/audit_workspace_migration.py",
+      "?? scripts/execution_progress.py",
+      "?? scripts/fixtures/workspace-v6-anonymized.json",
+      "?? scripts/preflight_p0_workspace.py",
+      "?? scripts/test_execution_progress.py",
+      " M scripts/test_workspace_migration_core.mjs",
+      "?? scripts/verify_p0_workspace_backup.py",
+      " M src/main.js",
+      "?? src/workspace-normalization-core.js"
+    ],
+    "dirtyEntries": [
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "AGENTS.md",
+        "displayPath": "AGENTS.md"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "README.md",
+        "displayPath": "README.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/PROTOCOL.md",
+        "displayPath": "docs/execution/PROTOCOL.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+        "displayPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+        "displayPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/project-audit-and-master-plan.md",
+        "displayPath": "docs/project-audit-and-master-plan.md"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/anonymize_workspace_fixture.py",
+        "displayPath": "scripts/anonymize_workspace_fixture.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_execution_state.py",
+        "displayPath": "scripts/audit_execution_state.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_p0_safety_boundary.py",
+        "displayPath": "scripts/audit_p0_safety_boundary.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workspace_migration.py",
+        "displayPath": "scripts/audit_workspace_migration.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/fixtures/workspace-v6-anonymized.json",
+        "displayPath": "scripts/fixtures/workspace-v6-anonymized.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/preflight_p0_workspace.py",
+        "displayPath": "scripts/preflight_p0_workspace.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_execution_progress.py",
+        "displayPath": "scripts/test_execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_workspace_migration_core.mjs",
+        "displayPath": "scripts/test_workspace_migration_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_p0_workspace_backup.py",
+        "displayPath": "scripts/verify_p0_workspace_backup.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/workspace-normalization-core.js",
+        "displayPath": "src/workspace-normalization-core.js"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "AGENTS.md",
+        "exists": true,
+        "sha256": "bee332433f8356c673cc8450fb38e86d65a7548206bbbc4b3db92e9978fc326c",
+        "size": 5854
+      },
+      {
+        "path": "README.md",
+        "exists": true,
+        "sha256": "bdab2bb692eccef0f9c2e34590506a9de91cee1df7db4707d34cc0f5c747b0e0",
+        "size": 17157
+      },
+      {
+        "path": "docs/execution/PROTOCOL.md",
+        "exists": true,
+        "sha256": "ea08df17495e8bb1d8e279f2a0ffc836157f1da1bc411129c6f3d217772ff9b3",
+        "size": 30945
+      },
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "df3903d5db709ef64e8b5df0c3ca58d3c22a51b60866342a6daad79ca401ab96",
+        "size": 13848
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+        "exists": true,
+        "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
+        "size": 8103
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+        "exists": true,
+        "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
+        "size": 8284
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+        "exists": true,
+        "sha256": "920227ff3af5e9cfbecaa423b06251a3c25b1fba1a84f55476375f2d429eb885",
+        "size": 11090
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+        "exists": true,
+        "sha256": "f50e540169810b2445ce4cfd27cc2b168e2be2c6190198f68367b3dab4a82404",
+        "size": 19757
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+        "exists": true,
+        "sha256": "e236904dccaaa6fcbcb8420ba03fab186264ab53c6f5c15343a85fb1b3696a2f",
+        "size": 24988
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "c00a13e5f9d7dd8019f57cb663f9a7c3e79ba0c97e68885b09cbccdd93dee331",
+        "size": 132442
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "66dd7c855c5139ddb5da094a85b7ed4c61012f3ddf3acaad61a846664e503ec6",
+        "size": 78424
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "a4b5bccdbd48f9ab4653114f4d7b8da56f19f3c9ec1a4ae47199a9890d27ff71",
+        "size": 28112
+      },
+      {
+        "path": "docs/project-audit-and-master-plan.md",
+        "exists": true,
+        "sha256": "dc565218cbc8e5e9780047d673df49a1d47fbeb39af0343033a0de4ab2977077",
+        "size": 79290
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "215cd1b86d1c7d016ea2d17b25a8d0c55a07341621430040ec62047fb04dbda9",
+        "size": 3516
+      },
+      {
+        "path": "scripts/anonymize_workspace_fixture.py",
+        "exists": true,
+        "sha256": "6c6e519b09f1a274ded9ea67a6b2cbfc700d4f57d9fbfb518ea19c197d17b8a9",
+        "size": 7696
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "exists": true,
+        "sha256": "84d7bd1d2a70ab9f52f2c4d1b96478be5117276909deaaaba8e73f8a48489456",
+        "size": 30334
+      },
+      {
+        "path": "scripts/audit_p0_safety_boundary.py",
+        "exists": true,
+        "sha256": "d52e59c78d83d6a9fedd756d07a5c2c83d1d3f659ce176c597c4efc3d6a1c78b",
+        "size": 4917
+      },
+      {
+        "path": "scripts/audit_workspace_migration.py",
+        "exists": true,
+        "sha256": "4128a84688777187ac8ae518fb5b1ba0c33de6c484286ba97e469918a37ffabb",
+        "size": 6501
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "exists": true,
+        "sha256": "da305884f4585d99efbdad8af0ce906a138d898211aff50a99aa2e5ae273ff38",
+        "size": 117507
+      },
+      {
+        "path": "scripts/fixtures/workspace-v6-anonymized.json",
+        "exists": true,
+        "sha256": "c79aabfa6f3eea357320e9d8936241401380e07c9f02865cd17bdd7610fda2ca",
+        "size": 41433
+      },
+      {
+        "path": "scripts/preflight_p0_workspace.py",
+        "exists": true,
+        "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
+        "size": 5554
+      },
+      {
+        "path": "scripts/test_execution_progress.py",
+        "exists": true,
+        "sha256": "0d8e7c1ad8141887acb2bdd2fa7894ae67b73af4fe08c1cc283263436741e3fb",
+        "size": 37518
+      },
+      {
+        "path": "scripts/test_workspace_migration_core.mjs",
+        "exists": true,
+        "sha256": "de5d2c5da8cdf40f943632f11d86235e8581a9428021914e516ff33d309eed19",
+        "size": 7604
+      },
+      {
+        "path": "scripts/verify_p0_workspace_backup.py",
+        "exists": true,
+        "sha256": "2aedbb0dd30d6c8b25684970629c317495eb68b2d8c13de7c78d5bbbf77cd1be",
+        "size": 6131
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "b660b8b0fa4e5e8989157e94f08a156171857bcb66db7e9da53d4e2125bc9aef",
+        "size": 344497
+      },
+      {
+        "path": "src/workspace-normalization-core.js",
+        "exists": true,
+        "sha256": "25a06597abc1b18d9bf05a531e37ccaa223690e6beaa771c930e8067becc758f",
+        "size": 16557
+      }
+    ],
+    "workingTreeFingerprint": "sha256:d8e4b73f6f3a2acd6eacc18ec3584474ae8edcba9633a14377c4d692c12187aa"
+  },
+  "gitDiffSha256": "418b792056f2b005b66d899e0c6b78d1939e1edb64627ebfad0173b5ddeb1f79",
+  "dirtyFileHashes": [
+    {
+      "path": "AGENTS.md",
+      "exists": true,
+      "sha256": "bee332433f8356c673cc8450fb38e86d65a7548206bbbc4b3db92e9978fc326c",
+      "size": 5854
+    },
+    {
+      "path": "README.md",
+      "exists": true,
+      "sha256": "bdab2bb692eccef0f9c2e34590506a9de91cee1df7db4707d34cc0f5c747b0e0",
+      "size": 17157
+    },
+    {
+      "path": "docs/execution/PROTOCOL.md",
+      "exists": true,
+      "sha256": "ea08df17495e8bb1d8e279f2a0ffc836157f1da1bc411129c6f3d217772ff9b3",
+      "size": 30945
+    },
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "df3903d5db709ef64e8b5df0c3ca58d3c22a51b60866342a6daad79ca401ab96",
+      "size": 13848
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "exists": true,
+      "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
+      "size": 8103
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "exists": true,
+      "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
+      "size": 8284
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "exists": true,
+      "sha256": "920227ff3af5e9cfbecaa423b06251a3c25b1fba1a84f55476375f2d429eb885",
+      "size": 11090
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "exists": true,
+      "sha256": "f50e540169810b2445ce4cfd27cc2b168e2be2c6190198f68367b3dab4a82404",
+      "size": 19757
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "exists": true,
+      "sha256": "e236904dccaaa6fcbcb8420ba03fab186264ab53c6f5c15343a85fb1b3696a2f",
+      "size": 24988
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "c00a13e5f9d7dd8019f57cb663f9a7c3e79ba0c97e68885b09cbccdd93dee331",
+      "size": 132442
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "66dd7c855c5139ddb5da094a85b7ed4c61012f3ddf3acaad61a846664e503ec6",
+      "size": 78424
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "a4b5bccdbd48f9ab4653114f4d7b8da56f19f3c9ec1a4ae47199a9890d27ff71",
+      "size": 28112
+    },
+    {
+      "path": "docs/project-audit-and-master-plan.md",
+      "exists": true,
+      "sha256": "dc565218cbc8e5e9780047d673df49a1d47fbeb39af0343033a0de4ab2977077",
+      "size": 79290
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "215cd1b86d1c7d016ea2d17b25a8d0c55a07341621430040ec62047fb04dbda9",
+      "size": 3516
+    },
+    {
+      "path": "scripts/anonymize_workspace_fixture.py",
+      "exists": true,
+      "sha256": "6c6e519b09f1a274ded9ea67a6b2cbfc700d4f57d9fbfb518ea19c197d17b8a9",
+      "size": 7696
+    },
+    {
+      "path": "scripts/audit_execution_state.py",
+      "exists": true,
+      "sha256": "84d7bd1d2a70ab9f52f2c4d1b96478be5117276909deaaaba8e73f8a48489456",
+      "size": 30334
+    },
+    {
+      "path": "scripts/audit_p0_safety_boundary.py",
+      "exists": true,
+      "sha256": "d52e59c78d83d6a9fedd756d07a5c2c83d1d3f659ce176c597c4efc3d6a1c78b",
+      "size": 4917
+    },
+    {
+      "path": "scripts/audit_workspace_migration.py",
+      "exists": true,
+      "sha256": "4128a84688777187ac8ae518fb5b1ba0c33de6c484286ba97e469918a37ffabb",
+      "size": 6501
+    },
+    {
+      "path": "scripts/execution_progress.py",
+      "exists": true,
+      "sha256": "da305884f4585d99efbdad8af0ce906a138d898211aff50a99aa2e5ae273ff38",
+      "size": 117507
+    },
+    {
+      "path": "scripts/fixtures/workspace-v6-anonymized.json",
+      "exists": true,
+      "sha256": "c79aabfa6f3eea357320e9d8936241401380e07c9f02865cd17bdd7610fda2ca",
+      "size": 41433
+    },
+    {
+      "path": "scripts/preflight_p0_workspace.py",
+      "exists": true,
+      "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
+      "size": 5554
+    },
+    {
+      "path": "scripts/test_execution_progress.py",
+      "exists": true,
+      "sha256": "0d8e7c1ad8141887acb2bdd2fa7894ae67b73af4fe08c1cc283263436741e3fb",
+      "size": 37518
+    },
+    {
+      "path": "scripts/test_workspace_migration_core.mjs",
+      "exists": true,
+      "sha256": "de5d2c5da8cdf40f943632f11d86235e8581a9428021914e516ff33d309eed19",
+      "size": 7604
+    },
+    {
+      "path": "scripts/verify_p0_workspace_backup.py",
+      "exists": true,
+      "sha256": "2aedbb0dd30d6c8b25684970629c317495eb68b2d8c13de7c78d5bbbf77cd1be",
+      "size": 6131
+    },
+    {
+      "path": "src/main.js",
+      "exists": true,
+      "sha256": "b660b8b0fa4e5e8989157e94f08a156171857bcb66db7e9da53d4e2125bc9aef",
+      "size": 344497
+    },
+    {
+      "path": "src/workspace-normalization-core.js",
+      "exists": true,
+      "sha256": "25a06597abc1b18d9bf05a531e37ccaa223690e6beaa771c930e8067becc758f",
+      "size": 16557
+    }
+  ],
+  "eventTail": {
+    "seq": 94,
+    "id": "EVT-0094",
+    "hash": "sha256:f42696f94e97db22989ce5d5c7ef52a2e0571607be6fb1e7186fbc21a3a945dd"
+  },
+  "evidenceTail": {
+    "seq": 39,
+    "id": "EVD-0039",
+    "hash": "sha256:af1d9b8190e89301a68963f8ce4b209195e2fbf3441acb5b190711dee3095748"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-10T12:23:37Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-10T12:23:37Z",
+        "observedAbsentAt": "2026-07-10T12:23:37Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-10T12:23:34Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-10T12:23:35Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "真实 workspace.json 和旧 workspace.json.bak 尚未分别创建独立、可校验且不覆盖源文件的备份。",
+      "当前没有控制器进程，当前 HEAD 尚未真实启动。",
+      "当前 HEAD 没有应用 UI -> 队列 -> 指定游戏 hwnd -> 后置验证 -> 报告的完整证据。",
+      "UI 默认/最小窗口尺寸仍存在功能不可达风险。"
+    ],
+    "nextCommands": [
+      "npm run audit:execution-state",
+      "git status --short --ignored",
+      "npm run execution:preflight-p0"
+    ],
+    "doNotDo": [
+      "匿名化完成前不把真实用户文本、图片正文或路径写入仓库"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0004"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:8797e05844b1778d4d292cebc72dcf76be1eb0e83fe968a12a9aaec46e6acf7c"
+}

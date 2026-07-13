@@ -1,0 +1,305 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0003",
+  "createdAt": "2026-07-10T09:36:03Z",
+  "type": "state_snapshot",
+  "reason": "修复干净仓库自漂移、worktree 锁、unknown action、live gate、checkpoint hash、清理归属和恢复命令后的安全快照",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f47be-d3fe-7853-89c5-d8208c7555ce",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P0",
+  "slice": {
+    "id": "P0-S1",
+    "title": "保护真实 v6 工作区并建立迁移基线",
+    "status": "in_progress",
+    "startedAt": null,
+    "scope": [
+      "只读核对真实 workspace.json 与 workspace.json.bak 的身份、schema、数量和哈希",
+      "为主文件和旧备份分别创建不覆盖源文件的独立备份",
+      "建立匿名 schema v6 migration fixture，并验证 5 个任务、63 个步骤、27 个目标及引用完整性"
+    ],
+    "nonGoals": [
+      "本切片不启动当前 HEAD 的新应用",
+      "本切片不向游戏窗口发送输入",
+      "本切片不重构 UI、runner、OCR 或识图",
+      "本切片不清理历史构建、报告、截图或缓存"
+    ],
+    "safetyBoundaries": [
+      "独立备份成功且哈希证据落盘前，不启动会自动迁移真实工作区的新版本",
+      "备份目标必须使用新文件名并验证不存在，禁止覆盖 workspace.json 或现有 workspace.json.bak",
+      "真实数据 fixture 必须匿名化，不把用户数据或截图提交到公开仓库",
+      "任何 AppData 写入前先登记 action intent；中断后先对账，不盲目重做"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P0-S1-C1",
+        "text": "workspace.json 的独立备份存在，源与备份 SHA-256 相同，源文件未被覆盖",
+        "status": "pending",
+        "evidenceIds": []
+      },
+      {
+        "id": "P0-S1-C2",
+        "text": "旧 workspace.json.bak 的独立备份存在，源与备份 SHA-256 相同，旧备份未被覆盖",
+        "status": "pending",
+        "evidenceIds": []
+      },
+      {
+        "id": "P0-S1-C3",
+        "text": "匿名 schema v6 fixture 保持 5 个任务、63 个步骤、27 个目标",
+        "status": "pending",
+        "evidenceIds": []
+      },
+      {
+        "id": "P0-S1-C4",
+        "text": "v6 到当前 schema 的迁移测试保持任务、步骤、目标和引用完整",
+        "status": "pending",
+        "evidenceIds": []
+      },
+      {
+        "id": "P0-S1-C5",
+        "text": "备份和 fixture 建立期间未启动新控制器、未停止旧控制器、未发送真实游戏输入",
+        "status": "pending",
+        "evidenceIds": []
+      }
+    ],
+    "nextAction": "选择两个明确不存在的新备份目标名；登记 appdata_backup intent 后分别复制 workspace.json 与旧 workspace.json.bak，并核对源/目标 SHA-256"
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "AGENTS.md",
+      "README.md",
+      "docs/execution/PROTOCOL.md",
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "docs/project-audit-and-master-plan.md",
+      "package.json",
+      "scripts/audit_execution_state.py",
+      "scripts/execution_progress.py",
+      "scripts/preflight_p0_workspace.py"
+    ],
+    "dirtyStatus": [
+      "?? AGENTS.md",
+      " M README.md",
+      "?? docs/execution/PROTOCOL.md",
+      "?? docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "?? docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "?? docs/execution/events.jsonl",
+      "?? docs/execution/evidence.jsonl",
+      "?? docs/execution/state.json",
+      "?? docs/project-audit-and-master-plan.md",
+      " M package.json",
+      "?? scripts/audit_execution_state.py",
+      "?? scripts/execution_progress.py",
+      "?? scripts/preflight_p0_workspace.py"
+    ]
+  },
+  "gitDiffSha256": "66becdd9117d2ab7fec0679b05b82da880e2af66b3872ee037adeac32c10c74c",
+  "dirtyFileHashes": [
+    {
+      "path": "AGENTS.md",
+      "exists": true,
+      "sha256": "a5a22a7dc8ccc3c2490a51ccabc0b7a82bc9e91e24d004e3cc2194d03bd4409a",
+      "size": 5312
+    },
+    {
+      "path": "README.md",
+      "exists": true,
+      "sha256": "539b22bb30c4a722fe3ea7a9334704b69ea4baea3a9678af562bb6b9d604f22f",
+      "size": 16762
+    },
+    {
+      "path": "docs/execution/PROTOCOL.md",
+      "exists": true,
+      "sha256": "b7dc99c79dea154bfaec60a16ecb7b26e097c41d5eec0a7567b80f2245fcdd81",
+      "size": 28847
+    },
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "785ba782659b72b6bff54dffaade1fae30832425450d83ce9a8b93cee8f3ab5a",
+      "size": 12560
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "exists": true,
+      "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
+      "size": 8103
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "exists": true,
+      "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
+      "size": 8284
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "8ebb4345652dfd1618fb468c037175ce269572130447a10866484d9185412f99",
+      "size": 12678
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "363dc26092355f3f546b262b0fd2b19b34f29e42ea7da03a231fa54e81841c2c",
+      "size": 6241
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "979710109186f52e767040c2b22737dbec44c69c28cf40ccdb652c797e5b0cc9",
+      "size": 13340
+    },
+    {
+      "path": "docs/project-audit-and-master-plan.md",
+      "exists": true,
+      "sha256": "dc565218cbc8e5e9780047d673df49a1d47fbeb39af0343033a0de4ab2977077",
+      "size": 79290
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "31cd0b281375c1a1eb7a155fa20a156c4a92d3397e284e472af6c7031b34c2ac",
+      "size": 2541
+    },
+    {
+      "path": "scripts/audit_execution_state.py",
+      "exists": true,
+      "sha256": "f3811cc2df4591e85d4dda7c41a79b60eaea06eff0cac7a6d5d4b618b456fc25",
+      "size": 22308
+    },
+    {
+      "path": "scripts/execution_progress.py",
+      "exists": true,
+      "sha256": "3ce7e808ccd5fb6f85dc1c1f4449f688cc3daea933181e12b9b63c9d6141c919",
+      "size": 61805
+    },
+    {
+      "path": "scripts/preflight_p0_workspace.py",
+      "exists": true,
+      "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
+      "size": 5554
+    }
+  ],
+  "eventTail": {
+    "seq": 12,
+    "id": "EVT-0012",
+    "hash": "sha256:eba63f428f5146b31aff47456f6370f93b5acbfa944d303b5a5688bfe70bbd0d"
+  },
+  "evidenceTail": {
+    "seq": 5,
+    "id": "EVD-0005",
+    "hash": "sha256:c5672416a277e4067f3fa21fdae2175a58641a2f5ff7e3245755b197b2dc95d1"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-10T08:51:07Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本次 CIM 查询未返回可执行路径和命令行，不能证明归属",
+        "cleanupAllowed": false
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37+08:00",
+        "identityLimit": "本次 CIM 查询未返回可执行路径和命令行，执行前必须重新枚举 HWND 身份",
+        "cleanupAllowed": false
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23+08:00",
+        "identityLimit": "本次 CIM 查询未返回可执行路径和命令行，执行前必须重新枚举 HWND 身份",
+        "cleanupAllowed": false
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "lastKnownGoodCheckpointId": null,
+    "blockers": [
+      "真实 workspace.json 和旧 workspace.json.bak 尚未分别创建独立、可校验且不覆盖源文件的备份。",
+      "当前运行控制器是旧构建，当前 HEAD 尚未真实启动。",
+      "当前 HEAD 没有应用 UI -> 队列 -> 指定游戏 hwnd -> 后置验证 -> 报告的完整证据。",
+      "UI 默认/最小窗口尺寸仍存在功能不可达风险。"
+    ],
+    "nextCommands": [
+      "npm run audit:execution-state",
+      "git status --short --ignored",
+      "npm run execution:preflight-p0"
+    ],
+    "doNotDo": [
+      "不要在独立备份完成前启动当前 HEAD 的应用或触发工作区自动迁移。",
+      "不要发送真实游戏输入；现有 live 报告全部不能证明当前 HEAD 已完成游戏后置结果。",
+      "不要停止 PID 42432、26056、52448；它们是会话前已存在且归属不由本轮管理。",
+      "不要删除 ignored 构建、报告、截图、素材或 __pycache__；归属和复用状态未核实。",
+      "不要把 preflight、输入已排队、静态测试或旧二进制运行写成产品已完成。"
+    ]
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "hash": "sha256:1b7668b32288fb4354a2028e2df078b6c5653fb2b213c6bb5f05529603219738"
+}

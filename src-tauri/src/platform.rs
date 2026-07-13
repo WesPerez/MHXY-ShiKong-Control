@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +26,116 @@ pub struct RgbFrame {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CaptureProvider {
+    WindowGdi,
+    DesktopVisibleGdi,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CaptureReliability {
+    HealthVerified,
+    TargetWindowUnverified,
+    PreviewOnly,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaptureMetadata {
+    pub provider: CaptureProvider,
+    pub reliability: CaptureReliability,
+    pub captured_at_ms: u64,
+    pub frame_hash: String,
+    pub width: u32,
+    pub height: u32,
+    pub fallback_used: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CapturedFrame {
+    pub rgb: RgbFrame,
+    pub metadata: CaptureMetadata,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CapturePurpose {
+    Control,
+    Preview,
+}
+
+impl CaptureMetadata {
+    pub fn is_strict_target_source(&self) -> bool {
+        self.provider == CaptureProvider::WindowGdi && !self.fallback_used
+    }
+
+    pub fn permits_control_decision(&self) -> bool {
+        self.is_strict_target_source() && self.reliability == CaptureReliability::HealthVerified
+    }
+}
+
+fn captured_frame(
+    rgb: RgbFrame,
+    provider: CaptureProvider,
+    reliability: CaptureReliability,
+    fallback_used: bool,
+) -> CapturedFrame {
+    let captured_at_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis().min(u128::from(u64::MAX)) as u64)
+        .unwrap_or_default();
+    let mut hash = 0xcbf29ce484222325u64;
+    for byte in &rgb.pixels {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    CapturedFrame {
+        metadata: CaptureMetadata {
+            provider,
+            reliability,
+            captured_at_ms,
+            frame_hash: format!("fnv1a64:{hash:016x}"),
+            width: rgb.width,
+            height: rgb.height,
+            fallback_used,
+        },
+        rgb,
+    }
+}
+
+fn capture_with_policy(
+    purpose: CapturePurpose,
+    primary: impl FnOnce() -> Result<RgbFrame, String>,
+    fallback: impl FnOnce() -> Result<RgbFrame, String>,
+) -> Result<CapturedFrame, String> {
+    match primary() {
+        Ok(rgb) => Ok(captured_frame(
+            rgb,
+            CaptureProvider::WindowGdi,
+            CaptureReliability::TargetWindowUnverified,
+            false,
+        )),
+        Err(primary_error) if purpose == CapturePurpose::Control => {
+            Err(format!("strict target-window capture unavailable: {primary_error}"))
+        }
+        Err(primary_error) => fallback()
+            .map(|rgb| {
+                captured_frame(
+                    rgb,
+                    CaptureProvider::DesktopVisibleGdi,
+                    CaptureReliability::PreviewOnly,
+                    true,
+                )
+            })
+            .map_err(|fallback_error| {
+                format!(
+                    "window capture failed: {primary_error}; desktop preview fallback failed: {fallback_error}"
+                )
+            }),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -73,22 +184,30 @@ pub fn window_for_hwnd(hwnd: isize) -> Result<AppWindow, String> {
 }
 
 #[cfg(windows)]
-pub fn capture_client_rgb(hwnd: isize) -> Result<RgbFrame, String> {
-    windows_impl::capture_client_rgb(hwnd)
+pub fn capture_client_rgb(hwnd: isize) -> Result<CapturedFrame, String> {
+    capture_with_policy(
+        CapturePurpose::Preview,
+        || windows_impl::capture_client_rgb_primary(hwnd),
+        || windows_impl::capture_client_rgb_fallback(hwnd),
+    )
 }
 
 #[cfg(not(windows))]
-pub fn capture_client_rgb(_hwnd: isize) -> Result<RgbFrame, String> {
+pub fn capture_client_rgb(_hwnd: isize) -> Result<CapturedFrame, String> {
     Err("window capture is only implemented on Windows".to_string())
 }
 
 #[cfg(windows)]
-pub fn capture_client_rgb_strict(hwnd: isize) -> Result<RgbFrame, String> {
-    windows_impl::capture_client_rgb_strict(hwnd)
+pub fn capture_client_rgb_strict(hwnd: isize) -> Result<CapturedFrame, String> {
+    capture_with_policy(
+        CapturePurpose::Control,
+        || windows_impl::capture_client_rgb_primary(hwnd),
+        || windows_impl::capture_client_rgb_fallback(hwnd),
+    )
 }
 
 #[cfg(not(windows))]
-pub fn capture_client_rgb_strict(_hwnd: isize) -> Result<RgbFrame, String> {
+pub fn capture_client_rgb_strict(_hwnd: isize) -> Result<CapturedFrame, String> {
     Err("strict window capture is only implemented on Windows".to_string())
 }
 
@@ -174,6 +293,93 @@ pub fn post_text(hwnd: isize, _text: &str) -> Result<HwndInputResult, String> {
     Err(format!(
         "hwnd text input is only implemented on Windows: {hwnd}"
     ))
+}
+
+#[cfg(test)]
+mod capture_policy_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn frame(value: u8) -> RgbFrame {
+        RgbFrame {
+            width: 2,
+            height: 2,
+            pixels: vec![value; 12],
+        }
+    }
+
+    #[test]
+    fn strict_capture_never_calls_desktop_fallback() {
+        let fallback_calls = AtomicUsize::new(0);
+        let error = capture_with_policy(
+            CapturePurpose::Control,
+            || Err("window dc failed".to_string()),
+            || {
+                fallback_calls.fetch_add(1, Ordering::SeqCst);
+                Ok(frame(1))
+            },
+        )
+        .unwrap_err();
+
+        assert!(error.contains("strict target-window capture unavailable"));
+        assert_eq!(fallback_calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn preview_fallback_is_explicitly_preview_only() {
+        let captured = capture_with_policy(
+            CapturePurpose::Preview,
+            || Err("window dc failed".to_string()),
+            || Ok(frame(2)),
+        )
+        .unwrap();
+
+        assert_eq!(
+            captured.metadata.provider,
+            CaptureProvider::DesktopVisibleGdi
+        );
+        assert_eq!(
+            captured.metadata.reliability,
+            CaptureReliability::PreviewOnly
+        );
+        assert!(captured.metadata.fallback_used);
+        assert!(!captured.metadata.is_strict_target_source());
+    }
+
+    #[test]
+    fn preview_failure_preserves_both_provider_errors() {
+        let error = capture_with_policy(
+            CapturePurpose::Preview,
+            || Err("primary failed".to_string()),
+            || Err("fallback failed".to_string()),
+        )
+        .unwrap_err();
+
+        assert!(error.contains("primary failed"));
+        assert!(error.contains("fallback failed"));
+    }
+
+    #[test]
+    fn strict_capture_metadata_has_source_time_hash_and_dimensions() {
+        let captured = capture_with_policy(
+            CapturePurpose::Control,
+            || Ok(frame(3)),
+            || panic!("strict capture must not call fallback"),
+        )
+        .unwrap();
+
+        assert_eq!(captured.metadata.provider, CaptureProvider::WindowGdi);
+        assert_eq!(
+            captured.metadata.reliability,
+            CaptureReliability::TargetWindowUnverified
+        );
+        assert!(captured.metadata.is_strict_target_source());
+        assert!(!captured.metadata.permits_control_decision());
+        assert_eq!(captured.metadata.width, 2);
+        assert_eq!(captured.metadata.height, 2);
+        assert!(captured.metadata.captured_at_ms > 0);
+        assert!(captured.metadata.frame_hash.starts_with("fnv1a64:"));
+    }
 }
 
 #[cfg(windows)]
@@ -352,24 +558,23 @@ mod windows_impl {
         })
     }
 
-    pub fn capture_client_rgb(hwnd: isize) -> Result<RgbFrame, String> {
-        unsafe {
-            let hwnd = HWND(hwnd as *mut c_void);
-            let Some((left, top, width, height)) = client_rect_on_screen(hwnd) else {
-                return Err("window client rect unavailable".to_string());
-            };
-            capture_window_client(hwnd, width, height)
-                .or_else(|_| capture_screen_region(left, top, width, height))
-        }
-    }
-
-    pub fn capture_client_rgb_strict(hwnd: isize) -> Result<RgbFrame, String> {
+    pub fn capture_client_rgb_primary(hwnd: isize) -> Result<RgbFrame, String> {
         unsafe {
             let hwnd = HWND(hwnd as *mut c_void);
             let Some((_, _, width, height)) = client_rect_on_screen(hwnd) else {
                 return Err("window client rect unavailable".to_string());
             };
             capture_window_client(hwnd, width, height)
+        }
+    }
+
+    pub fn capture_client_rgb_fallback(hwnd: isize) -> Result<RgbFrame, String> {
+        unsafe {
+            let hwnd = HWND(hwnd as *mut c_void);
+            let Some((left, top, width, height)) = client_rect_on_screen(hwnd) else {
+                return Err("window client rect unavailable".to_string());
+            };
+            capture_screen_region(left, top, width, height)
         }
     }
 

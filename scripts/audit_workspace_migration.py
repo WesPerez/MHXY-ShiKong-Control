@@ -21,7 +21,10 @@ def audit() -> dict[str, object]:
 
     required_files = [
         "src/workspace-migration-core.js",
+        "src/workspace-normalization-core.js",
         "scripts/test_workspace_migration_core.mjs",
+        "scripts/fixtures/workspace-v6-anonymized.json",
+        "scripts/anonymize_workspace_fixture.py",
         "src/main.js",
         "src-tauri/src/main.rs",
         "index.html",
@@ -37,6 +40,7 @@ def audit() -> dict[str, object]:
         return {"passed": False, "failures": failures, "warnings": warnings, "counts": counts}
 
     core = read_text("src/workspace-migration-core.js")
+    normalization = read_text("src/workspace-normalization-core.js")
     test = read_text("scripts/test_workspace_migration_core.mjs")
     main = read_text("src/main.js")
     rust = read_text("src-tauri/src/main.rs")
@@ -66,9 +70,31 @@ def audit() -> dict[str, object]:
         "testMigrationAuditRecognizesStableWorkspace",
         "testMigrationAuditWarnsOnFutureSchema",
         "workspaceMigrationSummaryText",
+        "normalizeWorkspaceCore",
+        "workspace-v6-anonymized.json",
+        "workflows: 5, steps: 63, targets: 27",
+        "brokenWorkspaceReferences",
+        "testRealNormalizationMigratesV6FixtureWithoutLossAndIsIdempotent",
     ]:
         if needle not in test:
             failures.append(f"workspace migration test missing {needle}")
+
+    for needle in [
+        "normalizeWorkspaceCore",
+        "normalizeWorkflowCore",
+        "normalizeStepCore",
+        "normalizeAssignmentsCore",
+        "item.type === \"retry_until\"",
+    ]:
+        if needle not in normalization:
+            failures.append(f"workspace normalization core missing {needle}")
+
+    fixture = json.loads(read_text("scripts/fixtures/workspace-v6-anonymized.json"))
+    fixture_steps = sum(len(workflow.get("steps", [])) for workflow in fixture.get("workflows", []))
+    if fixture.get("schemaVersion") != 6 or len(fixture.get("workflows", [])) != 5 or fixture_steps != 63 or len(fixture.get("targets", [])) != 27:
+        failures.append("anonymized v6 fixture must preserve schema 6 and 5/63/27 counts")
+    if any(target.get("dataUrl") for target in fixture.get("targets", [])):
+        failures.append("anonymized v6 fixture must not contain image data URLs")
 
     if f"CURRENT_SCHEMA_VERSION = {CURRENT_SCHEMA_VERSION}" not in test:
         failures.append(f"workspace migration test must pin CURRENT_SCHEMA_VERSION = {CURRENT_SCHEMA_VERSION}")
@@ -79,6 +105,7 @@ def audit() -> dict[str, object]:
 
     for needle in [
         "workspaceMigrationAudit(",
+        "normalizeWorkspaceCore(value",
         "state.workspaceMigration",
         "state.workspaceBackupPath",
         "renderWorkspaceMigrationAudit",

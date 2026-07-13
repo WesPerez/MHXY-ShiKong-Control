@@ -67,15 +67,15 @@ IMAGE_CLICK_RECHECK_TOKENS = [
 IMAGE_CLICK_RECHECK_PATTERNS = [
     (
         "image_click dispatch passes expected_window",
-        '"image_click"=>{dispatch_image_step(hwnd,&step,MouseDispatchMode::Click,expected_window)}',
+        '"image_click"=>dispatch_image_step(hwnd,&step,MouseDispatchMode::Click,expected_window,control,)',
     ),
     (
         "template image_click revalidates before click",
-        "ifmode.sends_input()&&matched.score>=threshold{validate_expected_window(hwnd,expected_window)?;letresult=matchmode",
+        "ifmode.sends_input()&&matched.score>=threshold{letresult=commit_visual_input(control,&captured.metadata,||{validate_expected_window(hwnd,expected_window)?;matchmode",
     ),
     (
         "roi image_click revalidates before click",
-        "ifmode.sends_input(){validate_expected_window(hwnd,expected_window)?;letresult=matchmode",
+        "ifletSome(point)=point_from_step_with_offset(step)?{ifmode.sends_input(){letresult=control.commit_input(||{validate_expected_window(hwnd,expected_window)?;matchmode",
     ),
 ]
 TARGET_TOKENS = [
@@ -327,7 +327,7 @@ TEXT_INPUT_TOKENS = [
 DOUBLE_CLICK_TOKENS = [
     "double_click",
     "post_mouse_double_click",
-    "dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick)",
+    "dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick, control)",
     "MouseDispatchMode::DoubleClick",
     "WM_LBUTTONDBLCLK",
     "WM_RBUTTONDBLCLK",

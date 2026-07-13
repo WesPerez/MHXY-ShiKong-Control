@@ -249,8 +249,44 @@
               <span id="task-model-state" class="state-pill">draft</span>
             </div>
 
+            <div class="inspector-tabs" role="tablist" aria-label="属性检查器">
+              <button
+                id="inspector-tab-workflow"
+                class="inspector-tab active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="inspector-panel-workflow"
+                data-inspector-tab="workflow"
+              >任务</button>
+              <button
+                id="inspector-tab-step"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="inspector-panel-step"
+                data-inspector-tab="step"
+              >步骤</button>
+              <button
+                id="inspector-tab-target"
+                class="inspector-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="inspector-panel-target"
+                data-inspector-tab="target"
+              >目标</button>
+            </div>
+
             <div class="inspector-scroll">
-              <section class="subsection">
+              <section
+                id="inspector-panel-workflow"
+                class="subsection inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-workflow"
+                data-inspector-panel="workflow"
+              >
                 <h3>任务</h3>
                 <div class="form-grid">
                   <label>
@@ -278,7 +314,14 @@
                 </div>
               </section>
 
-              <section class="subsection">
+              <section
+                id="inspector-panel-step"
+                class="subsection inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-step"
+                data-inspector-panel="step"
+                hidden
+              >
                 <h3>步骤</h3>
                 <div id="step-editor-empty" class="empty-block">未选择步骤</div>
                 <div id="step-editor" class="step-editor" hidden>
@@ -509,7 +552,14 @@
                 </div>
               </section>
 
-              <section class="subsection">
+              <section
+                id="inspector-panel-target"
+                class="subsection inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-target"
+                data-inspector-panel="target"
+                hidden
+              >
                 <div class="section-row">
                   <h3>识别目标</h3>
                   <span id="target-count" class="count">0</span>

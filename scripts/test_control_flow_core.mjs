@@ -320,6 +320,52 @@ function testRecoverySkipsNonRecoverableFailures() {
   assert.equal(recovery.transition.skippedReason, "status is not recoverable");
 }
 
+function testOcrTransientFailuresRequireBoundedRetry() {
+  const session = makeSession();
+  const steps = [
+    {
+      id: "s1",
+      type: "ocr_assert",
+      name: "OCR",
+      onFail: "restore",
+      recoveryStepId: "s2",
+      recoveryAction: "continue",
+      maxIterations: 2,
+    },
+    { id: "s2", type: "restore", name: "Recovery" },
+  ];
+
+  for (const status of ["timeout", "ocr_queue_full"]) {
+    const skipped = recoveryFor({ steps, itemIndex: 0, session, result: { status, action: "ocr" } });
+    assert.equal(skipped.recovered, false);
+    assert.equal(skipped.transition.skippedReason, "bounded retry is not configured");
+  }
+
+  steps[0].recoveryAction = "retry";
+  const retry = recoveryFor({ steps, itemIndex: 0, session, result: { status: "timeout", action: "ocr" } });
+  assert.equal(retry.recovered, true);
+  assert.equal(session.recoveryContext.recoveryMaxRetries, 2);
+}
+
+function testCancelledFailureNeverRecovers() {
+  const steps = [
+    {
+      id: "s1",
+      type: "ocr_assert",
+      name: "OCR",
+      onFail: "restore",
+      recoveryStepId: "s2",
+      recoveryAction: "retry",
+      maxIterations: 2,
+    },
+    { id: "s2", type: "restore", name: "Recovery" },
+  ];
+
+  const recovery = recoveryFor({ steps, itemIndex: 0, result: { status: "cancelled", action: "ocr" } });
+  assert.equal(recovery.recovered, false);
+  assert.equal(recovery.transition.skippedReason, "status is not recoverable");
+}
+
 function testRecoveryContinuePolicyReturnsToDefaultNextStep() {
   const session = makeSession();
   const steps = [
@@ -541,6 +587,8 @@ const tests = [
   testUnsupportedConditionFallsThroughWithEvidence,
   testRecoveryOnlyRunsForRecoverableFailures,
   testRecoverySkipsNonRecoverableFailures,
+  testOcrTransientFailuresRequireBoundedRetry,
+  testCancelledFailureNeverRecovers,
   testRecoveryContinuePolicyReturnsToDefaultNextStep,
   testRecoveryRetryPolicyReturnsToFailedStepWithBudget,
   testNormalizeRecoveryActionFallsBackSafely,

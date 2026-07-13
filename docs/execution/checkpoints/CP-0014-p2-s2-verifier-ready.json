@@ -1,0 +1,1482 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0014",
+  "createdAt": "2026-07-11T13:30:56Z",
+  "type": "state_snapshot",
+  "reason": "Playwright 五视口 verifier、依赖锁定和静态回归完成，等待外部进程/UI 授权",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f47be-d3fe-7853-89c5-d8208c7555ce",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P2",
+  "slice": {
+    "id": "P2-S2",
+    "title": "五视口真实渲染与检查器交互验收",
+    "status": "blocked",
+    "startedAt": "2026-07-11T13:06:16Z",
+    "scope": [
+      "index.html,src/styles.css,src/main.js,Playwright screenshots and viewport metrics"
+    ],
+    "nonGoals": [
+      "本切片不启动 Tauri 应用、不读取或迁移真实 AppData、不枚举游戏窗口、不发送输入"
+    ],
+    "safetyBoundaries": [
+      "只启动本任务拥有的 localhost 预览进程；完成后仅停止该 PID；浏览器只做只读 UI 交互"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P2-S2-C1",
+        "text": "当前工作树 Vite 预览以可核验 PID/命令启动并可访问",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "app_runtime"
+        ]
+      },
+      {
+        "id": "P2-S2-C2",
+        "text": "1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C3",
+        "text": "检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C4",
+        "text": "视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "用户授予 externalAuthorization=appdata_backup_only,local_preview_server_owned_process_only,ui_read_only_test 后登记 action intent 并运行 npm run test:ui-viewports",
+    "blockers": [
+      "缺少本地预览进程启动与只读 UI 测试授权"
+    ]
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "AGENTS.md",
+      "README.md",
+      "docs/execution/PROTOCOL.md",
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
+      "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
+      "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
+      "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
+      "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
+      "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
+      "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
+      "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
+      "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "docs/project-audit-and-master-plan.md",
+      "docs/workflow-model.md",
+      "index.html",
+      "package-lock.json",
+      "package.json",
+      "playwright.workbench.config.mjs",
+      "scripts/anonymize_workspace_fixture.py",
+      "scripts/audit_capture_policy.py",
+      "scripts/audit_execution_state.py",
+      "scripts/audit_input_safety.py",
+      "scripts/audit_ocr_worker.py",
+      "scripts/audit_p0_safety_boundary.py",
+      "scripts/audit_queue_readiness.py",
+      "scripts/audit_runtime_lane.py",
+      "scripts/audit_workbench_layout.py",
+      "scripts/audit_workbench_viewport_test.py",
+      "scripts/audit_workspace_migration.py",
+      "scripts/execution_progress.py",
+      "scripts/fixtures/workspace-v6-anonymized.json",
+      "scripts/playwright/workbench-viewports.spec.mjs",
+      "scripts/preflight_p0_workspace.py",
+      "scripts/test_capture_policy_core.mjs",
+      "scripts/test_control_flow_core.mjs",
+      "scripts/test_execution_progress.py",
+      "scripts/test_failure_evidence_core.mjs",
+      "scripts/test_run_dispatch_core.mjs",
+      "scripts/test_workbench_layout_core.mjs",
+      "scripts/test_workspace_migration_core.mjs",
+      "scripts/verify_p0_workspace_backup.py",
+      "src-tauri/Cargo.toml",
+      "src-tauri/src/main.rs",
+      "src-tauri/src/platform.rs",
+      "src-tauri/src/runtime/mod.rs",
+      "src-tauri/src/runtime/ocr_pool.rs",
+      "src-tauri/src/runtime/window_lane.rs",
+      "src/capture-policy-core.js",
+      "src/control-flow-core.js",
+      "src/failure-evidence-core.js",
+      "src/main.js",
+      "src/run-dispatch-core.js",
+      "src/styles.css",
+      "src/workbench-layout-core.js",
+      "src/workspace-normalization-core.js"
+    ],
+    "dirtyStatus": [
+      "?? AGENTS.md",
+      " M README.md",
+      "?? docs/execution/PROTOCOL.md",
+      "?? docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "?? docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "?? docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "?? docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "?? docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "?? docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
+      "?? docs/execution/checkpoints/CP-0007-p1-s1-final.json",
+      "?? docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
+      "?? docs/execution/checkpoints/CP-0009-p1-s2-final.json",
+      "?? docs/execution/checkpoints/CP-0010-p1-s3-final.json",
+      "?? docs/execution/checkpoints/CP-0011-p1-s4-final.json",
+      "?? docs/execution/checkpoints/CP-0012-p1-s5-final.json",
+      "?? docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
+      "?? docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
+      "?? docs/execution/events.jsonl",
+      "?? docs/execution/evidence.jsonl",
+      "?? docs/execution/state.json",
+      "?? docs/project-audit-and-master-plan.md",
+      " M docs/workflow-model.md",
+      " M index.html",
+      " M package-lock.json",
+      " M package.json",
+      "?? playwright.workbench.config.mjs",
+      "?? scripts/anonymize_workspace_fixture.py",
+      "?? scripts/audit_capture_policy.py",
+      "?? scripts/audit_execution_state.py",
+      " M scripts/audit_input_safety.py",
+      "?? scripts/audit_ocr_worker.py",
+      "?? scripts/audit_p0_safety_boundary.py",
+      " M scripts/audit_queue_readiness.py",
+      "?? scripts/audit_runtime_lane.py",
+      "?? scripts/audit_workbench_layout.py",
+      "?? scripts/audit_workbench_viewport_test.py",
+      " M scripts/audit_workspace_migration.py",
+      "?? scripts/execution_progress.py",
+      "?? scripts/fixtures/workspace-v6-anonymized.json",
+      "?? scripts/playwright/workbench-viewports.spec.mjs",
+      "?? scripts/preflight_p0_workspace.py",
+      "?? scripts/test_capture_policy_core.mjs",
+      " M scripts/test_control_flow_core.mjs",
+      "?? scripts/test_execution_progress.py",
+      " M scripts/test_failure_evidence_core.mjs",
+      "?? scripts/test_run_dispatch_core.mjs",
+      "?? scripts/test_workbench_layout_core.mjs",
+      " M scripts/test_workspace_migration_core.mjs",
+      "?? scripts/verify_p0_workspace_backup.py",
+      " M src-tauri/Cargo.toml",
+      " M src-tauri/src/main.rs",
+      " M src-tauri/src/platform.rs",
+      "?? src-tauri/src/runtime/mod.rs",
+      "?? src-tauri/src/runtime/ocr_pool.rs",
+      "?? src-tauri/src/runtime/window_lane.rs",
+      "?? src/capture-policy-core.js",
+      " M src/control-flow-core.js",
+      " M src/failure-evidence-core.js",
+      " M src/main.js",
+      "?? src/run-dispatch-core.js",
+      " M src/styles.css",
+      "?? src/workbench-layout-core.js",
+      "?? src/workspace-normalization-core.js"
+    ],
+    "dirtyEntries": [
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "AGENTS.md",
+        "displayPath": "AGENTS.md"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "README.md",
+        "displayPath": "README.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/PROTOCOL.md",
+        "displayPath": "docs/execution/PROTOCOL.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+        "displayPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+        "displayPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
+        "displayPath": "docs/execution/checkpoints/CP-0007-p1-s1-final.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
+        "displayPath": "docs/execution/checkpoints/CP-0009-p1-s2-final.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
+        "displayPath": "docs/execution/checkpoints/CP-0010-p1-s3-final.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
+        "displayPath": "docs/execution/checkpoints/CP-0011-p1-s4-final.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
+        "displayPath": "docs/execution/checkpoints/CP-0012-p1-s5-final.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
+        "displayPath": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
+        "displayPath": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/project-audit-and-master-plan.md",
+        "displayPath": "docs/project-audit-and-master-plan.md"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/workflow-model.md",
+        "displayPath": "docs/workflow-model.md"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "index.html",
+        "displayPath": "index.html"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package-lock.json",
+        "displayPath": "package-lock.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "playwright.workbench.config.mjs",
+        "displayPath": "playwright.workbench.config.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/anonymize_workspace_fixture.py",
+        "displayPath": "scripts/anonymize_workspace_fixture.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_capture_policy.py",
+        "displayPath": "scripts/audit_capture_policy.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_execution_state.py",
+        "displayPath": "scripts/audit_execution_state.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_input_safety.py",
+        "displayPath": "scripts/audit_input_safety.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_ocr_worker.py",
+        "displayPath": "scripts/audit_ocr_worker.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_p0_safety_boundary.py",
+        "displayPath": "scripts/audit_p0_safety_boundary.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_queue_readiness.py",
+        "displayPath": "scripts/audit_queue_readiness.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_runtime_lane.py",
+        "displayPath": "scripts/audit_runtime_lane.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workbench_layout.py",
+        "displayPath": "scripts/audit_workbench_layout.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workbench_viewport_test.py",
+        "displayPath": "scripts/audit_workbench_viewport_test.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workspace_migration.py",
+        "displayPath": "scripts/audit_workspace_migration.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/fixtures/workspace-v6-anonymized.json",
+        "displayPath": "scripts/fixtures/workspace-v6-anonymized.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/playwright/workbench-viewports.spec.mjs",
+        "displayPath": "scripts/playwright/workbench-viewports.spec.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/preflight_p0_workspace.py",
+        "displayPath": "scripts/preflight_p0_workspace.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_capture_policy_core.mjs",
+        "displayPath": "scripts/test_capture_policy_core.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_control_flow_core.mjs",
+        "displayPath": "scripts/test_control_flow_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_execution_progress.py",
+        "displayPath": "scripts/test_execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_failure_evidence_core.mjs",
+        "displayPath": "scripts/test_failure_evidence_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_run_dispatch_core.mjs",
+        "displayPath": "scripts/test_run_dispatch_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_workbench_layout_core.mjs",
+        "displayPath": "scripts/test_workbench_layout_core.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_workspace_migration_core.mjs",
+        "displayPath": "scripts/test_workspace_migration_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_p0_workspace_backup.py",
+        "displayPath": "scripts/verify_p0_workspace_backup.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/Cargo.toml",
+        "displayPath": "src-tauri/Cargo.toml"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/main.rs",
+        "displayPath": "src-tauri/src/main.rs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/platform.rs",
+        "displayPath": "src-tauri/src/platform.rs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/runtime/mod.rs",
+        "displayPath": "src-tauri/src/runtime/mod.rs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/runtime/ocr_pool.rs",
+        "displayPath": "src-tauri/src/runtime/ocr_pool.rs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/runtime/window_lane.rs",
+        "displayPath": "src-tauri/src/runtime/window_lane.rs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/capture-policy-core.js",
+        "displayPath": "src/capture-policy-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/control-flow-core.js",
+        "displayPath": "src/control-flow-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/failure-evidence-core.js",
+        "displayPath": "src/failure-evidence-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/run-dispatch-core.js",
+        "displayPath": "src/run-dispatch-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/styles.css",
+        "displayPath": "src/styles.css"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/workbench-layout-core.js",
+        "displayPath": "src/workbench-layout-core.js"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/workspace-normalization-core.js",
+        "displayPath": "src/workspace-normalization-core.js"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "AGENTS.md",
+        "exists": true,
+        "sha256": "bee332433f8356c673cc8450fb38e86d65a7548206bbbc4b3db92e9978fc326c",
+        "size": 5854
+      },
+      {
+        "path": "README.md",
+        "exists": true,
+        "sha256": "bdab2bb692eccef0f9c2e34590506a9de91cee1df7db4707d34cc0f5c747b0e0",
+        "size": 17157
+      },
+      {
+        "path": "docs/execution/PROTOCOL.md",
+        "exists": true,
+        "sha256": "ea08df17495e8bb1d8e279f2a0ffc836157f1da1bc411129c6f3d217772ff9b3",
+        "size": 30945
+      },
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "ed056964e2f9dad577c739cbf75e1ed04cebe29315e240ed4be056a207380cd8",
+        "size": 14053
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+        "exists": true,
+        "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
+        "size": 8103
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+        "exists": true,
+        "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
+        "size": 8284
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+        "exists": true,
+        "sha256": "920227ff3af5e9cfbecaa423b06251a3c25b1fba1a84f55476375f2d429eb885",
+        "size": 11090
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+        "exists": true,
+        "sha256": "f50e540169810b2445ce4cfd27cc2b168e2be2c6190198f68367b3dab4a82404",
+        "size": 19757
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+        "exists": true,
+        "sha256": "c807a1465a3bd249080e3c821b23ace269ebf9828a2e6aa90e39a74fab6c6216",
+        "size": 25787
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
+        "exists": true,
+        "sha256": "9c90befaedbb97d5fc4b11cf05f847d364bd906ff6d2c11b46be68e70d80daff",
+        "size": 27725
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
+        "exists": true,
+        "sha256": "ecfa2eccf2dc04efef4ad13a6cefc6b7f861193f5cfcb0f017f8812595759917",
+        "size": 28606
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
+        "exists": true,
+        "sha256": "9283d1eac846d99b0d7f6ffd446c84cff3a549e34c24b5fa579afdae7ee3b83d",
+        "size": 32020
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
+        "exists": true,
+        "sha256": "1d0a80114af4a7202b618ac4d2deebdef5ab0f865eec6e252fbcb5055391cf14",
+        "size": 32517
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
+        "exists": true,
+        "sha256": "67cd6e528c73e350bcacb8787dc1f9b51b0f5577072b99cc72e780bde16ddf08",
+        "size": 34070
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
+        "exists": true,
+        "sha256": "afbfbbab6b76d0394f86feed52d11885ed41a4cc034ac5cc48ad089da01f8826",
+        "size": 37898
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
+        "exists": true,
+        "sha256": "6f5c068e18589ee631afd0a6456d2634b3409aa1fd1bca93bad13a5092fb155c",
+        "size": 43230
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
+        "exists": true,
+        "sha256": "ce5916b146ad97aa52a453c0d0af532fd18dc20bd10bf2f82da8c6de991dd2eb",
+        "size": 46916
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
+        "exists": true,
+        "sha256": "ff64fbe99901fc3484757a18242fe64e725dcc24b641086289c9c8bddc542e1d",
+        "size": 49557
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "1140432d4d8d3bcac4edb5e1b5cbe9302916a6614c9dc5fa4083e4c6e188c80b",
+        "size": 383414
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "cb18ad8617f827d421120c83d16c824b49c1a7df2a7cd1b146265da8c3c61973",
+        "size": 187904
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "6bbbbb3e104a489750e62088ddf8931b4e8aeb3f4ccaf68759c45ce882c6e879",
+        "size": 58831
+      },
+      {
+        "path": "docs/project-audit-and-master-plan.md",
+        "exists": true,
+        "sha256": "dc565218cbc8e5e9780047d673df49a1d47fbeb39af0343033a0de4ab2977077",
+        "size": 79290
+      },
+      {
+        "path": "docs/workflow-model.md",
+        "exists": true,
+        "sha256": "9549cf07adfbaec91edcb911c57e7a864df281a6af126a4421d38c72b68c0e36",
+        "size": 37300
+      },
+      {
+        "path": "index.html",
+        "exists": true,
+        "sha256": "00f3968dcfa6d87a5b57d177a19a0e939d8a2dc740b87684fd48dcd5275e5992",
+        "size": 33761
+      },
+      {
+        "path": "package-lock.json",
+        "exists": true,
+        "sha256": "d8c9c04bcebc7a3f4781b8d6df771dbf09b8e35702a8ff3f50ee9ac0b66ee260",
+        "size": 43760
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "25696c2638e213e65dbfeb1d3e3202cf298a61eb0c326235c4c889aa582705ba",
+        "size": 4547
+      },
+      {
+        "path": "playwright.workbench.config.mjs",
+        "exists": true,
+        "sha256": "3ea5278ab24ccec527a72bcf8162080cd4342e8085dbfd8d0a2f04f954739309",
+        "size": 995
+      },
+      {
+        "path": "scripts/anonymize_workspace_fixture.py",
+        "exists": true,
+        "sha256": "6c6e519b09f1a274ded9ea67a6b2cbfc700d4f57d9fbfb518ea19c197d17b8a9",
+        "size": 7696
+      },
+      {
+        "path": "scripts/audit_capture_policy.py",
+        "exists": true,
+        "sha256": "1037171c2ea5db60058ca46c7acebd2e42116718aaf3aefb48a55df3538d1b94",
+        "size": 5819
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "exists": true,
+        "sha256": "cf18236942612a04018e1ea0731f02cb64983c6c8649e064c2daefc888a82bdf",
+        "size": 31268
+      },
+      {
+        "path": "scripts/audit_input_safety.py",
+        "exists": true,
+        "sha256": "e149a3b930d38dffd77ad0dd91937428bef7972989d1610320977f00b6648090",
+        "size": 31911
+      },
+      {
+        "path": "scripts/audit_ocr_worker.py",
+        "exists": true,
+        "sha256": "e50f21aab0d525919089d8f4c5681a3cbf5d6ec84a4dd97f1fbbbfb44b6afea7",
+        "size": 7575
+      },
+      {
+        "path": "scripts/audit_p0_safety_boundary.py",
+        "exists": true,
+        "sha256": "d52e59c78d83d6a9fedd756d07a5c2c83d1d3f659ce176c597c4efc3d6a1c78b",
+        "size": 4917
+      },
+      {
+        "path": "scripts/audit_queue_readiness.py",
+        "exists": true,
+        "sha256": "717ff63d2c8434697dae0583005e26eff2057ed951e795a833be0f7494d9458d",
+        "size": 31196
+      },
+      {
+        "path": "scripts/audit_runtime_lane.py",
+        "exists": true,
+        "sha256": "ad0d15411c44ca0099b0e3eff305749d14e99a64dd42d62d5efffb0a49183e43",
+        "size": 7848
+      },
+      {
+        "path": "scripts/audit_workbench_layout.py",
+        "exists": true,
+        "sha256": "18d4576f880b5a0bf2293dcdfe2390f2686d49b49964353b1917f2c015a80277",
+        "size": 5758
+      },
+      {
+        "path": "scripts/audit_workbench_viewport_test.py",
+        "exists": true,
+        "sha256": "440f9d9be6cc34d2aedba00633ca4397cd548f4967cfc0a9903f008f5f2d6020",
+        "size": 4808
+      },
+      {
+        "path": "scripts/audit_workspace_migration.py",
+        "exists": true,
+        "sha256": "4128a84688777187ac8ae518fb5b1ba0c33de6c484286ba97e469918a37ffabb",
+        "size": 6501
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "exists": true,
+        "sha256": "efbb4243be454b385caae790bd30d4e50d5bcce8f6bca64b6d69de7f307441b5",
+        "size": 118856
+      },
+      {
+        "path": "scripts/fixtures/workspace-v6-anonymized.json",
+        "exists": true,
+        "sha256": "c79aabfa6f3eea357320e9d8936241401380e07c9f02865cd17bdd7610fda2ca",
+        "size": 41433
+      },
+      {
+        "path": "scripts/playwright/workbench-viewports.spec.mjs",
+        "exists": true,
+        "sha256": "01cf8325b494ca207ab8e10dbe2524ec4f9306d6584a79192bd48d6579186c00",
+        "size": 3599
+      },
+      {
+        "path": "scripts/preflight_p0_workspace.py",
+        "exists": true,
+        "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
+        "size": 5554
+      },
+      {
+        "path": "scripts/test_capture_policy_core.mjs",
+        "exists": true,
+        "sha256": "45a46170d40347484650e80a4291cecff59c3332ac943e7e16eece3da95cd04b",
+        "size": 1487
+      },
+      {
+        "path": "scripts/test_control_flow_core.mjs",
+        "exists": true,
+        "sha256": "a50be0da256ff71b270ebc35ec44952013030ab0e94c65d6946b20e830c35a24",
+        "size": 19805
+      },
+      {
+        "path": "scripts/test_execution_progress.py",
+        "exists": true,
+        "sha256": "93418ad467432691bef364d631e517d31275e672f81499790a811e308b7ff08c",
+        "size": 41559
+      },
+      {
+        "path": "scripts/test_failure_evidence_core.mjs",
+        "exists": true,
+        "sha256": "44f229cbeca5e8eb9e97c5dc41e7f75c723be9ed23661c59c4c5e37bbc20f99d",
+        "size": 5440
+      },
+      {
+        "path": "scripts/test_run_dispatch_core.mjs",
+        "exists": true,
+        "sha256": "0c8cace0c923520850e26514a29032cc9ef1fd76b2935fc3ce959580766e857b",
+        "size": 3895
+      },
+      {
+        "path": "scripts/test_workbench_layout_core.mjs",
+        "exists": true,
+        "sha256": "f20402d0f09da02721cd7a4c0c17ceb54427de5e4e1fde69891358f9392b5052",
+        "size": 1980
+      },
+      {
+        "path": "scripts/test_workspace_migration_core.mjs",
+        "exists": true,
+        "sha256": "de5d2c5da8cdf40f943632f11d86235e8581a9428021914e516ff33d309eed19",
+        "size": 7604
+      },
+      {
+        "path": "scripts/verify_p0_workspace_backup.py",
+        "exists": true,
+        "sha256": "2aedbb0dd30d6c8b25684970629c317495eb68b2d8c13de7c78d5bbbf77cd1be",
+        "size": 6131
+      },
+      {
+        "path": "src-tauri/Cargo.toml",
+        "exists": true,
+        "sha256": "89b224920fdf28340a0d293ce549d6f5cfb9eccff374453d5e4e08a53e8210ec",
+        "size": 831
+      },
+      {
+        "path": "src-tauri/src/main.rs",
+        "exists": true,
+        "sha256": "894c2dfad12b362e3d99117c587e6e9553a3e9e2262fa7217cc5e8b7f5a042b8",
+        "size": 105793
+      },
+      {
+        "path": "src-tauri/src/platform.rs",
+        "exists": true,
+        "sha256": "23a5e58ceff9a6d0f66578e096671953df2209c77e4cab253e7a238d0d28bf63",
+        "size": 39455
+      },
+      {
+        "path": "src-tauri/src/runtime/mod.rs",
+        "exists": true,
+        "sha256": "f50b78ce6c44c2e1eed6f8a0d0a179da49ec5fdfb0b93d7a7d5f435ce94558d2",
+        "size": 186
+      },
+      {
+        "path": "src-tauri/src/runtime/ocr_pool.rs",
+        "exists": true,
+        "sha256": "5489e43059356e908c9b6e616c39cd1acaa53b918cf9a10ce5485e8a6716c972",
+        "size": 20914
+      },
+      {
+        "path": "src-tauri/src/runtime/window_lane.rs",
+        "exists": true,
+        "sha256": "c3ff85db5f7beb0a09ee36c701e4134bcd0010b6d1b0281372f40f80fb1536b7",
+        "size": 23599
+      },
+      {
+        "path": "src/capture-policy-core.js",
+        "exists": true,
+        "sha256": "bc68289d914e2ba474e4ddf6a588185c365b4dc6172c2ee447f975254b51174f",
+        "size": 936
+      },
+      {
+        "path": "src/control-flow-core.js",
+        "exists": true,
+        "sha256": "e925734714aabb06784334dd022ab99a7ab310ad365de5d2c38c7c2428ddbd20",
+        "size": 32437
+      },
+      {
+        "path": "src/failure-evidence-core.js",
+        "exists": true,
+        "sha256": "f42c670a82cdf51e4a317b05cb8f7f5d321ddde633d487a7559807c62904b8ec",
+        "size": 7095
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "c03635029c989ae69b19d915e3983539548fe1ee171f7474371143698e4d6b98",
+        "size": 348972
+      },
+      {
+        "path": "src/run-dispatch-core.js",
+        "exists": true,
+        "sha256": "ee487d4f927180ffd649b20aa4240522c6dabdd52aa9cda52d7309c2a6a66d56",
+        "size": 2864
+      },
+      {
+        "path": "src/styles.css",
+        "exists": true,
+        "sha256": "01f969f59da2b6b150fabd1aa25ffb12c3abf468bb157e28e705615b14ca7f47",
+        "size": 42191
+      },
+      {
+        "path": "src/workbench-layout-core.js",
+        "exists": true,
+        "sha256": "ac5e12510723835771d5700c10ec54140fd940136a840941205913947bf06e16",
+        "size": 1454
+      },
+      {
+        "path": "src/workspace-normalization-core.js",
+        "exists": true,
+        "sha256": "25a06597abc1b18d9bf05a531e37ccaa223690e6beaa771c930e8067becc758f",
+        "size": 16557
+      }
+    ],
+    "workingTreeFingerprint": "sha256:5167c11014cdbb3d4fc5e821e5aa0a69ddf50a7ed20ffa313c4b6c3619c933b1"
+  },
+  "gitDiffSha256": "21a899f32483a917e921a2de09701e047bc4647ed2cabec8a437e98dd3357c93",
+  "dirtyFileHashes": [
+    {
+      "path": "AGENTS.md",
+      "exists": true,
+      "sha256": "bee332433f8356c673cc8450fb38e86d65a7548206bbbc4b3db92e9978fc326c",
+      "size": 5854
+    },
+    {
+      "path": "README.md",
+      "exists": true,
+      "sha256": "bdab2bb692eccef0f9c2e34590506a9de91cee1df7db4707d34cc0f5c747b0e0",
+      "size": 17157
+    },
+    {
+      "path": "docs/execution/PROTOCOL.md",
+      "exists": true,
+      "sha256": "ea08df17495e8bb1d8e279f2a0ffc836157f1da1bc411129c6f3d217772ff9b3",
+      "size": 30945
+    },
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "ed056964e2f9dad577c739cbf75e1ed04cebe29315e240ed4be056a207380cd8",
+      "size": 14053
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+      "exists": true,
+      "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
+      "size": 8103
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
+      "exists": true,
+      "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
+      "size": 8284
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
+      "exists": true,
+      "sha256": "920227ff3af5e9cfbecaa423b06251a3c25b1fba1a84f55476375f2d429eb885",
+      "size": 11090
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
+      "exists": true,
+      "sha256": "f50e540169810b2445ce4cfd27cc2b168e2be2c6190198f68367b3dab4a82404",
+      "size": 19757
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
+      "exists": true,
+      "sha256": "c807a1465a3bd249080e3c821b23ace269ebf9828a2e6aa90e39a74fab6c6216",
+      "size": 25787
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
+      "exists": true,
+      "sha256": "9c90befaedbb97d5fc4b11cf05f847d364bd906ff6d2c11b46be68e70d80daff",
+      "size": 27725
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
+      "exists": true,
+      "sha256": "ecfa2eccf2dc04efef4ad13a6cefc6b7f861193f5cfcb0f017f8812595759917",
+      "size": 28606
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
+      "exists": true,
+      "sha256": "9283d1eac846d99b0d7f6ffd446c84cff3a549e34c24b5fa579afdae7ee3b83d",
+      "size": 32020
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
+      "exists": true,
+      "sha256": "1d0a80114af4a7202b618ac4d2deebdef5ab0f865eec6e252fbcb5055391cf14",
+      "size": 32517
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
+      "exists": true,
+      "sha256": "67cd6e528c73e350bcacb8787dc1f9b51b0f5577072b99cc72e780bde16ddf08",
+      "size": 34070
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
+      "exists": true,
+      "sha256": "afbfbbab6b76d0394f86feed52d11885ed41a4cc034ac5cc48ad089da01f8826",
+      "size": 37898
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
+      "exists": true,
+      "sha256": "6f5c068e18589ee631afd0a6456d2634b3409aa1fd1bca93bad13a5092fb155c",
+      "size": 43230
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
+      "exists": true,
+      "sha256": "ce5916b146ad97aa52a453c0d0af532fd18dc20bd10bf2f82da8c6de991dd2eb",
+      "size": 46916
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
+      "exists": true,
+      "sha256": "ff64fbe99901fc3484757a18242fe64e725dcc24b641086289c9c8bddc542e1d",
+      "size": 49557
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "1140432d4d8d3bcac4edb5e1b5cbe9302916a6614c9dc5fa4083e4c6e188c80b",
+      "size": 383414
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "cb18ad8617f827d421120c83d16c824b49c1a7df2a7cd1b146265da8c3c61973",
+      "size": 187904
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "6bbbbb3e104a489750e62088ddf8931b4e8aeb3f4ccaf68759c45ce882c6e879",
+      "size": 58831
+    },
+    {
+      "path": "docs/project-audit-and-master-plan.md",
+      "exists": true,
+      "sha256": "dc565218cbc8e5e9780047d673df49a1d47fbeb39af0343033a0de4ab2977077",
+      "size": 79290
+    },
+    {
+      "path": "docs/workflow-model.md",
+      "exists": true,
+      "sha256": "9549cf07adfbaec91edcb911c57e7a864df281a6af126a4421d38c72b68c0e36",
+      "size": 37300
+    },
+    {
+      "path": "index.html",
+      "exists": true,
+      "sha256": "00f3968dcfa6d87a5b57d177a19a0e939d8a2dc740b87684fd48dcd5275e5992",
+      "size": 33761
+    },
+    {
+      "path": "package-lock.json",
+      "exists": true,
+      "sha256": "d8c9c04bcebc7a3f4781b8d6df771dbf09b8e35702a8ff3f50ee9ac0b66ee260",
+      "size": 43760
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "25696c2638e213e65dbfeb1d3e3202cf298a61eb0c326235c4c889aa582705ba",
+      "size": 4547
+    },
+    {
+      "path": "playwright.workbench.config.mjs",
+      "exists": true,
+      "sha256": "3ea5278ab24ccec527a72bcf8162080cd4342e8085dbfd8d0a2f04f954739309",
+      "size": 995
+    },
+    {
+      "path": "scripts/anonymize_workspace_fixture.py",
+      "exists": true,
+      "sha256": "6c6e519b09f1a274ded9ea67a6b2cbfc700d4f57d9fbfb518ea19c197d17b8a9",
+      "size": 7696
+    },
+    {
+      "path": "scripts/audit_capture_policy.py",
+      "exists": true,
+      "sha256": "1037171c2ea5db60058ca46c7acebd2e42116718aaf3aefb48a55df3538d1b94",
+      "size": 5819
+    },
+    {
+      "path": "scripts/audit_execution_state.py",
+      "exists": true,
+      "sha256": "cf18236942612a04018e1ea0731f02cb64983c6c8649e064c2daefc888a82bdf",
+      "size": 31268
+    },
+    {
+      "path": "scripts/audit_input_safety.py",
+      "exists": true,
+      "sha256": "e149a3b930d38dffd77ad0dd91937428bef7972989d1610320977f00b6648090",
+      "size": 31911
+    },
+    {
+      "path": "scripts/audit_ocr_worker.py",
+      "exists": true,
+      "sha256": "e50f21aab0d525919089d8f4c5681a3cbf5d6ec84a4dd97f1fbbbfb44b6afea7",
+      "size": 7575
+    },
+    {
+      "path": "scripts/audit_p0_safety_boundary.py",
+      "exists": true,
+      "sha256": "d52e59c78d83d6a9fedd756d07a5c2c83d1d3f659ce176c597c4efc3d6a1c78b",
+      "size": 4917
+    },
+    {
+      "path": "scripts/audit_queue_readiness.py",
+      "exists": true,
+      "sha256": "717ff63d2c8434697dae0583005e26eff2057ed951e795a833be0f7494d9458d",
+      "size": 31196
+    },
+    {
+      "path": "scripts/audit_runtime_lane.py",
+      "exists": true,
+      "sha256": "ad0d15411c44ca0099b0e3eff305749d14e99a64dd42d62d5efffb0a49183e43",
+      "size": 7848
+    },
+    {
+      "path": "scripts/audit_workbench_layout.py",
+      "exists": true,
+      "sha256": "18d4576f880b5a0bf2293dcdfe2390f2686d49b49964353b1917f2c015a80277",
+      "size": 5758
+    },
+    {
+      "path": "scripts/audit_workbench_viewport_test.py",
+      "exists": true,
+      "sha256": "440f9d9be6cc34d2aedba00633ca4397cd548f4967cfc0a9903f008f5f2d6020",
+      "size": 4808
+    },
+    {
+      "path": "scripts/audit_workspace_migration.py",
+      "exists": true,
+      "sha256": "4128a84688777187ac8ae518fb5b1ba0c33de6c484286ba97e469918a37ffabb",
+      "size": 6501
+    },
+    {
+      "path": "scripts/execution_progress.py",
+      "exists": true,
+      "sha256": "efbb4243be454b385caae790bd30d4e50d5bcce8f6bca64b6d69de7f307441b5",
+      "size": 118856
+    },
+    {
+      "path": "scripts/fixtures/workspace-v6-anonymized.json",
+      "exists": true,
+      "sha256": "c79aabfa6f3eea357320e9d8936241401380e07c9f02865cd17bdd7610fda2ca",
+      "size": 41433
+    },
+    {
+      "path": "scripts/playwright/workbench-viewports.spec.mjs",
+      "exists": true,
+      "sha256": "01cf8325b494ca207ab8e10dbe2524ec4f9306d6584a79192bd48d6579186c00",
+      "size": 3599
+    },
+    {
+      "path": "scripts/preflight_p0_workspace.py",
+      "exists": true,
+      "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
+      "size": 5554
+    },
+    {
+      "path": "scripts/test_capture_policy_core.mjs",
+      "exists": true,
+      "sha256": "45a46170d40347484650e80a4291cecff59c3332ac943e7e16eece3da95cd04b",
+      "size": 1487
+    },
+    {
+      "path": "scripts/test_control_flow_core.mjs",
+      "exists": true,
+      "sha256": "a50be0da256ff71b270ebc35ec44952013030ab0e94c65d6946b20e830c35a24",
+      "size": 19805
+    },
+    {
+      "path": "scripts/test_execution_progress.py",
+      "exists": true,
+      "sha256": "93418ad467432691bef364d631e517d31275e672f81499790a811e308b7ff08c",
+      "size": 41559
+    },
+    {
+      "path": "scripts/test_failure_evidence_core.mjs",
+      "exists": true,
+      "sha256": "44f229cbeca5e8eb9e97c5dc41e7f75c723be9ed23661c59c4c5e37bbc20f99d",
+      "size": 5440
+    },
+    {
+      "path": "scripts/test_run_dispatch_core.mjs",
+      "exists": true,
+      "sha256": "0c8cace0c923520850e26514a29032cc9ef1fd76b2935fc3ce959580766e857b",
+      "size": 3895
+    },
+    {
+      "path": "scripts/test_workbench_layout_core.mjs",
+      "exists": true,
+      "sha256": "f20402d0f09da02721cd7a4c0c17ceb54427de5e4e1fde69891358f9392b5052",
+      "size": 1980
+    },
+    {
+      "path": "scripts/test_workspace_migration_core.mjs",
+      "exists": true,
+      "sha256": "de5d2c5da8cdf40f943632f11d86235e8581a9428021914e516ff33d309eed19",
+      "size": 7604
+    },
+    {
+      "path": "scripts/verify_p0_workspace_backup.py",
+      "exists": true,
+      "sha256": "2aedbb0dd30d6c8b25684970629c317495eb68b2d8c13de7c78d5bbbf77cd1be",
+      "size": 6131
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "exists": true,
+      "sha256": "89b224920fdf28340a0d293ce549d6f5cfb9eccff374453d5e4e08a53e8210ec",
+      "size": 831
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "exists": true,
+      "sha256": "894c2dfad12b362e3d99117c587e6e9553a3e9e2262fa7217cc5e8b7f5a042b8",
+      "size": 105793
+    },
+    {
+      "path": "src-tauri/src/platform.rs",
+      "exists": true,
+      "sha256": "23a5e58ceff9a6d0f66578e096671953df2209c77e4cab253e7a238d0d28bf63",
+      "size": 39455
+    },
+    {
+      "path": "src-tauri/src/runtime/mod.rs",
+      "exists": true,
+      "sha256": "f50b78ce6c44c2e1eed6f8a0d0a179da49ec5fdfb0b93d7a7d5f435ce94558d2",
+      "size": 186
+    },
+    {
+      "path": "src-tauri/src/runtime/ocr_pool.rs",
+      "exists": true,
+      "sha256": "5489e43059356e908c9b6e616c39cd1acaa53b918cf9a10ce5485e8a6716c972",
+      "size": 20914
+    },
+    {
+      "path": "src-tauri/src/runtime/window_lane.rs",
+      "exists": true,
+      "sha256": "c3ff85db5f7beb0a09ee36c701e4134bcd0010b6d1b0281372f40f80fb1536b7",
+      "size": 23599
+    },
+    {
+      "path": "src/capture-policy-core.js",
+      "exists": true,
+      "sha256": "bc68289d914e2ba474e4ddf6a588185c365b4dc6172c2ee447f975254b51174f",
+      "size": 936
+    },
+    {
+      "path": "src/control-flow-core.js",
+      "exists": true,
+      "sha256": "e925734714aabb06784334dd022ab99a7ab310ad365de5d2c38c7c2428ddbd20",
+      "size": 32437
+    },
+    {
+      "path": "src/failure-evidence-core.js",
+      "exists": true,
+      "sha256": "f42c670a82cdf51e4a317b05cb8f7f5d321ddde633d487a7559807c62904b8ec",
+      "size": 7095
+    },
+    {
+      "path": "src/main.js",
+      "exists": true,
+      "sha256": "c03635029c989ae69b19d915e3983539548fe1ee171f7474371143698e4d6b98",
+      "size": 348972
+    },
+    {
+      "path": "src/run-dispatch-core.js",
+      "exists": true,
+      "sha256": "ee487d4f927180ffd649b20aa4240522c6dabdd52aa9cda52d7309c2a6a66d56",
+      "size": 2864
+    },
+    {
+      "path": "src/styles.css",
+      "exists": true,
+      "sha256": "01f969f59da2b6b150fabd1aa25ffb12c3abf468bb157e28e705615b14ca7f47",
+      "size": 42191
+    },
+    {
+      "path": "src/workbench-layout-core.js",
+      "exists": true,
+      "sha256": "ac5e12510723835771d5700c10ec54140fd940136a840941205913947bf06e16",
+      "size": 1454
+    },
+    {
+      "path": "src/workspace-normalization-core.js",
+      "exists": true,
+      "sha256": "25a06597abc1b18d9bf05a531e37ccaa223690e6beaa771c930e8067becc758f",
+      "size": 16557
+    }
+  ],
+  "eventTail": {
+    "seq": 204,
+    "id": "EVT-0204",
+    "hash": "sha256:ebe46389641c1b774d1efbf4cdb6ea1d9aead7247af2e6dcdd25d6402a2b5e99"
+  },
+  "evidenceTail": {
+    "seq": 76,
+    "id": "EVD-0076",
+    "hash": "sha256:8640e3a0a95e6244522613b9174c8a0b8c9e939b776d96fca38284866cefaf60"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-10T12:23:37Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-10T12:23:37Z",
+        "observedAbsentAt": "2026-07-10T12:23:37Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-10T12:23:34Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "梦幻西游：时空窗口之一",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-10T12:23:35Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run audit:execution-state",
+      "git status --short --ignored",
+      "npm run execution:preflight-p0"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0013"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:7aa4cffac2401e1a39aa2337b3a1e9718826e42bb70ef092f161f14b05b66878"
+}

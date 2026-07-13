@@ -299,7 +299,7 @@ h3 {
 .workbench {
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr) 360px;
-  grid-template-rows: minmax(270px, 1fr) minmax(220px, 0.9fr) 250px;
+  grid-template-rows: minmax(220px, 1fr) minmax(180px, 0.9fr) minmax(190px, 0.72fr);
   grid-template-areas:
     "library preview inspector"
     "library steps inspector"
@@ -331,7 +331,7 @@ h3 {
 .library-panel {
   grid-area: library;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, auto) minmax(96px, 1fr) auto;
   border-right: 1px solid #2a3034;
 }
 
@@ -351,20 +351,20 @@ h3 {
 .step-panel {
   grid-area: steps;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(96px, 1fr);
   border-right: 1px solid #2a3034;
 }
 
 .inspector-panel {
   grid-area: inspector;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .run-panel {
   grid-area: run;
   display: grid;
-  grid-template-columns: 320px minmax(250px, 0.66fr) minmax(320px, 1fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(220px, 0.9fr) minmax(200px, 0.72fr) minmax(250px, 1fr) minmax(220px, 0.88fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "run-title run-actions run-actions run-json"
@@ -389,6 +389,40 @@ h3 {
 }
 
 .panel-title > div {
+  min-width: 0;
+}
+
+.inspector-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #2f383d;
+  padding-bottom: 6px;
+}
+
+.inspector-tab {
+  min-height: 30px;
+  border-color: transparent;
+  background: transparent;
+  color: #98a5ab;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.inspector-tab:hover {
+  border-color: #3f4b50;
+  background: #1b2125;
+}
+
+.inspector-tab.active,
+.inspector-tab[aria-selected="true"] {
+  border-color: rgba(100, 195, 180, 0.52);
+  background: #18302f;
+  color: #d9f7f1;
+}
+
+.inspector-tab-panel {
   min-width: 0;
 }
 
@@ -481,6 +515,11 @@ h3 {
 .session-lanes {
   overflow: auto;
   min-height: 0;
+}
+
+.workflow-list,
+.step-list {
+  min-height: 96px;
 }
 
 .window-list,
@@ -607,6 +646,8 @@ h3 {
 
 .workflow-wizard {
   margin-bottom: 10px;
+  max-height: min(300px, 38vh);
+  overflow: auto;
 }
 
 .blueprint-preview {
@@ -2344,7 +2385,59 @@ progress::-webkit-progress-value {
   }
 }
 
+@media (min-width: 1121px) and (max-height: 900px) {
+  .topbar {
+    gap: 8px 14px;
+    padding: 8px 12px;
+  }
+
+  .ops-card {
+    min-height: 52px;
+    padding: 7px 10px;
+  }
+
+  .ops-card strong {
+    font-size: 18px;
+  }
+
+  .target-rail {
+    grid-template-rows: minmax(140px, 0.8fr) minmax(190px, 1.1fr) minmax(120px, auto);
+  }
+
+  .workbench {
+    grid-template-rows: minmax(200px, 1fr) minmax(170px, 0.85fr) minmax(190px, 0.72fr);
+  }
+
+  .target-panel,
+  .assignment-panel,
+  .capture-panel,
+  .library-panel,
+  .preview-panel,
+  .step-panel,
+  .inspector-panel,
+  .run-panel {
+    padding: 9px;
+  }
+
+  .panel-title {
+    margin-bottom: 8px;
+  }
+}
+
 @media (max-width: 1120px) {
+  body {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  main {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
   .topbar {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2358,18 +2451,28 @@ progress::-webkit-progress-value {
   }
 
   .app-shell {
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
+  }
+
+  .target-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.8fr);
+    grid-template-rows: minmax(240px, auto);
+    border-right: 0;
+    border-bottom: 1px solid #2a3034;
   }
 
   .workbench {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 240px minmax(250px, 1fr) minmax(240px, 0.9fr) minmax(280px, 1fr) 300px;
+    grid-template-rows: minmax(340px, auto) minmax(360px, auto) minmax(380px, auto) minmax(440px, auto) minmax(620px, auto);
     grid-template-areas:
       "library"
       "preview"
       "steps"
       "inspector"
       "run";
+    overflow: visible;
   }
 
   .library-panel,
@@ -2389,6 +2492,10 @@ progress::-webkit-progress-value {
       "sessions"
       "reports"
       "logs";
+  }
+
+  .workflow-wizard {
+    max-height: 280px;
   }
 }
 
@@ -2413,6 +2520,10 @@ progress::-webkit-progress-value {
     display: block;
     height: auto;
     overflow: visible;
+  }
+
+  .target-rail {
+    border-bottom: 0;
   }
 
   .panel {

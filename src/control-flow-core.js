@@ -1,14 +1,17 @@
 const DEFAULT_MAX_WORKFLOW_JUMPS = 100;
 const DEFAULT_MAX_CONTROL_FLOW_TRANSITIONS = 300;
 
-const DEFAULT_TERMINAL_BACKEND_STATUSES = new Set(["error", "unsupported"]);
+const DEFAULT_TERMINAL_BACKEND_STATUSES = new Set(["error", "unsupported", "cancelled"]);
 const DEFAULT_BACKGROUND_FAILURE_STATUSES = new Set([
   "missing_asset",
   "below_threshold",
   "text_miss",
   "ocr_unavailable",
+  "ocr_queue_full",
+  "timeout",
   "missing_expect",
 ]);
+const BOUNDED_RETRY_ONLY_STATUSES = new Set(["ocr_queue_full", "timeout"]);
 const DEFAULT_PLANNED_ONLY_STEP_TYPES = new Set(["restore"]);
 const DEFAULT_RECOVERY_ACTIONS = new Set(["stop", "retry", "continue"]);
 
@@ -236,6 +239,14 @@ export function recoveryDecisionForFailedStep(context, options = {}) {
       failureReason,
       message: `${workflow.name} / ${item.name} 失败状态 ${result?.status || "unknown"} 不适合自动恢复，已停止`,
       transition: buildTransition("skipped", defaultNextPc, { skippedReason: "status is not recoverable" }),
+    };
+  }
+  if (BOUNDED_RETRY_ONLY_STATUSES.has(result?.status || "") && (recoveryAction !== "retry" || recoveryMaxRetries <= 0)) {
+    return {
+      recovered: false,
+      failureReason,
+      message: `${workflow.name} / ${item.name} 失败状态 ${result?.status} 仅允许有界重试，已停止`,
+      transition: buildTransition("skipped", defaultNextPc, { skippedReason: "bounded retry is not configured" }),
     };
   }
   if (!targetStepId) {

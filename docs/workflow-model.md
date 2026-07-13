@@ -316,8 +316,8 @@ schema v9 继续保留 v7 的控制流定义态字段：`targetStepId`、`elseTa
 
 - 用户把当前任务追加到已选窗口的任务队列。
 - 点击观察运行后，每个已选窗口读取自己的启用队列，并生成独立 `RunSession`。
-- 如果某个窗口没有任何队列项，运行按钮会回退到当前 active workflow，便于快速调试单任务；如果已有队列但全部停用，则跳过该窗口。
-- 同一个 hwnd 如果已有 active session，会拒绝第二个 session，保持互斥。
+- 如果某个窗口没有任何队列项，或队列全部停用/引用的任务已不存在，则明确跳过该窗口；运行入口不会回退执行当前 active workflow。
+- 同一个 hwnd 在窗口身份异步复核前先同步登记 `starting` session；`starting/running/paused` 都会拒绝第二个 session，避免快速双击并发启动。
 - 不同 hwnd 的会话并行推进，各自串行消费自己的队列、步骤进度和日志。
 - 观察运行和后台运行结束后写入 `runHistory` 报告，并保存工作区；保存成功后 UI 会保留最近一次 `workspace.json.bak` 路径。
 - 观察运行不截图、不点击、不发快捷键、不启动客户端、不请求管理员重启。
@@ -333,6 +333,9 @@ schema v9 继续保留 v7 的控制流定义态字段：`targetStepId`、`elseTa
 - `onFail=restore` 只对识图/OCR/缺素材这类可恢复失败生效；`error/unsupported`、窗口身份漂移、权限不足、用户停止不会进入恢复分支。恢复入口不能只指向计划态 restore，默认恢复片段只在恢复分支执行；恢复分支完成后按 `recoveryAction` 停止、重试或继续，`retry` 必须有 `maxIterations` 上限，`runHistory` 保留原失败点、恢复 transition 和恢复完成策略。
 - readiness 会把已执行的条件分支、任务跳转、失败恢复分支和仍计划态的 `restore` 步骤分开显示。任务没有缺图片、缺坐标或缺 OCR 文本时，仍可能因为 `restore` 步骤显示计划态提醒；这表示输入链路可演练，但该恢复步骤本身没有后台输入动作。
 - 后台运行启动前还会调用 Rust `current_window_identity` 重新读取一次 hwnd 的实时身份；该只读复核通过后，`RunSession.windowIdentity` 才保存为启动时窗口快照：`hwnd/title/processId/processName/clientWidth/clientHeight/elevated`。前端 runner 在每个后台步骤执行前都会再做一次只读身份复核，因此 `delay`、`condition`、`task_jump` 这类无后端输入步骤也不会在 hwnd 漂移后继续推进。每个后台输入/OCR/截图步骤调用 Rust 时还会传入该快照，且 `expectedWindow.hwnd` 必须存在并等于命令入参。
+- 每个 Rust 步骤调用同时携带 `sessionId/stepId/deadlineMs/cancelTokenId`，并先进入 per-HWND FIFO lane；同一 hwnd 同时最多执行一个步骤，不同 hwnd 可以并行。模板搜索按固定的最多 4096 个像素比较触发一次 execution checkpoint，排队中或搜索中的 cancel/deadline 会返回错误，不继续进入输入提交。
+- 所有 hotkey、文本、坐标点击、双击、模板点击和 ROI 点击都通过 session 级 `commit_input` 提交。`cancel_session` 与该提交门共享同一 session generation 锁：取消先完成时输入 closure 不会被调用；输入提交先开始时，取消会等完整的短消息序列结束后再返回，避免只发出 keydown、mousedown 或半次双击。不同 session 使用不同提交锁，不会因此退化为全局输入串行。Windows OCR 的 WinRT 调用中中止仍是后续切片，当前只在调用边界检查 deadline/cancel，不宣称可打断 `.get()`。
+- 捕获结果使用 `provider/reliability/capturedAtMs/frameHash/width/height` 明确信任来源。自动 `snapshot`、`wait_image`、`detect_page`、OCR、模板点击、保存截图和 live 断言只调用 strict target-window capture，失败时不会回退桌面区域。人工预览允许在 Window GDI 失败后使用可见桌面区域，但必须标记 `desktop_visible_gdi/preview_only`，不能进入目标验证或控制成功。当前 Window GDI 成功只标记 `window_gdi/target_window_unverified`；在 P3 完成 WGC/PrintWindow、黑帧和旧帧健康验证前，视觉控制步骤会以 `capture_unreliable` fail-closed，不发送输入。hotkey、文本和显式坐标/ROI 点击不依赖截图，仍遵守窗口身份与 `commit_input` 门禁。
 - Rust 在 `execute_workflow_step` 开头重新读取当前 hwnd 的窗口记录，并逐项比对标题、PID、进程名、client 尺寸和权限状态；不一致时返回错误并停止该窗口会话。`image_click` 在模板匹配或 ROI 解析后、真正投递鼠标消息前会再校验一次窗口身份，避免识图过程中 hwnd 被复用后误点其它窗口。
 - `hotkey` 通过 hwnd 投递 `WM_KEYDOWN/WM_KEYUP` 或 `WM_SYSKEYDOWN/WM_SYSKEYUP`。
 - `text_input` 通过 hwnd 投递 `WM_CHAR`，文本来源优先取 `command` 里的 `text=` / `value=`，没有时取步骤 `target`；后端限制单步最多 500 个字符。

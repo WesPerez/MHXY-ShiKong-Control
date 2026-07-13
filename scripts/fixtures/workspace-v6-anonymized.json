@@ -1,0 +1,1615 @@
+{
+  "schemaVersion": 6,
+  "activeWorkflowId": "workflow-001",
+  "workflows": [
+    {
+      "schemaVersion": 6,
+      "id": "workflow-001",
+      "name": "Workflow 01",
+      "category": "Category 01",
+      "description": "",
+      "tags": [
+        "fixture"
+      ],
+      "initialCheck": "target-001",
+      "targetPolicy": {
+        "titleNeedle": "ANONYMIZED-GAME-WINDOW",
+        "inputMode": "hwnd-message",
+        "concurrency": "per-window-exclusive"
+      },
+      "steps": [
+        {
+          "id": "step-001",
+          "type": "detect_page",
+          "name": "Step 01",
+          "target": "target-001",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 3000,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-002",
+          "type": "hotkey",
+          "name": "Step 02",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-003",
+          "type": "wait_image",
+          "name": "Step 03",
+          "target": "target-002",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-004",
+          "type": "image_click",
+          "name": "Step 04",
+          "target": "target-003",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-005",
+          "type": "delay",
+          "name": "Step 05",
+          "target": "500ms",
+          "command": "reason=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 800,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-006",
+          "type": "ocr_assert",
+          "name": "Step 06",
+          "target": "target-004",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-007",
+          "type": "image_click",
+          "name": "Step 07",
+          "target": "target-005",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-008",
+          "type": "condition",
+          "name": "Step 08",
+          "target": "last.status",
+          "command": "guard=true",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-009",
+          "type": "image_click",
+          "name": "Step 09",
+          "target": "target-006",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-010",
+          "type": "snapshot",
+          "name": "Step 10",
+          "target": "window.client",
+          "command": "dry-run log only",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-011",
+          "type": "retry_until",
+          "name": "Step 11",
+          "target": "last.status",
+          "command": "interval=500ms",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 3,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-012",
+          "type": "restore",
+          "name": "Step 12",
+          "target": "restore.home",
+          "command": "safe sequence",
+          "expect": "fixture.expected",
+          "timeoutMs": 6000,
+          "retry": 1,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "schemaVersion": 6,
+      "id": "workflow-002",
+      "name": "Workflow 02",
+      "category": "Category 02",
+      "description": "",
+      "tags": [
+        "fixture"
+      ],
+      "initialCheck": "target-001",
+      "targetPolicy": {
+        "titleNeedle": "ANONYMIZED-GAME-WINDOW",
+        "inputMode": "hwnd-message",
+        "concurrency": "per-window-exclusive"
+      },
+      "steps": [
+        {
+          "id": "step-013",
+          "type": "detect_page",
+          "name": "Step 01",
+          "target": "target-001",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 3000,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-014",
+          "type": "hotkey",
+          "name": "Step 02",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-015",
+          "type": "wait_image",
+          "name": "Step 03",
+          "target": "target-007",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-016",
+          "type": "image_click",
+          "name": "Step 04",
+          "target": "target-007",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-017",
+          "type": "ocr_assert",
+          "name": "Step 05",
+          "target": "target-008",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-018",
+          "type": "condition",
+          "name": "Step 06",
+          "target": "last.status",
+          "command": "guard=true",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-019",
+          "type": "image_click",
+          "name": "Step 07",
+          "target": "target-009",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-020",
+          "type": "retry_until",
+          "name": "Step 08",
+          "target": "last.status",
+          "command": "interval=500ms",
+          "expect": "fixture.expected",
+          "timeoutMs": 7000,
+          "retry": 4,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-021",
+          "type": "click",
+          "name": "Step 09",
+          "target": "target-010",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 1300,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-022",
+          "type": "image_click",
+          "name": "Step 10",
+          "target": "target-011",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-023",
+          "type": "delay",
+          "name": "Step 11",
+          "target": "500ms",
+          "command": "reason=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 800,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-024",
+          "type": "snapshot",
+          "name": "Step 12",
+          "target": "window.client",
+          "command": "dry-run log only",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-025",
+          "type": "restore",
+          "name": "Step 13",
+          "target": "restore.home",
+          "command": "safe sequence",
+          "expect": "fixture.expected",
+          "timeoutMs": 6000,
+          "retry": 1,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "schemaVersion": 6,
+      "id": "workflow-003",
+      "name": "Workflow 03",
+      "category": "Category 03",
+      "description": "",
+      "tags": [
+        "fixture"
+      ],
+      "initialCheck": "target-001",
+      "targetPolicy": {
+        "titleNeedle": "ANONYMIZED-GAME-WINDOW",
+        "inputMode": "hwnd-message",
+        "concurrency": "per-window-exclusive"
+      },
+      "steps": [
+        {
+          "id": "step-026",
+          "type": "detect_page",
+          "name": "Step 01",
+          "target": "target-001",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 3000,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-027",
+          "type": "hotkey",
+          "name": "Step 02",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-028",
+          "type": "wait_image",
+          "name": "Step 03",
+          "target": "target-012",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-029",
+          "type": "ocr_assert",
+          "name": "Step 04",
+          "target": "target-013",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-030",
+          "type": "condition",
+          "name": "Step 05",
+          "target": "last.status",
+          "command": "guard=true",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-031",
+          "type": "wait_image",
+          "name": "Step 06",
+          "target": "target-014",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-032",
+          "type": "image_click",
+          "name": "Step 07",
+          "target": "target-014",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-033",
+          "type": "click",
+          "name": "Step 08",
+          "target": "target-015",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 1300,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-034",
+          "type": "ocr_assert",
+          "name": "Step 09",
+          "target": "target-016",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-035",
+          "type": "image_click",
+          "name": "Step 10",
+          "target": "target-006",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-036",
+          "type": "retry_until",
+          "name": "Step 11",
+          "target": "last.status",
+          "command": "interval=500ms",
+          "expect": "fixture.expected",
+          "timeoutMs": 7000,
+          "retry": 4,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-037",
+          "type": "snapshot",
+          "name": "Step 12",
+          "target": "window.client",
+          "command": "dry-run log only",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-038",
+          "type": "restore",
+          "name": "Step 13",
+          "target": "restore.home",
+          "command": "safe sequence",
+          "expect": "fixture.expected",
+          "timeoutMs": 6000,
+          "retry": 1,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "schemaVersion": 6,
+      "id": "workflow-004",
+      "name": "Workflow 04",
+      "category": "Category 04",
+      "description": "",
+      "tags": [
+        "fixture"
+      ],
+      "initialCheck": "target-001",
+      "targetPolicy": {
+        "titleNeedle": "ANONYMIZED-GAME-WINDOW",
+        "inputMode": "hwnd-message",
+        "concurrency": "per-window-exclusive"
+      },
+      "steps": [
+        {
+          "id": "step-039",
+          "type": "detect_page",
+          "name": "Step 01",
+          "target": "target-001",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 3000,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-040",
+          "type": "hotkey",
+          "name": "Step 02",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-041",
+          "type": "wait_image",
+          "name": "Step 03",
+          "target": "target-017",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-042",
+          "type": "image_click",
+          "name": "Step 04",
+          "target": "target-018",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-043",
+          "type": "ocr_assert",
+          "name": "Step 05",
+          "target": "target-019",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-044",
+          "type": "condition",
+          "name": "Step 06",
+          "target": "last.status",
+          "command": "guard=true",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-045",
+          "type": "image_click",
+          "name": "Step 07",
+          "target": "target-020",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-046",
+          "type": "image_click",
+          "name": "Step 08",
+          "target": "target-021",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-047",
+          "type": "delay",
+          "name": "Step 09",
+          "target": "500ms",
+          "command": "reason=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 800,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-048",
+          "type": "ocr_assert",
+          "name": "Step 10",
+          "target": "target-022",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-049",
+          "type": "snapshot",
+          "name": "Step 11",
+          "target": "window.client",
+          "command": "dry-run log only",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-050",
+          "type": "restore",
+          "name": "Step 12",
+          "target": "restore.home",
+          "command": "safe sequence",
+          "expect": "fixture.expected",
+          "timeoutMs": 6000,
+          "retry": 1,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "schemaVersion": 6,
+      "id": "workflow-005",
+      "name": "Workflow 05",
+      "category": "Category 05",
+      "description": "",
+      "tags": [
+        "fixture"
+      ],
+      "initialCheck": "target-001",
+      "targetPolicy": {
+        "titleNeedle": "ANONYMIZED-GAME-WINDOW",
+        "inputMode": "hwnd-message",
+        "concurrency": "per-window-exclusive"
+      },
+      "steps": [
+        {
+          "id": "step-051",
+          "type": "detect_page",
+          "name": "Step 01",
+          "target": "target-001",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 3000,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-052",
+          "type": "hotkey",
+          "name": "Step 02",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-053",
+          "type": "wait_image",
+          "name": "Step 03",
+          "target": "target-023",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-054",
+          "type": "image_click",
+          "name": "Step 04",
+          "target": "target-023",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 2600,
+          "retry": 1,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-055",
+          "type": "ocr_assert",
+          "name": "Step 05",
+          "target": "target-024",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 4200,
+          "retry": 2,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-056",
+          "type": "condition",
+          "name": "Step 06",
+          "target": "last.status",
+          "command": "guard=true",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-057",
+          "type": "hotkey",
+          "name": "Step 07",
+          "target": "ALT+1",
+          "command": "mode=hwnd-key",
+          "expect": "fixture.expected",
+          "timeoutMs": 1200,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-058",
+          "type": "wait_image",
+          "name": "Step 08",
+          "target": "target-025",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-059",
+          "type": "wait_image",
+          "name": "Step 09",
+          "target": "target-026",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 5000,
+          "retry": 2,
+          "onFail": "retry",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-060",
+          "type": "click",
+          "name": "Step 10",
+          "target": "target-027",
+          "command": "mode=fixture",
+          "expect": "fixture.expected",
+          "timeoutMs": 1300,
+          "retry": 0,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-061",
+          "type": "retry_until",
+          "name": "Step 11",
+          "target": "last.status",
+          "command": "interval=500ms",
+          "expect": "fixture.expected",
+          "timeoutMs": 9000,
+          "retry": 5,
+          "onFail": "restore",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-062",
+          "type": "snapshot",
+          "name": "Step 12",
+          "target": "window.client",
+          "command": "dry-run log only",
+          "expect": "fixture.expected",
+          "timeoutMs": 1000,
+          "retry": 0,
+          "onFail": "skip",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        },
+        {
+          "id": "step-063",
+          "type": "restore",
+          "name": "Step 13",
+          "target": "restore.home",
+          "command": "safe sequence",
+          "expect": "fixture.expected",
+          "timeoutMs": 6000,
+          "retry": 1,
+          "onFail": "stop",
+          "enabled": true,
+          "targetId": "",
+          "notes": ""
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "assignments": {},
+  "targets": [
+    {
+      "id": "target-001",
+      "name": "Target 01",
+      "kind": "page",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-002",
+      "name": "Target 02",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-003",
+      "name": "Target 03",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-004",
+      "name": "Target 04",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "top"
+      },
+      "texts": [
+        "sample-text-04"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-005",
+      "name": "Target 05",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-006",
+      "name": "Target 06",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-007",
+      "name": "Target 07",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.84,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-008",
+      "name": "Target 08",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "top"
+      },
+      "texts": [
+        "sample-text-08"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-009",
+      "name": "Target 09",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-010",
+      "name": "Target 10",
+      "kind": "click_target",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-011",
+      "name": "Target 11",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-012",
+      "name": "Target 12",
+      "kind": "page",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.85,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-013",
+      "name": "Target 13",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "top"
+      },
+      "texts": [
+        "sample-text-13"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-014",
+      "name": "Target 14",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.88,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-015",
+      "name": "Target 15",
+      "kind": "click_target",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "right",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-016",
+      "name": "Target 16",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "dialog"
+      },
+      "texts": [
+        "sample-text-16"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-017",
+      "name": "Target 17",
+      "kind": "page",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.84,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-018",
+      "name": "Target 18",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-019",
+      "name": "Target 19",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "top"
+      },
+      "texts": [
+        "sample-text-19"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-020",
+      "name": "Target 20",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-021",
+      "name": "Target 21",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-022",
+      "name": "Target 22",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "panel"
+      },
+      "texts": [
+        "sample-text-22"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-023",
+      "name": "Target 23",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.84,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-024",
+      "name": "Target 24",
+      "kind": "ocr",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "top"
+      },
+      "texts": [
+        "sample-text-24"
+      ],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-025",
+      "name": "Target 25",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.86,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-026",
+      "name": "Target 26",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.84,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    },
+    {
+      "id": "target-027",
+      "name": "Target 27",
+      "kind": "image",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "dataUrl": "",
+      "roi": null,
+      "match": {
+        "threshold": 0.84,
+        "scope": "window"
+      },
+      "texts": [],
+      "click": {
+        "button": "left",
+        "point": "center"
+      },
+      "source": null,
+      "width": 0,
+      "height": 0,
+      "note": ""
+    }
+  ],
+  "runHistory": [],
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "fixtureMetadata": {
+    "kind": "mhxy-anonymized-workspace-v6",
+    "sourceSha256": "445BE6550B813DCA8B783DB6DC2F61C633234B41C410703DE70BEB810B6DD8D3",
+    "contentRemoved": [
+      "names",
+      "descriptions",
+      "notes",
+      "paths",
+      "window identities",
+      "image data URLs",
+      "OCR text"
+    ]
+  }
+}

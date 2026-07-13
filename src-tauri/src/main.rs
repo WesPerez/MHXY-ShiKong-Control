@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod platform;
+mod runtime;
 mod single_instance;
 mod tray;
 
@@ -8,8 +9,12 @@ use base64::{engine::general_purpose, Engine as _};
 use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
     capture_client_rgb, capture_client_rgb_strict, current_process_elevated, list_windows,
-    post_hotkey, post_mouse_click, post_mouse_double_click, post_text, window_for_hwnd, HwndPoint,
-    RgbFrame,
+    post_hotkey, post_mouse_click, post_mouse_double_click, post_text, window_for_hwnd,
+    CaptureMetadata, CaptureProvider, CaptureReliability, HwndPoint, RgbFrame,
+};
+use runtime::{
+    ExecutionContextInput, ExecutionControl, OcrJobStage, OcrPoolError, OcrWorkerPool,
+    WindowLaneRegistry,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -20,7 +25,7 @@ use std::{
     process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tauri::Manager;
+use tauri::{Manager, State};
 #[cfg(windows)]
 use windows::{
     core::PCWSTR,
@@ -33,6 +38,11 @@ struct PreviewImage {
     width: u32,
     height: u32,
     data_url: String,
+    capture_provider: CaptureProvider,
+    capture_reliability: CaptureReliability,
+    captured_at_ms: u64,
+    frame_hash: String,
+    fallback_used: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,6 +74,10 @@ struct SnapshotResult {
     saved_path: String,
     width: u32,
     height: u32,
+    capture_provider: CaptureProvider,
+    capture_reliability: CaptureReliability,
+    captured_at_ms: u64,
+    frame_hash: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -200,6 +214,12 @@ struct StepDispatchResult {
     x: Option<u32>,
     y: Option<u32>,
     score: Option<f32>,
+    capture_provider: Option<CaptureProvider>,
+    capture_reliability: Option<CaptureReliability>,
+    captured_at_ms: Option<u64>,
+    frame_hash: Option<String>,
+    capture_width: Option<u32>,
+    capture_height: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -369,43 +389,84 @@ fn replace_file_with_temp(tmp_path: &Path, path: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn execute_workflow_step(
+async fn execute_workflow_step(
+    runtime: State<'_, WindowLaneRegistry>,
+    ocr_pool: State<'_, OcrWorkerPool>,
     hwnd: isize,
     step: WorkflowStepInput,
     expected_window: Option<ExpectedWindowInput>,
+    execution: ExecutionContextInput,
+) -> Result<StepDispatchResult, String> {
+    let runtime = runtime.inner().clone();
+    let ocr_pool = ocr_pool.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let permit = runtime
+            .acquire(hwnd, execution)
+            .map_err(|error| error.to_string())?;
+        let control = permit.control();
+        control.checkpoint()?;
+        execute_workflow_step_unlocked(hwnd, step, expected_window, &control, &ocr_pool)
+    })
+    .await
+    .map_err(|error| format!("workflow step worker failed: {error}"))?
+}
+
+fn execute_workflow_step_unlocked(
+    hwnd: isize,
+    step: WorkflowStepInput,
+    expected_window: Option<ExpectedWindowInput>,
+    control: &ExecutionControl,
+    ocr_pool: &OcrWorkerPool,
 ) -> Result<StepDispatchResult, String> {
     let expected_window = expected_window.as_ref();
     validate_expected_window(hwnd, expected_window)?;
     let step_type = step.step_type.trim().to_ascii_lowercase();
     let mut result = match step_type.as_str() {
-        "hotkey" => dispatch_hotkey_step(hwnd, &step),
-        "text_input" => dispatch_text_input_step(hwnd, &step),
-        "click" => dispatch_click_step(hwnd, &step, MouseDispatchMode::Click),
+        "hotkey" => dispatch_hotkey_step(hwnd, &step, control),
+        "text_input" => dispatch_text_input_step(hwnd, &step, control),
+        "click" => dispatch_click_step(hwnd, &step, MouseDispatchMode::Click, control),
         "double_click" => {
             if template_data_url(&step).is_some() || step.roi.is_some() {
-                dispatch_image_step(hwnd, &step, MouseDispatchMode::DoubleClick, expected_window)
+                dispatch_image_step(
+                    hwnd,
+                    &step,
+                    MouseDispatchMode::DoubleClick,
+                    expected_window,
+                    control,
+                )
             } else {
-                dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick)
+                dispatch_click_step(hwnd, &step, MouseDispatchMode::DoubleClick, control)
             }
         }
-        "image_click" => {
-            dispatch_image_step(hwnd, &step, MouseDispatchMode::Click, expected_window)
-        }
+        "image_click" => dispatch_image_step(
+            hwnd,
+            &step,
+            MouseDispatchMode::Click,
+            expected_window,
+            control,
+        ),
         "wait_image" | "detect_page" => {
-            dispatch_image_step(hwnd, &step, MouseDispatchMode::MatchOnly, None)
+            dispatch_image_step(hwnd, &step, MouseDispatchMode::MatchOnly, None, control)
         }
         "snapshot" => {
-            let frame = capture_client_rgb(hwnd)?;
-            Ok(step_result(
+            control.checkpoint()?;
+            let captured = capture_client_rgb_strict(hwnd)?;
+            control.checkpoint()?;
+            let mut output = step_result(
                 hwnd,
                 &step.step_type,
                 "observed",
                 "snapshot",
                 format!(
-                    "captured {}x{} for step verification",
-                    frame.width, frame.height
+                    "captured {}x{} for step verification via {:?}/{:?}",
+                    captured.rgb.width,
+                    captured.rgb.height,
+                    captured.metadata.provider,
+                    captured.metadata.reliability,
                 ),
-            ))
+            );
+            attach_capture_metadata(&mut output, &captured.metadata);
+            Ok(output)
         }
         "delay" | "condition" | "loop" | "retry_until" | "task_jump" | "restore" => {
             Ok(step_result(
@@ -416,7 +477,7 @@ fn execute_workflow_step(
                 "step is represented in the runner but has no direct backend input in this build",
             ))
         }
-        "ocr_assert" => dispatch_ocr_step(hwnd, &step),
+        "ocr_assert" => dispatch_ocr_step(hwnd, &step, control, ocr_pool),
         other => Ok(step_result(
             hwnd,
             other,
@@ -430,20 +491,47 @@ fn execute_workflow_step(
 }
 
 #[tauri::command]
+fn cancel_session(
+    runtime: State<'_, WindowLaneRegistry>,
+    session_id: String,
+    cancel_token_id: String,
+) -> Result<bool, String> {
+    runtime
+        .cancel_session(&session_id, &cancel_token_id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn complete_session(
+    runtime: State<'_, WindowLaneRegistry>,
+    session_id: String,
+    cancel_token_id: String,
+) -> Result<bool, String> {
+    runtime
+        .complete_session(&session_id, &cancel_token_id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn capture_window_preview(
     hwnd: isize,
     expected_window: Option<ExpectedWindowInput>,
 ) -> Result<PreviewImage, String> {
     validate_expected_window(hwnd, expected_window.as_ref())?;
-    let frame = capture_client_rgb(hwnd)?;
-    let png = encode_png(&frame)?;
+    let captured = capture_client_rgb(hwnd)?;
+    let png = encode_png(&captured.rgb)?;
     Ok(PreviewImage {
-        width: frame.width,
-        height: frame.height,
+        width: captured.rgb.width,
+        height: captured.rgb.height,
         data_url: format!(
             "data:image/png;base64,{}",
             general_purpose::STANDARD.encode(png)
         ),
+        capture_provider: captured.metadata.provider,
+        capture_reliability: captured.metadata.reliability,
+        captured_at_ms: captured.metadata.captured_at_ms,
+        frame_hash: captured.metadata.frame_hash,
+        fallback_used: captured.metadata.fallback_used,
     })
 }
 
@@ -453,7 +541,7 @@ fn save_window_snapshot(
     expected_window: Option<ExpectedWindowInput>,
 ) -> Result<SnapshotResult, String> {
     validate_expected_window(hwnd, expected_window.as_ref())?;
-    let frame = capture_client_rgb(hwnd)?;
+    let captured = capture_client_rgb_strict(hwnd)?;
     let root = project_root()?;
     let dir = root
         .join("assets")
@@ -462,11 +550,15 @@ fn save_window_snapshot(
         .join("captures");
     fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
     let path = dir.join(format!("window-{}.png", timestamp()));
-    save_png(&frame, &path)?;
+    save_png(&captured.rgb, &path)?;
     Ok(SnapshotResult {
         saved_path: path.display().to_string(),
-        width: frame.width,
-        height: frame.height,
+        width: captured.rgb.width,
+        height: captured.rgb.height,
+        capture_provider: captured.metadata.provider,
+        capture_reliability: captured.metadata.reliability,
+        captured_at_ms: captured.metadata.captured_at_ms,
+        frame_hash: captured.metadata.frame_hash,
     })
 }
 
@@ -806,10 +898,11 @@ impl MouseDispatchMode {
 fn dispatch_hotkey_step(
     hwnd: isize,
     step: &WorkflowStepInput,
+    control: &ExecutionControl,
 ) -> Result<StepDispatchResult, String> {
     let hotkey = first_non_empty([step.target.as_str(), step.command.as_str()])
         .ok_or_else(|| "hotkey step requires target or command".to_string())?;
-    let result = post_hotkey(hwnd, hotkey)?;
+    let result = control.commit_input(|| post_hotkey(hwnd, hotkey))?;
     Ok(step_result_with_input(
         hwnd,
         &step.step_type,
@@ -824,9 +917,10 @@ fn dispatch_hotkey_step(
 fn dispatch_text_input_step(
     hwnd: isize,
     step: &WorkflowStepInput,
+    control: &ExecutionControl,
 ) -> Result<StepDispatchResult, String> {
     let text = text_input_value(step)?;
-    let result = post_text(hwnd, text)?;
+    let result = control.commit_input(|| post_text(hwnd, text))?;
     Ok(step_result_with_input(
         hwnd,
         &step.step_type,
@@ -842,6 +936,7 @@ fn dispatch_click_step(
     hwnd: isize,
     step: &WorkflowStepInput,
     mode: MouseDispatchMode,
+    control: &ExecutionControl,
 ) -> Result<StepDispatchResult, String> {
     let point = point_from_step(step).ok_or_else(|| {
         format!(
@@ -850,10 +945,10 @@ fn dispatch_click_step(
         )
     })?;
     let button = command_value(&step.command, "button").unwrap_or("left");
-    let result = match mode {
-        MouseDispatchMode::DoubleClick => post_mouse_double_click(hwnd, point.clone(), button)?,
-        _ => post_mouse_click(hwnd, point.clone(), button)?,
-    };
+    let result = control.commit_input(|| match mode {
+        MouseDispatchMode::DoubleClick => post_mouse_double_click(hwnd, point.clone(), button),
+        _ => post_mouse_click(hwnd, point.clone(), button),
+    })?;
     let mut output = step_result_with_input(
         hwnd,
         &step.step_type,
@@ -873,18 +968,34 @@ fn dispatch_image_step(
     step: &WorkflowStepInput,
     mode: MouseDispatchMode,
     expected_window: Option<&ExpectedWindowInput>,
+    control: &ExecutionControl,
 ) -> Result<StepDispatchResult, String> {
     let button = command_value(&step.command, "button").unwrap_or("left");
     let threshold = image_threshold(step)?;
     if let Some(data_url) = template_data_url(step) {
-        let frame = if mode.sends_input() {
-            capture_client_rgb_strict(hwnd)?
-        } else {
-            capture_client_rgb(hwnd)?
-        };
+        control.checkpoint()?;
+        let captured = capture_client_rgb_strict(hwnd)?;
+        control.checkpoint()?;
+        if !captured.metadata.permits_control_decision() {
+            let mut output = step_result(
+                hwnd,
+                &step.step_type,
+                "capture_unreliable",
+                mode.image_action(),
+                format!(
+                    "capture source {:?}/{:?} is target-scoped but not health-verified",
+                    captured.metadata.provider, captured.metadata.reliability
+                ),
+            );
+            attach_capture_metadata(&mut output, &captured.metadata);
+            return Ok(output);
+        }
+        let frame = &captured.rgb;
         let template = load_image_data_url_rgb(data_url)?;
+        control.checkpoint()?;
         let search_roi = scaled_roi(step.roi, frame.width, frame.height);
-        let matched = match_template(&frame, &template, search_roi)?;
+        let matched = match_template(frame, &template, search_roi, || control.checkpoint())?;
+        control.checkpoint()?;
         let click_point = image_click_point(&matched, step, frame.width, frame.height)?;
         let mut output = step_result_with_input(
             hwnd,
@@ -909,14 +1020,17 @@ fn dispatch_image_step(
         output.matched = matched.score >= threshold;
         output.x = Some(click_point.x);
         output.y = Some(click_point.y);
+        attach_capture_metadata(&mut output, &captured.metadata);
         if mode.sends_input() && matched.score >= threshold {
-            validate_expected_window(hwnd, expected_window)?;
-            let result = match mode {
-                MouseDispatchMode::DoubleClick => {
-                    post_mouse_double_click(hwnd, click_point, button)?
+            let result = commit_visual_input(control, &captured.metadata, || {
+                validate_expected_window(hwnd, expected_window)?;
+                match mode {
+                    MouseDispatchMode::DoubleClick => {
+                        post_mouse_double_click(hwnd, click_point, button)
+                    }
+                    _ => post_mouse_click(hwnd, click_point, button),
                 }
-                _ => post_mouse_click(hwnd, click_point, button)?,
-            };
+            })?;
             output.input_sent = true;
             output.detail = format!("{}; {}", output.detail, result.detail);
         }
@@ -925,13 +1039,15 @@ fn dispatch_image_step(
 
     if let Some(point) = point_from_step_with_offset(step)? {
         if mode.sends_input() {
-            validate_expected_window(hwnd, expected_window)?;
-            let result = match mode {
-                MouseDispatchMode::DoubleClick => {
-                    post_mouse_double_click(hwnd, point.clone(), button)?
+            let result = control.commit_input(|| {
+                validate_expected_window(hwnd, expected_window)?;
+                match mode {
+                    MouseDispatchMode::DoubleClick => {
+                        post_mouse_double_click(hwnd, point.clone(), button)
+                    }
+                    _ => post_mouse_click(hwnd, point.clone(), button),
                 }
-                _ => post_mouse_click(hwnd, point.clone(), button)?,
-            };
+            })?;
             let mut output = step_result_with_input(
                 hwnd,
                 &step.step_type,
@@ -968,7 +1084,26 @@ fn dispatch_image_step(
     ))
 }
 
-fn dispatch_ocr_step(hwnd: isize, step: &WorkflowStepInput) -> Result<StepDispatchResult, String> {
+fn commit_visual_input<T>(
+    control: &ExecutionControl,
+    metadata: &CaptureMetadata,
+    action: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    if !metadata.permits_control_decision() {
+        return Err(format!(
+            "capture_unreliable: {:?}/{:?} cannot authorize input",
+            metadata.provider, metadata.reliability
+        ));
+    }
+    control.commit_input(action)
+}
+
+fn dispatch_ocr_step(
+    hwnd: isize,
+    step: &WorkflowStepInput,
+    control: &ExecutionControl,
+    ocr_pool: &OcrWorkerPool,
+) -> Result<StepDispatchResult, String> {
     let expected_texts = expected_ocr_texts(step);
     if expected_texts.is_empty() {
         return Ok(step_result(
@@ -980,11 +1115,31 @@ fn dispatch_ocr_step(hwnd: isize, step: &WorkflowStepInput) -> Result<StepDispat
         ));
     }
 
-    let frame = capture_client_rgb(hwnd)?;
-    let roi = ocr_search_roi(step, frame.width, frame.height);
-    let crop = crop_frame(&frame, roi)?;
+    control.checkpoint()?;
+    let captured = capture_client_rgb_strict(hwnd)?;
+    control.checkpoint()?;
+    if !captured.metadata.permits_control_decision() {
+        let mut output = step_result(
+            hwnd,
+            &step.step_type,
+            "capture_unreliable",
+            "ocr",
+            format!(
+                "capture source {:?}/{:?} is target-scoped but not health-verified",
+                captured.metadata.provider, captured.metadata.reliability
+            ),
+        );
+        attach_capture_metadata(&mut output, &captured.metadata);
+        return Ok(output);
+    }
+    let roi = ocr_search_roi(step, captured.rgb.width, captured.rgb.height);
+    let crop = crop_frame(&captured.rgb, roi)?;
     let language = ocr_language_tag(step);
-    match recognize_ocr_text(&crop, language.as_deref()) {
+    let ocr_language = language.clone();
+    let recognized = ocr_pool.execute(control, move || {
+        recognize_ocr_text(&crop, ocr_language.as_deref())
+    });
+    match recognized {
         Ok(recognized) => {
             let matched_text = matched_ocr_text(&recognized, &expected_texts);
             let mut output = step_result(
@@ -1005,24 +1160,52 @@ fn dispatch_ocr_step(hwnd: isize, step: &WorkflowStepInput) -> Result<StepDispat
                 ),
             );
             output.matched = matched_text.is_some();
+            attach_capture_metadata(&mut output, &captured.metadata);
             Ok(output)
         }
-        Err(err) => {
+        Err(error) => {
+            let (status, detail) = match &error {
+                OcrPoolError::QueueFull => (
+                    "ocr_queue_full",
+                    "OCR worker queue is full; retry after an existing OCR job completes"
+                        .to_string(),
+                ),
+                OcrPoolError::Cancelled { stage } => (
+                    "cancelled",
+                    format!("OCR job cancelled while {}", ocr_stage_label(*stage)),
+                ),
+                OcrPoolError::DeadlineExceeded { stage } => (
+                    "timeout",
+                    format!("OCR deadline exceeded while {}", ocr_stage_label(*stage)),
+                ),
+                OcrPoolError::WorkerUnavailable(_) | OcrPoolError::BackendFailed(_) => (
+                    "ocr_unavailable",
+                    format!("Windows OCR unavailable: {error}"),
+                ),
+            };
             let mut output = step_result(
                 hwnd,
                 &step.step_type,
-                "ocr_unavailable",
+                status,
                 "ocr",
                 format!(
-                    "Windows OCR unavailable: {err}; expected={}; lang={}; roi={}",
+                    "{detail}; expected={}; lang={}; roi={}",
                     expected_texts.join("|"),
                     language.as_deref().unwrap_or("user-profile"),
                     roi_label(roi)
                 ),
             );
             output.matched = false;
+            attach_capture_metadata(&mut output, &captured.metadata);
             Ok(output)
         }
+    }
+}
+
+fn ocr_stage_label(stage: OcrJobStage) -> &'static str {
+    match stage {
+        OcrJobStage::Queued => "queued",
+        OcrJobStage::Running => "running; late backend results are discarded",
     }
 }
 
@@ -1331,7 +1514,22 @@ fn step_result_with_input(
         x: None,
         y: None,
         score,
+        capture_provider: None,
+        capture_reliability: None,
+        captured_at_ms: None,
+        frame_hash: None,
+        capture_width: None,
+        capture_height: None,
     }
+}
+
+fn attach_capture_metadata(result: &mut StepDispatchResult, metadata: &CaptureMetadata) {
+    result.capture_provider = Some(metadata.provider);
+    result.capture_reliability = Some(metadata.reliability);
+    result.captured_at_ms = Some(metadata.captured_at_ms);
+    result.frame_hash = Some(metadata.frame_hash.clone());
+    result.capture_width = Some(metadata.width);
+    result.capture_height = Some(metadata.height);
 }
 
 fn append_step_metadata(result: &mut StepDispatchResult, step: &WorkflowStepInput) {
@@ -1715,7 +1913,11 @@ fn match_template(
     frame: &RgbFrame,
     template: &RgbFrame,
     search_roi: Option<RoiRect>,
+    mut checkpoint: impl FnMut() -> Result<(), String>,
 ) -> Result<TemplateMatch, String> {
+    const CHECKPOINT_PIXEL_BUDGET: usize = 4096;
+
+    checkpoint()?;
     if template.width == 0 || template.height == 0 {
         return Err("template image is empty".to_string());
     }
@@ -1748,9 +1950,18 @@ fn match_template(
         height: template.height,
         score: f32::MIN,
     };
+    let mut pixels_since_checkpoint = 0usize;
     for y in roi.y..=max_y {
         for x in roi.x..=max_x {
-            let score = template_score(frame, template, x, y);
+            let score = template_score(
+                frame,
+                template,
+                x,
+                y,
+                &mut pixels_since_checkpoint,
+                CHECKPOINT_PIXEL_BUDGET,
+                &mut checkpoint,
+            )?;
             if score > best.score {
                 best.x = x;
                 best.y = y;
@@ -1758,15 +1969,29 @@ fn match_template(
             }
         }
     }
+    checkpoint()?;
     Ok(best)
 }
 
-fn template_score(frame: &RgbFrame, template: &RgbFrame, left: u32, top: u32) -> f32 {
+fn template_score(
+    frame: &RgbFrame,
+    template: &RgbFrame,
+    left: u32,
+    top: u32,
+    pixels_since_checkpoint: &mut usize,
+    checkpoint_pixel_budget: usize,
+    checkpoint: &mut dyn FnMut() -> Result<(), String>,
+) -> Result<f32, String> {
     let mut diff: u64 = 0;
     for y in 0..template.height {
         let frame_row = ((top + y) * frame.width + left) as usize * 3;
         let template_row = (y * template.width) as usize * 3;
         for x in 0..template.width as usize {
+            *pixels_since_checkpoint += 1;
+            if *pixels_since_checkpoint >= checkpoint_pixel_budget {
+                checkpoint()?;
+                *pixels_since_checkpoint = 0;
+            }
             let frame_index = frame_row + x * 3;
             let template_index = template_row + x * 3;
             diff += (i16::from(frame.pixels[frame_index])
@@ -1781,7 +2006,7 @@ fn template_score(frame: &RgbFrame, template: &RgbFrame, left: u32, top: u32) ->
         }
     }
     let max_diff = template.width as f32 * template.height as f32 * 3.0 * 255.0;
-    1.0 - (diff as f32 / max_diff)
+    Ok(1.0 - (diff as f32 / max_diff))
 }
 
 fn launch_configured_game_client() -> Result<GameLaunchResult, String> {
@@ -1971,6 +2196,8 @@ fn main() {
     }
     tauri::Builder::default()
         .setup(|app| {
+            app.manage(WindowLaneRegistry::new());
+            app.manage(OcrWorkerPool::default());
             tray::setup(app)?;
             let app_handle = app.handle().clone();
             match single_instance::start_listener(move || {
@@ -2009,6 +2236,8 @@ fn main() {
             save_workflow_workspace,
             current_window_identity,
             execute_workflow_step,
+            cancel_session,
+            complete_session,
             capture_window_preview,
             save_window_snapshot,
             import_preview_image,
@@ -2055,6 +2284,22 @@ mod tests {
             client_height: Some(window.client_height),
             elevated: window.elevated,
         }
+    }
+
+    fn test_execution_control(hwnd: isize) -> ExecutionControl {
+        let registry = WindowLaneRegistry::new();
+        let guard = registry
+            .acquire(
+                hwnd,
+                ExecutionContextInput {
+                    session_id: format!("test-session-{hwnd}"),
+                    step_id: "test-step".to_string(),
+                    deadline_ms: 60_000,
+                    cancel_token_id: format!("test-cancel-{hwnd}"),
+                },
+            )
+            .unwrap();
+        guard.control()
     }
 
     fn frame_delta_ratio(left: &RgbFrame, right: &RgbFrame) -> f64 {
@@ -2146,7 +2391,9 @@ mod tests {
             return;
         }
         for window in windows.iter().take(2) {
-            let before = capture_client_rgb(window.hwnd).expect("capture before hotkey");
+            let before = capture_client_rgb_strict(window.hwnd)
+                .expect("strict capture before hotkey")
+                .rgb;
             let step = WorkflowStepInput {
                 step_type: "hotkey".to_string(),
                 target: "ALT+N".to_string(),
@@ -2163,12 +2410,19 @@ mod tests {
                 ocr_language: None,
                 ocr_region: None,
             };
-            let result =
-                execute_workflow_step(window.hwnd, step, Some(expected_from_window(window)))
-                    .expect("post live background hotkey");
+            let result = execute_workflow_step_unlocked(
+                window.hwnd,
+                step,
+                Some(expected_from_window(window)),
+                &test_execution_control(window.hwnd),
+                &OcrWorkerPool::default(),
+            )
+            .expect("post live background hotkey");
             assert!(result.input_sent, "hotkey should report input_sent");
             std::thread::sleep(std::time::Duration::from_millis(900));
-            let after = capture_client_rgb(window.hwnd).expect("capture after hotkey");
+            let after = capture_client_rgb_strict(window.hwnd)
+                .expect("strict capture after hotkey")
+                .rgb;
             let delta = frame_delta_ratio(&before, &after);
             assert!(
                 delta > 0.001,
@@ -2200,7 +2454,9 @@ mod tests {
             .map(|window| {
                 (
                     window.hwnd,
-                    capture_client_rgb(window.hwnd).expect("capture before parallel hotkey"),
+                    capture_client_rgb_strict(window.hwnd)
+                        .expect("strict capture before parallel hotkey")
+                        .rgb,
                 )
             })
             .collect();
@@ -2227,10 +2483,12 @@ mod tests {
                         ocr_region: None,
                     };
                     barrier.wait();
-                    let result = execute_workflow_step(
+                    let result = execute_workflow_step_unlocked(
                         window.hwnd,
                         step,
                         Some(expected_from_window(&window)),
+                        &test_execution_control(window.hwnd),
+                        &OcrWorkerPool::default(),
                     )?;
                     Ok::<_, String>((window.hwnd, result))
                 })
@@ -2251,7 +2509,9 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(900));
         for (hwnd, before) in before_frames {
             assert!(sent_hwnds.contains(&hwnd));
-            let after = capture_client_rgb(hwnd).expect("capture after parallel hotkey");
+            let after = capture_client_rgb_strict(hwnd)
+                .expect("strict capture after parallel hotkey")
+                .rgb;
             let delta = frame_delta_ratio(&before, &after);
             assert!(
                 delta > 0.001,
@@ -2338,7 +2598,14 @@ mod tests {
             w: 4,
             h: 4,
         });
-        let error = dispatch_image_step(42, &step, MouseDispatchMode::Click, None).unwrap_err();
+        let error = dispatch_image_step(
+            42,
+            &step,
+            MouseDispatchMode::Click,
+            None,
+            &test_execution_control(42),
+        )
+        .unwrap_err();
         assert!(error.contains("expected window identity is required"));
     }
 
@@ -2352,8 +2619,14 @@ mod tests {
             w: 4,
             h: 4,
         });
-        let error =
-            dispatch_image_step(42, &step, MouseDispatchMode::DoubleClick, None).unwrap_err();
+        let error = dispatch_image_step(
+            42,
+            &step,
+            MouseDispatchMode::DoubleClick,
+            None,
+            &test_execution_control(42),
+        )
+        .unwrap_err();
         assert!(error.contains("expected window identity is required"));
     }
 
@@ -2391,7 +2664,13 @@ mod tests {
             ocr_language: None,
             ocr_region: None,
         };
-        let error = dispatch_click_step(42, &step, MouseDispatchMode::DoubleClick).unwrap_err();
+        let error = dispatch_click_step(
+            42,
+            &step,
+            MouseDispatchMode::DoubleClick,
+            &test_execution_control(42),
+        )
+        .unwrap_err();
         assert!(error.contains("double_click step requires target"));
     }
 
@@ -2529,6 +2808,114 @@ mod tests {
         ] {
             assert!(image_threshold(&image_step(raw)).is_err(), "{raw}");
         }
+    }
+
+    #[test]
+    fn template_match_stops_on_cancel_checkpoint() {
+        let frame = RgbFrame {
+            width: 128,
+            height: 128,
+            pixels: vec![0; 128 * 128 * 3],
+        };
+        let template = RgbFrame {
+            width: 1,
+            height: 1,
+            pixels: vec![0; 3],
+        };
+        let mut checkpoints = 0;
+
+        let error = match_template(&frame, &template, None, || {
+            checkpoints += 1;
+            if checkpoints == 2 {
+                Err("session cancelled during template search".to_string())
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap_err();
+
+        assert!(error.contains("cancelled"));
+        assert_eq!(checkpoints, 2);
+    }
+
+    #[test]
+    fn template_match_stops_on_deadline_checkpoint() {
+        let frame = RgbFrame {
+            width: 128,
+            height: 128,
+            pixels: vec![255; 128 * 128 * 3],
+        };
+        let template = RgbFrame {
+            width: 1,
+            height: 1,
+            pixels: vec![255; 3],
+        };
+        let mut checkpoints = 0;
+
+        let error = match_template(&frame, &template, None, || {
+            checkpoints += 1;
+            if checkpoints == 2 {
+                Err("template search deadline exceeded".to_string())
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap_err();
+
+        assert!(error.contains("deadline exceeded"));
+        assert_eq!(checkpoints, 2);
+    }
+
+    #[test]
+    fn unverified_visual_capture_never_calls_input_action() {
+        let control = test_execution_control(42);
+        let metadata = CaptureMetadata {
+            provider: CaptureProvider::WindowGdi,
+            reliability: CaptureReliability::TargetWindowUnverified,
+            captured_at_ms: 1,
+            frame_hash: "fnv1a64:test".to_string(),
+            width: 100,
+            height: 80,
+            fallback_used: false,
+        };
+        let calls = std::sync::atomic::AtomicUsize::new(0);
+
+        let error = commit_visual_input(&control, &metadata, || {
+            calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(())
+        })
+        .unwrap_err();
+
+        assert!(error.contains("capture_unreliable"));
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn step_result_keeps_capture_provenance() {
+        let metadata = CaptureMetadata {
+            provider: CaptureProvider::DesktopVisibleGdi,
+            reliability: CaptureReliability::PreviewOnly,
+            captured_at_ms: 123,
+            frame_hash: "fnv1a64:abc".to_string(),
+            width: 640,
+            height: 480,
+            fallback_used: true,
+        };
+        let mut result = step_result(42, "snapshot", "observed", "snapshot", "captured");
+        attach_capture_metadata(&mut result, &metadata);
+
+        assert_eq!(
+            result.capture_provider,
+            Some(CaptureProvider::DesktopVisibleGdi)
+        );
+        assert_eq!(
+            result.capture_reliability,
+            Some(CaptureReliability::PreviewOnly)
+        );
+        assert_eq!(result.captured_at_ms, Some(123));
+        assert_eq!(result.frame_hash.as_deref(), Some("fnv1a64:abc"));
+        assert_eq!(result.capture_width, Some(640));
+        assert_eq!(result.capture_height, Some(480));
     }
 
     #[test]

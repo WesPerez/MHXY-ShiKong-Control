@@ -110,7 +110,19 @@ export function failureStepFromReport(report) {
 export function isFailureStepResult(result) {
   const status = text(result?.status || "");
   return (
-    ["stopped", "error", "unsupported", "missing_asset", "below_threshold", "text_miss", "ocr_unavailable", "missing_expect"].includes(status) ||
+    [
+      "stopped",
+      "error",
+      "unsupported",
+      "cancelled",
+      "timeout",
+      "missing_asset",
+      "below_threshold",
+      "text_miss",
+      "ocr_unavailable",
+      "ocr_queue_full",
+      "missing_expect",
+    ].includes(status) ||
     Boolean(result?.detail && /失败|error|unsupported|identity|threshold|missing/i.test(String(result.detail)))
   );
 }

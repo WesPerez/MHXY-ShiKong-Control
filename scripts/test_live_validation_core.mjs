@@ -18,7 +18,7 @@ function sampleEvidence(overrides = {}) {
     version: 1,
     id: "live-background-hotkey-test",
     generatedAt: fixedNow,
-    repoRoot: "E:\\Project\\Common\\MHXY-ShiKong-Control",
+    repoRoot: "E:\\Project\\Common\\mhxy-shikong-control",
     admin: false,
     allowInput: false,
     requireExecuted: false,

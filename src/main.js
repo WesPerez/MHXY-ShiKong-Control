@@ -30,6 +30,7 @@ import {
   workspaceMigrationAudit,
   workspaceMigrationSummaryText,
 } from "./workspace-migration-core.js";
+import { normalizeWorkspaceCore } from "./workspace-normalization-core.js";
 import {
   failureEvidenceBundle,
   failureEvidenceSummaryText,
@@ -40,6 +41,22 @@ import {
   liveValidationRunHistoryEntry,
   mergeLiveValidationRunHistory,
 } from "./live-validation-core.js";
+import {
+  previewCaptureSummary,
+  targetVerificationPassed,
+} from "./capture-policy-core.js";
+import {
+  activateStartingSession,
+  assignedQueueRunEntries,
+  isActiveRunSession,
+  releaseStartingSession,
+  reserveStartingSession,
+} from "./run-dispatch-core.js";
+import {
+  inspectorTabForFocusSelector,
+  normalizeInspectorTab,
+  workbenchViewportContract,
+} from "./workbench-layout-core.js";
 import "./styles.css";
 
 const TARGET_TITLE = "梦幻西游：时空";
@@ -67,13 +84,17 @@ const stepFailActions = new Set(["stop", "retry", "skip", "restore"]);
 const targetKindOptions = ["image", "roi", "page", "ocr", "click_target", "state", "unknown"];
 const workflowConcurrencyOptions = new Set(["per-window-exclusive"]);
 const imageClickPointOptions = new Set(["center", "top-left", "top-right", "bottom-left", "bottom-right"]);
-const terminalBackendStatuses = new Set(["error", "unsupported"]);
+const terminalBackendStatuses = new Set(["error", "unsupported", "cancelled"]);
 const backgroundFailureStatuses = new Set([
   "missing_asset",
   "below_threshold",
   "text_miss",
   "ocr_unavailable",
   "missing_expect",
+  "capture_unavailable",
+  "capture_unreliable",
+  "timeout",
+  "ocr_queue_full",
 ]);
 const plannedOnlyStepTypes = new Set(["restore"]);
 const recoveryFragmentStepTypes = new Set([
@@ -677,6 +698,7 @@ const state = {
   workspaceMigration: null,
   selectedStepId: null,
   selectedTargetId: "",
+  inspectorTab: "workflow",
   targetVerification: null,
   targetSearch: "",
   targetKindFilter: "all",
@@ -690,6 +712,46 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const isTauriRuntime = Boolean(globalThis.__TAURI_INTERNALS__);
 const appWindow = isTauriRuntime ? getCurrentWindow() : null;
+
+function applyWorkbenchViewportContract() {
+  const contract = workbenchViewportContract(window.innerWidth, window.innerHeight);
+  document.body.dataset.workbenchMode = contract.mode;
+  document.body.dataset.workbenchDensity = contract.density;
+}
+
+function setInspectorTab(tab, options = {}) {
+  const selected = normalizeInspectorTab(tab, { hasStep: Boolean(selectedStep()) });
+  state.inspectorTab = selected;
+  for (const button of document.querySelectorAll("[data-inspector-tab]")) {
+    const active = button.dataset.inspectorTab === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+    if (active && options.focus) button.focus();
+  }
+  for (const panel of document.querySelectorAll("[data-inspector-panel]")) {
+    panel.hidden = panel.dataset.inspectorPanel !== selected;
+  }
+}
+
+function bindInspectorTabs() {
+  const tabs = [...document.querySelectorAll("[data-inspector-tab]")];
+  for (const button of tabs) {
+    button.addEventListener("click", () => setInspectorTab(button.dataset.inspectorTab));
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const current = tabs.indexOf(button);
+      const next = event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      setInspectorTab(tabs[next].dataset.inspectorTab, { focus: true });
+    });
+  }
+  setInspectorTab(state.inspectorTab);
+}
 
 function backendUnavailableMessage(command) {
   return `桌面后端不可用：${command} 需要从 Tauri 应用窗口运行`;
@@ -1010,31 +1072,14 @@ async function loadWorkspace() {
 }
 
 function normalizeWorkspace(value) {
-  const seed = createSeedWorkspace();
-  const source = value && typeof value === "object" ? value : {};
-  const workflows = Array.isArray(source.workflows)
-    ? source.workflows.map(normalizeWorkflow)
-    : seed.workflows;
-  const activeWorkflowId = workflows.some((item) => item.id === source.activeWorkflowId)
-    ? source.activeWorkflowId
-    : workflows[0]?.id || null;
-  const targetSource = [
-    ...(Array.isArray(source.assets) ? source.assets : []),
-    ...(Array.isArray(source.targets) ? source.targets : []),
-  ];
-  const targets = targetSource.length
-    ? mergeTargetCatalog(targetSource.map(normalizeTarget), workflows)
-    : createTargetCatalogFromWorkflows(workflows);
-  return {
-    schemaVersion: WORKSPACE_SCHEMA_VERSION,
-    activeWorkflowId,
-    workflows,
-    assignments: normalizeAssignments(source.assignments, workflows),
-    targets,
-    runHistory: Array.isArray(source.runHistory) ? source.runHistory.slice(0, 80) : [],
-    createdAt: source.createdAt || new Date().toISOString(),
-    updatedAt: source.updatedAt || new Date().toISOString(),
-  };
+  return normalizeWorkspaceCore(value, {
+    currentSchemaVersion: WORKSPACE_SCHEMA_VERSION,
+    defaultImageThreshold: DEFAULT_IMAGE_THRESHOLD,
+    stepDefaults,
+    targetTitle: TARGET_TITLE,
+    seedFactory: createSeedWorkspace,
+    randomId,
+  });
 }
 
 function normalizeWorkflow(value) {
@@ -1226,9 +1271,9 @@ function defaultThresholdForStep(item) {
 }
 
 function catalogTargetIdForStep(item) {
-  if (!targetBackedStepTypes.has(item?.type)) return "";
   const explicitId = String(item.targetId || item.assetId || "").trim();
   if (explicitId) return explicitId;
+  if (!targetBackedStepTypes.has(item?.type) || item.type === "retry_until") return "";
   return isLogicalTargetName(item.target) ? item.target.trim() : "";
 }
 
@@ -1370,7 +1415,7 @@ function selectedWindows() {
 }
 
 function isActiveSession(session) {
-  return Boolean(session && ["running", "paused"].includes(session.status));
+  return isActiveRunSession(session);
 }
 
 function activeRunSessions() {
@@ -1381,12 +1426,16 @@ function runningSessions() {
   return Object.values(state.sessions || {}).filter((session) => session.status === "running");
 }
 
+function startingSessions() {
+  return Object.values(state.sessions || {}).filter((session) => session.status === "starting");
+}
+
 function pausedSessions() {
   return Object.values(state.sessions || {}).filter((session) => session.status === "paused" || session.pauseRequested);
 }
 
 function currentRunState() {
-  if (runningSessions().length) return "running";
+  if (startingSessions().length || runningSessions().length) return "running";
   if (pausedSessions().length) return "paused";
   return "idle";
 }
@@ -1448,19 +1497,7 @@ function ensureAssignment(target) {
 
 function queueRunEntriesForTarget(target) {
   const assignment = assignmentForHwnd(target.hwnd);
-  return (assignment?.queue || [])
-    .filter((item) => item.enabled)
-    .map((item) => ({ queueItem: normalizeQueueItem(item), workflow: workflowById(item.workflowId) }))
-    .filter((entry) => entry.workflow);
-}
-
-function activeWorkflowRunEntry() {
-  const workflow = activeWorkflow();
-  if (!workflow) return null;
-  return {
-    workflow,
-    queueItem: queueItemForWorkflow(workflow.id),
-  };
+  return assignedQueueRunEntries(assignment, workflowById, normalizeQueueItem);
 }
 
 function renumberQueue(queue) {
@@ -2132,6 +2169,7 @@ function renderWorkflowList() {
     button.addEventListener("click", () => {
       state.workspace.activeWorkflowId = item.id;
       state.selectedStepId = item.steps[0]?.id || null;
+      setInspectorTab("workflow");
       renderWorkflowForm();
       renderWorkflowList();
       renderSteps();
@@ -2724,6 +2762,7 @@ function renderSteps(validationOverride = null) {
       state.selectedStepId = item.id;
       const boundTarget = targetForStep(item);
       if (boundTarget) state.selectedTargetId = boundTarget.id;
+      setInspectorTab("step");
       renderSteps();
       renderStepEditor();
       renderTargets();
@@ -3042,6 +3081,7 @@ function selectCompletionItem(item) {
     setStatus(completionStatusMessage(item));
     return;
   }
+  setInspectorTab("workflow");
   renderWorkflowForm();
   if (item.message.includes("少于 10 步")) {
     $("#step-block-preset")?.focus();
@@ -3076,8 +3116,9 @@ function targetPassesCurrentFilters(target) {
 }
 
 function focusCompletionField(item, stepItem) {
+  const selector = completionFocusSelector(item, stepItem);
+  setInspectorTab(inspectorTabForFocusSelector(selector));
   window.requestAnimationFrame(() => {
-    const selector = completionFocusSelector(item, stepItem);
     const element = selector ? $(selector) : null;
     if (!element) return;
     openContainingDetails(element);
@@ -4587,13 +4628,21 @@ async function verifySelectedTarget() {
     verifyState.textContent = "验证中 · 正在截图匹配/OCR";
   }
   const probe = targetVerificationStep(target);
+  const probeSessionId = `target-probe-${target.id}-${Date.now()}`;
+  const probeCancelTokenId = `${probeSessionId}-cancel`;
   try {
     const result = await invokeBackend("execute_workflow_step", {
       hwnd: Number(windowTarget.hwnd),
       step: backendStepPayload(probe),
       expectedWindow: windowIdentityForTarget(windowTarget),
+      execution: {
+        sessionId: probeSessionId,
+        stepId: probe.id || `target-probe-${target.id}`,
+        deadlineMs: Math.max(1, Number(probe.timeoutMs) || 5000),
+        cancelTokenId: probeCancelTokenId,
+      },
     });
-    const matched = Boolean(result.matched || ["matched", "ok", "planned"].includes(result.status));
+    const matched = targetVerificationPassed(result);
     const level = matched ? "ready" : "blocked";
     const score = result.score == null ? "" : ` · score=${Number(result.score).toFixed(3)}`;
     const point = result.x != null && result.y != null ? ` · @${result.x},${result.y}` : "";
@@ -4619,6 +4668,13 @@ async function verifySelectedTarget() {
     };
     appendLog("warn", `${target.name} 验证失败：${detail}`);
     setStatus(`目标验证失败：${detail}`);
+  } finally {
+    await invokeBackend("complete_session", {
+      sessionId: probeSessionId,
+      cancelTokenId: probeCancelTokenId,
+    }).catch((error) => {
+      appendLog("warn", `目标验证后端会话清理失败：${probeSessionId} / ${error}`);
+    });
   }
   renderTargets({ preserveEditor: true });
 }
@@ -5306,9 +5362,12 @@ async function capturePreview() {
       hwnd: Number(target.hwnd),
       expectedWindow: windowIdentityForTarget(target),
     });
-    setPreviewImage(preview.dataUrl, preview.width, preview.height, "window");
-    updateActiveMeta(`${target.display} · ${preview.width}x${preview.height} · hwnd=${target.hwnd}`);
-    setStatus("窗口预览已刷新");
+    const capture = previewCaptureSummary(preview);
+    setPreviewImage(preview.dataUrl, preview.width, preview.height, "window", capture);
+    updateActiveMeta(
+      `${target.display} · ${preview.width}x${preview.height} · ${capture.label} · ${capture.provider}/${capture.reliability}`,
+    );
+    setStatus(`窗口预览已刷新 · ${capture.label}`);
   } catch (error) {
     clearPreview("预览失败");
     setStatus(`预览失败：${error}`);
@@ -5335,10 +5394,10 @@ async function loadOfflineImage() {
   }
 }
 
-function setPreviewImage(dataUrl, width, height, source) {
+function setPreviewImage(dataUrl, width, height, source, capture = null) {
   const image = $("#preview-image");
   image.src = dataUrl;
-  state.preview = { width, height };
+  state.preview = { width, height, capture };
   state.previewSource = source;
   $("#preview-empty").style.display = "none";
   updateRoiBox();
@@ -5378,6 +5437,10 @@ async function saveSnapshot() {
     });
     setStatus(`已保存截图：${result.savedPath}`);
     appendLog("info", `截图保存：${result.savedPath}`);
+    appendLog(
+      "info",
+      `截图来源：${result.captureProvider}/${result.captureReliability} · frame=${result.frameHash}`,
+    );
   } catch (error) {
     setStatus(`保存截图失败：${error}`);
     appendLog("error", `保存截图失败：${error}`);
@@ -5929,6 +5992,7 @@ function renderTargets(options = {}) {
     `;
     row.addEventListener("click", () => {
       state.selectedTargetId = targetItem.id;
+      setInspectorTab("target");
       renderTargets();
       setStatus(`已选择目标：${targetItem.name}`);
     });
@@ -6383,16 +6447,17 @@ async function runSelected(mode) {
   let launched = 0;
   for (const target of targets) {
     const assignment = assignmentForHwnd(target.hwnd);
-    const hasWindowQueue = Boolean(assignment?.queue?.length);
-    const source = hasWindowQueue ? "queue" : "active";
-    const runEntries = hasWindowQueue ? queueRunEntriesForTarget(target) : [activeWorkflowRunEntry()].filter(Boolean);
+    if (!assignment?.queue?.length) {
+      appendLog("warn", `${target.display} 未配置窗口队列，已跳过；不会回退执行当前任务`);
+      continue;
+    }
+    const source = "queue";
+    const runEntries = queueRunEntriesForTarget(target);
     const workflows = runEntries.map((entry) => entry.workflow);
-    if (hasWindowQueue) {
-      const mismatch = windowIdentityMismatchReason(assignment.windowIdentity, windowIdentityForTarget(target));
-      if (mismatch) {
-        appendLog("warn", `${target.display} 队列窗口身份不匹配：${mismatch}；请刷新窗口后重新分配任务`);
-        continue;
-      }
+    const mismatch = windowIdentityMismatchReason(assignment.windowIdentity, windowIdentityForTarget(target));
+    if (mismatch) {
+      appendLog("warn", `${target.display} 队列窗口身份不匹配：${mismatch}；请刷新窗口后重新分配任务`);
+      continue;
     }
     if (!workflows.length) {
       appendLog("warn", `${target.display} 没有可运行任务`);
@@ -6445,8 +6510,6 @@ async function startRunForWindow(target, runEntries, mode, source) {
     appendLog("warn", `${target.display} 已有运行中的会话，同 hwnd 保持互斥`);
     return false;
   }
-  const windowIdentity = await currentWindowIdentityForRun(target, mode);
-  if (!windowIdentity) return false;
   const runPlan = runEntries.map((entry) => ({
     workflow: JSON.parse(JSON.stringify(entry.workflow)),
     queueItem: normalizeQueueItem(entry.queueItem || { workflowId: entry.workflow.id }),
@@ -6459,55 +6522,37 @@ async function startRunForWindow(target, runEntries, mode, source) {
     appendLog("warn", `${target.display} 队列没有启用步骤`);
     return false;
   }
-  const session = {
+  const session = reserveStartingSession(state.sessions, {
     id: `run-${++state.sessionSerial}`,
     mode,
     source,
     hwnd: target.hwnd,
     display: target.display,
-    windowIdentity,
-    workflowIds: runPlan.map((entry) => entry.workflow.id),
-    workflowNames: runPlan.map((entry) => entry.workflow.name),
-    workflowId: runPlan[0]?.workflow.id || "",
-    workflowName: runPlan.length === 1 ? runPlan[0].workflow.name : `${runPlan.length} 个任务`,
-    queuePlan: runPlan.map((entry, index) => ({
-      queueItemId: entry.queueItem.id,
-      workflowId: entry.workflow.id,
-      workflowName: entry.workflow.name,
-      order: index + 1,
-      startDelayMs: entry.queueItem.startDelayMs || 0,
-      afterDelayMs: entry.queueItem.afterDelayMs || 0,
-    })),
-    queueEvents: [],
-    controlFlowTransitions: [],
-    controlFlowTransitionSerial: 0,
-    currentWorkflowName: "",
-    status: "running",
-    currentStep: 0,
+    runPlan,
     totalSteps: enabledStepTotal,
     startedAt: new Date().toISOString(),
-    logs: [],
-    stepResults: [],
-    failureReason: "",
-    failedWorkflowName: "",
-    failedStepName: "",
-    endedWindowIdentity: null,
-    endedWindowIdentityError: "",
-    controlFlowCounts: {},
-    workflowJumpCount: 0,
-    workflowJumpRequest: null,
-    cancelRequested: false,
-    pauseRequested: false,
-    pauseRequestedAt: "",
-    pauseStartedAt: "",
-    pausedDurationMs: 0,
-    pauseCount: 0,
-    activePauseEvent: null,
-    runEvents: [],
-    runEventSerial: 0,
-  };
-  state.sessions[key] = session;
+  });
+  if (!session) {
+    appendLog("warn", `${target.display} 已有 starting/running/paused 会话，同 hwnd 保持互斥`);
+    return false;
+  }
   setRunState("running");
+  renderSessions();
+  let windowIdentity = null;
+  try {
+    windowIdentity = await currentWindowIdentityForRun(target, mode);
+  } catch (error) {
+    releaseStartingSession(state.sessions, target.hwnd, session);
+    syncRunState();
+    renderSessions();
+    throw error;
+  }
+  if (!windowIdentity || !activateStartingSession(state.sessions, target.hwnd, session, windowIdentity)) {
+    releaseStartingSession(state.sessions, target.hwnd, session);
+    syncRunState();
+    renderSessions();
+    return false;
+  }
   recordRunEvent(session, "session_start", {
     status: "running",
     detail: `${modeLabel(mode)} 启动：${target.display} -> ${session.workflowNames.join(" / ")}`,
@@ -6679,6 +6724,12 @@ function recordRunEvent(session, type, payload = {}) {
     "x",
     "y",
     "score",
+    "captureProvider",
+    "captureReliability",
+    "capturedAtMs",
+    "frameHash",
+    "captureWidth",
+    "captureHeight",
     "reason",
     "resultStatus",
     "resultAction",
@@ -6720,8 +6771,13 @@ async function waitIfPaused(session, workflow = null, context = {}) {
 }
 
 function syncRunActionButtons() {
+  const dryRunButton = $("#dry-run-selected");
+  const backgroundRunButton = $("#background-run-selected");
   const pauseButton = $("#pause-runs");
   const resumeButton = $("#resume-runs");
+  const launchPending = startingSessions().length > 0;
+  if (dryRunButton) dryRunButton.disabled = launchPending;
+  if (backgroundRunButton) backgroundRunButton.disabled = launchPending;
   if (pauseButton) {
     pauseButton.disabled = !runningSessions().some((session) => !session.cancelRequested && !session.pauseRequested);
   }
@@ -6736,46 +6792,57 @@ function appendRunHistoryRecord(record, reason = "run logged") {
 }
 
 async function runSession(session, runPlan) {
-  const pendingRunPlan = [...runPlan];
-  for (let index = 0; index < pendingRunPlan.length; index += 1) {
-    if (!(await waitIfPaused(session))) break;
-    const entry = pendingRunPlan[index];
-    session.workflowJumpRequest = null;
-    const completed = await runWorkflowEntry(session, entry);
-    if (!completed) break;
-    const jumpRequest = session.workflowJumpRequest;
-    session.workflowJumpRequest = null;
-    if (jumpRequest?.workflowId) {
-      const inserted = insertWorkflowJumpIntoRunPlan(session, pendingRunPlan, index + 1, jumpRequest);
-      if (!inserted) break;
+  try {
+    const pendingRunPlan = [...runPlan];
+    for (let index = 0; index < pendingRunPlan.length; index += 1) {
+      if (!(await waitIfPaused(session))) break;
+      const entry = pendingRunPlan[index];
+      session.workflowJumpRequest = null;
+      const completed = await runWorkflowEntry(session, entry);
+      if (!completed) break;
+      const jumpRequest = session.workflowJumpRequest;
+      session.workflowJumpRequest = null;
+      if (jumpRequest?.workflowId) {
+        const inserted = insertWorkflowJumpIntoRunPlan(session, pendingRunPlan, index + 1, jumpRequest);
+        if (!inserted) break;
+      }
+    }
+    if (session.activePauseEvent || session.pauseStartedAt) {
+      closePauseEvent(session, new Date(), session.cancelRequested ? "stopped" : "resumed");
+      session.pauseRequested = false;
+      session.pauseRequestedAt = "";
+    }
+    if (session.status !== "failed") {
+      session.status = session.cancelRequested ? "stopped" : "done";
+      if (session.status === "stopped" && !session.failureReason) session.failureReason = "user requested stop";
+    }
+    session.endedAt = new Date().toISOString();
+    session.durationMs = Math.max(0, Date.parse(session.endedAt) - Date.parse(session.startedAt));
+    await attachEndedWindowIdentity(session);
+    recordRunEvent(session, "session_end", {
+      status: session.status,
+      detail: session.failureReason || `${modeLabel(session.mode)} ${session.status}`,
+      durationMs: session.durationMs || 0,
+      endedAt: session.endedAt,
+      timestamp: session.endedAt,
+    });
+    appendRunHistoryRecord(runHistoryEntryFromSession(session), "run logged");
+    renderSessions();
+    syncRunState();
+    appendLog(
+      session.status === "done" ? "info" : "warn",
+      `${modeLabel(session.mode)} ${session.status}：${session.display}`,
+    );
+  } finally {
+    if (session.mode === "background") {
+      await invokeBackend("complete_session", {
+        sessionId: session.id,
+        cancelTokenId: session.id,
+      }).catch((error) => {
+        appendLog("warn", `后端会话清理失败：${session.id} / ${error}`);
+      });
     }
   }
-  if (session.activePauseEvent || session.pauseStartedAt) {
-    closePauseEvent(session, new Date(), session.cancelRequested ? "stopped" : "resumed");
-    session.pauseRequested = false;
-    session.pauseRequestedAt = "";
-  }
-  if (session.status !== "failed") {
-    session.status = session.cancelRequested ? "stopped" : "done";
-    if (session.status === "stopped" && !session.failureReason) session.failureReason = "user requested stop";
-  }
-  session.endedAt = new Date().toISOString();
-  session.durationMs = Math.max(0, Date.parse(session.endedAt) - Date.parse(session.startedAt));
-  await attachEndedWindowIdentity(session);
-  recordRunEvent(session, "session_end", {
-    status: session.status,
-    detail: session.failureReason || `${modeLabel(session.mode)} ${session.status}`,
-    durationMs: session.durationMs || 0,
-    endedAt: session.endedAt,
-    timestamp: session.endedAt,
-  });
-  appendRunHistoryRecord(runHistoryEntryFromSession(session), "run logged");
-  renderSessions();
-  syncRunState();
-  appendLog(
-    session.status === "done" ? "info" : "warn",
-    `${modeLabel(session.mode)} ${session.status}：${session.display}`,
-  );
 }
 
 function insertWorkflowJumpIntoRunPlan(session, runPlan, insertIndex, request) {
@@ -6881,13 +6948,7 @@ async function runWorkflowEntry(session, entry) {
             inputSent: false,
             matched: false,
           }
-        : await executeBackgroundStepWithRetries(session, item).catch((error) => ({
-            status: "error",
-            action: "backend",
-            detail: String(error),
-            inputSent: false,
-            matched: false,
-          }));
+        : await executeBackgroundStepWithRetries(session, item).catch(backendInvokeFailureResult);
       session.logs.unshift(formatStepLog(session.currentStep - 1, workflow, item, result));
       stopAfterResult = shouldStopAfterResult(item, result);
     } else {
@@ -7132,6 +7193,12 @@ function recordSessionStepResult(session, workflow, item, result, startedAt, end
     x: result?.x ?? null,
     y: result?.y ?? null,
     score: result?.score ?? null,
+    captureProvider: result?.captureProvider || "",
+    captureReliability: result?.captureReliability || "",
+    capturedAtMs: result?.capturedAtMs ?? null,
+    frameHash: result?.frameHash || "",
+    captureWidth: result?.captureWidth ?? null,
+    captureHeight: result?.captureHeight ?? null,
     startedAt: startedAt.toISOString(),
     endedAt: endedAt.toISOString(),
     durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()),
@@ -7402,8 +7469,29 @@ function retryUntilHasVisualTarget(item) {
 }
 
 function shouldRetryBackgroundStep(item, result) {
+  if (result.status === "cancelled") return false;
+  if (["timeout", "ocr_queue_full"].includes(result.status)) {
+    return item.onFail === "retry" || item.type === "ocr_assert";
+  }
   if (!["below_threshold", "text_miss", "ocr_unavailable"].includes(result.status)) return false;
   return item.onFail === "retry" || ["wait_image", "detect_page", "image_click", "double_click", "ocr_assert"].includes(item.type);
+}
+
+function backendInvokeFailureResult(error) {
+  const detail = String(error);
+  const normalized = detail.toLowerCase();
+  const status = normalized.includes("cancelled") || normalized.includes("was cancelled")
+    ? "cancelled"
+    : normalized.includes("deadline") || normalized.includes("timed out")
+      ? "timeout"
+      : "error";
+  return {
+    status,
+    action: "backend",
+    detail,
+    inputSent: false,
+    matched: false,
+  };
 }
 
 function backgroundRetryDelay(item) {
@@ -7422,6 +7510,12 @@ async function executeBackendStep(session, item) {
     hwnd: Number(session.hwnd),
     step: payload,
     expectedWindow: session.windowIdentity || null,
+    execution: {
+      sessionId: session.id,
+      stepId: item.id || `${session.id}-step-${session.currentStep}`,
+      deadlineMs: Math.max(1, Number(item.timeoutMs) || 1000),
+      cancelTokenId: session.id,
+    },
   });
 }
 
@@ -7620,6 +7714,14 @@ function stopDryRun() {
       });
       session.cancelRequested = true;
       session.pauseRequested = false;
+      if (session.mode === "background") {
+        void invokeBackend("cancel_session", {
+          sessionId: session.id,
+          cancelTokenId: session.id,
+        }).catch((error) => {
+          appendLog("warn", `后端取消请求失败：${session.id} / ${error}`);
+        });
+      }
       count += 1;
     }
   }
@@ -8023,6 +8125,7 @@ function focusFailureReportStep(report) {
   }
   state.workspace.activeWorkflowId = workflow.id;
   selectStepAndTarget(stepItem);
+  setInspectorTab("step");
   renderAll();
   window.requestAnimationFrame(() => {
     $("#step-editor")?.scrollIntoView({ block: "nearest" });
@@ -8202,13 +8305,18 @@ $("#preview-image").addEventListener("contextmenu", (event) => {
 });
 window.addEventListener("mousemove", moveRoiDrag);
 window.addEventListener("mouseup", endRoiDrag);
-window.addEventListener("resize", updateRoiBox);
+window.addEventListener("resize", () => {
+  updateRoiBox();
+  applyWorkbenchViewportContract();
+});
 window.addEventListener("paste", handlePasteImage);
 
 bindWorkflowInputs();
 bindStepEditor();
 bindStepParamEditor();
 bindTargetEditor();
+bindInspectorTabs();
+applyWorkbenchViewportContract();
 appendLog("info", "本地任务模型初始化中");
 await setupCloseToTray();
 await loadWorkspace();
