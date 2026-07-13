@@ -27,6 +27,7 @@ export const HOME_VITALITY_BLUEPRINT = {
 
 export const HOME_VITALITY_TEMPLATE_BINDINGS = [
   { target: 'page.home.ready', key: 'zonghe/jiahao.png', kind: 'page', name: '\u4e3b\u754c\u9762\u5224\u5b9a', threshold: 0.86 },
+  { target: 'entry.home', key: 'jiayuan/jiayuan.png', kind: 'image', name: '\u5bb6\u56ed\u5165\u53e3', threshold: 0.82 },
   { target: 'page.home_yard.ready', key: 'jiayuan/dali.png', kind: 'page', name: '\u5bb6\u56ed\u6253\u7406\u9875\u5224\u5b9a' },
   { target: 'button.home_clean', key: 'jiayuan/dali.png', kind: 'image', name: '\u5bb6\u56ed\u6253\u7406\u6309\u94ae' },
 ];

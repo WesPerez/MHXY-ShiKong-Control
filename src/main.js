@@ -129,6 +129,7 @@ const controlFlowStepReferenceFields = ["targetStepId", "elseTargetStepId", "rec
 const controlFlowWorkflowReferenceFields = ["jumpWorkflowId"];
 const builtinTargetTemplateBindings = [
   { target: "page.home.ready", key: "zonghe/jiahao.png", kind: "page", name: "主界面判定", threshold: 0.86 },
+  { target: "entry.home", key: "jiayuan/jiayuan.png", kind: "image", name: "家园入口", threshold: 0.82 },
   { target: "target.activity.icon", key: "zonghe/huodong1.png", kind: "image", name: "活动入口" },
   { target: "page.activity.ready", key: "zonghe/huodong_jiemian_panduan.png", kind: "page", name: "活动界面判定" },
   { target: "button.welfare", key: "qiandao/fuli.png", kind: "image", name: "福利入口" },

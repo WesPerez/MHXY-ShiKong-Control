@@ -2264,6 +2264,24 @@
         "关闭X9联赛弹窗"
       ],
       "note": "Mapped ShiKong bottom-plus expanded activity-overlay close icon."
+    },
+    "jiayuan/jiayuan.png": {
+      "sourcePipeline": "assets/resource/base/pipeline/jiayuan_zhengli.json",
+      "sourceNode": "点击家园",
+      "sourceRoi": [
+        977,
+        640,
+        60,
+        46
+      ],
+      "sourceSpace": "maaPipeline",
+      "coordinateMode": "image",
+      "replacementPath": "assets/resource/ShiKong/image/jiayuan/jiayuan.png",
+      "width": 50,
+      "height": 36,
+      "sourceSha256": "f469630625834f28051c31b1db838520b23604fd5ee51db3d01fea2409b05781",
+      "importedFrom": "E:/Project/Common/Maa_MHXY_MG/assets/resource/base/image/jiayuan/jiayuan.png",
+      "note": "Offline entry.home binding imported from Maa base image; does not claim live ShiKong match score or authorize HWND input."
     }
   }
 }
