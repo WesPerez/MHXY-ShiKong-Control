@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:c87ac905fe10acc412d404fc1a575af8f2647ea97ed709e42ac0fe0c5b00c677 -->
-<!-- checkpoint-id: CP-0023 -->
+<!-- state-digest: sha256:b18297aa94612d6e8f598e71c0ee2d29585a74f4c4d20dfe08ae6def10d9754e -->
+<!-- checkpoint-id: CP-0024 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -9,25 +9,25 @@
 ## 恢复首屏
 
 - 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T08:37:13Z`
-- 更新时间（北京时间）：`2026-07-13T16:37:13+08:00`
+- 更新时间（UTC）：`2026-07-13T08:44:27Z`
+- 更新时间（北京时间）：`2026-07-13T16:44:27+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P3`
-- 当前切片：`P3-S3` - Vision fail-closed taxonomy and match debug metadata
+- 当前切片：`P3-S4` - Offline home-vitality readiness scaffolding
 - 阶段状态：`in_progress`；切片状态：`verified`；动作状态：`none`
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
 - 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：P3-S3 rebind on HEAD: Vite build（EVD-0106，当前工作区绑定有效）
-- 唯一下一动作：Commit ledger rebind; begin P4-S1 offline home-vitality task scaffolding without live game input
+- 最新当前有效证据：P3-S4 offline home-vitality readiness scaffolding: Vite build green（EVD-0111，当前工作区绑定有效）
+- 唯一下一动作：Commit P3-S4 product+ledger; leave docs/execution dirty after rebind if needed
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
-- 最新 checkpoint：`CP-0023`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 最新 checkpoint：`CP-0024`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`136223s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`136657s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -62,31 +62,30 @@
 
 ### 范围
 
+- src/home-vitality-core.js
+- scripts/test_home_vitality_core.mjs
 - src/main.js
-- src/failure-evidence-core.js
-- scripts/test_failure_evidence_core.mjs
-- src-tauri/src/main.rs
-- src-tauri/src/runtime/vision_match.rs
+- package.json
 
 ### 非目标
 
-- Do not integrate OpenCV
 - Do not send live game input
-- Do not require full WGC implementation in this slice
+- Do not require real HWND capture for slice close
+- Do not integrate OpenCV
 
 ### 安全边界
 
-- missing_template and search_budget_exceeded never count as matched success
-- Match debug metadata is observational only and never authorizes input
+- Offline readiness never authorizes live input
+- Missing template/image targets remain fail-closed needs_capture
 
 ### 验收条件
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P3-S3-C1` | Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses | `passed` | `test` | `EVD-0101`, `EVD-0102`, `EVD-0104`, `EVD-0105` |
-| `P3-S3-C2` | Rust StepDispatchResult exposes match box fields when a template match is attempted | `passed` | `test` | `EVD-0101`, `EVD-0102`, `EVD-0104`, `EVD-0105` |
-| `P3-S3-C3` | wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests | `passed` | `test` | `EVD-0101`, `EVD-0102`, `EVD-0104`, `EVD-0105` |
-| `P3-S3-C4` | Core regression and Vite build remain green | `passed` | `build`, `test` | `EVD-0101`, `EVD-0102`, `EVD-0103`, `EVD-0104`, `EVD-0105`, `EVD-0106` |
+| `P3-S4-C1` | home-vitality blueprint reports step count and required visual targets offline | `passed` | `test` | `EVD-0110` |
+| `P3-S4-C2` | missing entry.home/template assets are classified needs_capture rather than ready | `passed` | `test` | `EVD-0110` |
+| `P3-S4-C3` | OCR/hotkey/restore steps classified without claiming live success | `passed` | `test` | `EVD-0110` |
+| `P3-S4-C4` | core regression and Vite build remain green | `passed` | `build`, `test` | `EVD-0110`, `EVD-0111` |
 
 ## 当前动作
 
@@ -94,7 +93,7 @@
 
 ## 下一步
 
-- 唯一下一动作：Commit ledger rebind; begin P4-S1 offline home-vitality task scaffolding without live game input
+- 唯一下一动作：Commit P3-S4 product+ledger; leave docs/execution dirty after rebind if needed
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -110,20 +109,25 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`f266ea2bc842d2bc0a3b0fb429b7c4348b8515c6`
+- observed HEAD：`778ebe6d2c8d8253fc47a98bd9901700ffa4f03f`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:95029b2d2f0616fee2ec31df754f4761a8a7a3c61cf55dd60dce6a328de3de90`
-- 最新 checkpoint：`CP-0023` (state_snapshot)
+- working tree fingerprint：`sha256:41ce24f3cce216f7f365fed1c2af9a80047c148cfe72aa2d71cf2a1aa3a97dc1`
+- 最新 checkpoint：`CP-0024` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
 
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
+- `docs/execution/checkpoints/CP-0024-p3-s4-verified.json`
 - `docs/execution/events.jsonl`
 - `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
+- `package.json`
+- `scripts/test_home_vitality_core.mjs`
+- `src/home-vitality-core.js`
+- `src/main.js`
 
 ## 运行进程与产物
 
@@ -154,29 +158,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0099` | `test` | `passed` | `stale` | P3-S2 rebind on HEAD: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0100` | `build` | `passed` | `stale` | P3-S2 rebind on HEAD: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0101` | `test` | `passed` | `stale` | P3-S3 vision taxonomy and match box fields: cargo fmt/check/test/clippy green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0102` | `test` | `passed` | `stale` | P3-S3 vision taxonomy and match box: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0103` | `build` | `passed` | `stale` | P3-S3 vision taxonomy and match box: Vite build green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0104` | `test` | `passed` | `valid` | P3-S3 rebind on HEAD: cargo fmt/check/test/clippy green<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0105` | `test` | `passed` | `valid` | P3-S3 rebind on HEAD: core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0106` | `build` | `passed` | `valid` | P3-S3 rebind on HEAD: Vite build<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0104` | `test` | `passed` | `stale` | P3-S3 rebind on HEAD: cargo fmt/check/test/clippy green<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0105` | `test` | `passed` | `stale` | P3-S3 rebind on HEAD: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0106` | `build` | `passed` | `stale` | P3-S3 rebind on HEAD: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0107` | `test` | `passed` | `stale` | P3-S3 rebind after ledger commit: cargo green on HEAD 778ebe6<br>证据工作树指纹与当前现场不同 |
+| `EVD-0108` | `test` | `passed` | `stale` | P3-S3 rebind after ledger commit: core regression on HEAD 778ebe6<br>证据工作树指纹与当前现场不同 |
+| `EVD-0109` | `build` | `passed` | `stale` | P3-S3 rebind after ledger commit: Vite build on HEAD 778ebe6<br>证据工作树指纹与当前现场不同 |
+| `EVD-0110` | `test` | `passed` | `valid` | P3-S4 offline home-vitality readiness scaffolding: core regression green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0111` | `build` | `passed` | `valid` | P3-S4 offline home-vitality readiness scaffolding: Vite build green<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 278 | `2026-07-13T08:25:07Z` | `test_run` | P3-S3 vision taxonomy and match box: full core regression green |
-| 279 | `2026-07-13T08:25:09Z` | `test_run` | P3-S3 vision taxonomy and match box: Vite build green |
-| 280 | `2026-07-13T08:25:30Z` | `slice_state_changed` | P3-S3 verified: missing_template/search_budget_exceeded fail-closed taxonomy, match box metadata on StepDispatchResult; EVD-0101/0102/0103 green |
-| 281 | `2026-07-13T08:25:31Z` | `checkpoint` | 创建 CP-0023：P3-S3 acceptance criteria passed with trusted profile evidence before product commit |
-| 282 | `2026-07-13T08:25:32Z` | `decision` | P3-S3 closed on worktree evidence. Next: commit, then continue remaining P3 items (preview/execute parity overlays later) or begin P4 home-vitality e2e prep when capture/match gates are solid. |
-| 283 | `2026-07-13T08:25:38Z` | `reconciliation` | Align ledger after P3-S3 verification commit |
-| 284 | `2026-07-13T08:25:51Z` | `test_run` | P3-S3 rebind on HEAD: cargo fmt/check/test/clippy green |
-| 285 | `2026-07-13T08:26:42Z` | `test_run` | P3-S3 rebind on HEAD: core regression |
-| 286 | `2026-07-13T08:26:44Z` | `test_run` | P3-S3 rebind on HEAD: Vite build |
-| 287 | `2026-07-13T08:37:12Z` | `decision` | P3-S3 rebound on HEAD f266ea2 (EVD-0104/0105/0106). Remaining P3 plan items (WGC probe, OpenCV, real-frame benchmark, overlay UI) are deferred; capture+budget match+fail-closed taxonomy are solid enough to prepare P4 home-vitality offline scaffolding next, without live input. |
+| 288 | `2026-07-13T08:37:18Z` | `reconciliation` | Align ledger after P3-S3 rebind ledger commit 778ebe6 |
+| 289 | `2026-07-13T08:37:40Z` | `test_run` | P3-S3 rebind after ledger commit: cargo green on HEAD 778ebe6 |
+| 290 | `2026-07-13T08:38:28Z` | `test_run` | P3-S3 rebind after ledger commit: core regression on HEAD 778ebe6 |
+| 291 | `2026-07-13T08:38:30Z` | `test_run` | P3-S3 rebind after ledger commit: Vite build on HEAD 778ebe6 |
+| 292 | `2026-07-13T08:38:51Z` | `decision` | P3-S3 criteria rebound on product+ledger HEAD 778ebe6 via EVD-0107/0108/0109. Leave docs/execution dirty (no more ledger-only commits that invalidate criteria). Next vertical work: P4-S1 offline home-vitality scaffolding without live input. |
+| 293 | `2026-07-13T08:40:13Z` | `slice_started` | 开始切片 P3-S4：Offline home-vitality readiness scaffolding |
+| 294 | `2026-07-13T08:43:54Z` | `test_run` | P3-S4 offline home-vitality readiness scaffolding: core regression green |
+| 295 | `2026-07-13T08:44:22Z` | `test_run` | P3-S4 offline home-vitality readiness scaffolding: Vite build green |
+| 296 | `2026-07-13T08:44:27Z` | `slice_state_changed` | P3-S4 verified: offline home-vitality readiness core classifies entry.home needs_capture and never claims live ready; EVD-0110/0111 green |
+| 297 | `2026-07-13T08:44:28Z` | `checkpoint` | 创建 CP-0024：P3-S4 offline home-vitality scaffolding verified before product commit |
 
 ## 异常恢复
 

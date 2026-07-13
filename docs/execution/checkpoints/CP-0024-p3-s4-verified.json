@@ -1,0 +1,395 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0024",
+  "createdAt": "2026-07-13T08:44:28Z",
+  "type": "state_snapshot",
+  "reason": "P3-S4 offline home-vitality scaffolding verified before product commit",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f5a42-5766-7be3-9861-f979ab529d26",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P3",
+  "slice": {
+    "id": "P3-S4",
+    "title": "Offline home-vitality readiness scaffolding",
+    "status": "verified",
+    "startedAt": "2026-07-13T08:40:13Z",
+    "scope": [
+      "src/home-vitality-core.js",
+      "scripts/test_home_vitality_core.mjs",
+      "src/main.js",
+      "package.json"
+    ],
+    "nonGoals": [
+      "Do not send live game input",
+      "Do not require real HWND capture for slice close",
+      "Do not integrate OpenCV"
+    ],
+    "safetyBoundaries": [
+      "Offline readiness never authorizes live input",
+      "Missing template/image targets remain fail-closed needs_capture"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P3-S4-C1",
+        "text": "home-vitality blueprint reports step count and required visual targets offline",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0110"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S4-C2",
+        "text": "missing entry.home/template assets are classified needs_capture rather than ready",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0110"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S4-C3",
+        "text": "OCR/hotkey/restore steps classified without claiming live success",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0110"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S4-C4",
+        "text": "core regression and Vite build remain green",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0110",
+          "EVD-0111"
+        ],
+        "requiredEvidenceCategories": [
+          "build",
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "Commit P3-S4 product+ledger; leave docs/execution dirty after rebind if needed"
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "778ebe6d2c8d8253fc47a98bd9901700ffa4f03f",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "package.json",
+      "scripts/test_home_vitality_core.mjs",
+      "src/home-vitality-core.js",
+      "src/main.js"
+    ],
+    "dirtyStatus": [
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json",
+      " M package.json",
+      "?? scripts/test_home_vitality_core.mjs",
+      "?? src/home-vitality-core.js",
+      " M src/main.js"
+    ],
+    "dirtyEntries": [
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_home_vitality_core.mjs",
+        "displayPath": "scripts/test_home_vitality_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/home-vitality-core.js",
+        "displayPath": "src/home-vitality-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "01ddc49ae07bdb69acda6f64d8565635169f69dc23b780c27eeece161e3014b0",
+        "size": 11735
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+        "exists": true,
+        "sha256": "58d0f0194fb6eebebfc9e669632becc0530185d858dea47c47a1521c3c78f0c8",
+        "size": 11549
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "f83d9631a29f10e99bf22f594f0b140f6861c9c76628344acbef70e27685ad16",
+        "size": 500748
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "cb836e183d2765310c7474276ab3d4e84cffca9033bbe59c5edf4c440ab6848b",
+        "size": 244126
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "e328c18aa74b1cc43dd63bbc0709a78a501e29bf2517559b6297be5c4f1c3a25",
+        "size": 40151
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "656ce5f0620a6cf252a1c86bedc4f153d4cdb2a0b1e9d16fbc7d7cd98fa8bd9f",
+        "size": 4709
+      },
+      {
+        "path": "scripts/test_home_vitality_core.mjs",
+        "exists": true,
+        "sha256": "392e8c4ad1f5afe2ba3f162ba7e5213b383ecd70d993976b509d6312de22ebe6",
+        "size": 3862
+      },
+      {
+        "path": "src/home-vitality-core.js",
+        "exists": true,
+        "sha256": "148ba3a1564d87c38c320ce498aa63cc0e5a2882732d627e96c42e8746af730e",
+        "size": 8645
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "7dbbb3c3e43d2ca8f53d9a5c1a943e5c6779cf3dadc26e8214b8289bed7b798b",
+        "size": 354434
+      }
+    ],
+    "workingTreeFingerprint": "sha256:41ce24f3cce216f7f365fed1c2af9a80047c148cfe72aa2d71cf2a1aa3a97dc1"
+  },
+  "gitDiffSha256": "357a28d98e80384574df29c4674d700c0b33065b837f7142610bb3d7428cfe1d",
+  "dirtyFileHashes": [
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "01ddc49ae07bdb69acda6f64d8565635169f69dc23b780c27eeece161e3014b0",
+      "size": 11735
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+      "exists": true,
+      "sha256": "58d0f0194fb6eebebfc9e669632becc0530185d858dea47c47a1521c3c78f0c8",
+      "size": 11549
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "f83d9631a29f10e99bf22f594f0b140f6861c9c76628344acbef70e27685ad16",
+      "size": 500748
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "cb836e183d2765310c7474276ab3d4e84cffca9033bbe59c5edf4c440ab6848b",
+      "size": 244126
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "e328c18aa74b1cc43dd63bbc0709a78a501e29bf2517559b6297be5c4f1c3a25",
+      "size": 40151
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "656ce5f0620a6cf252a1c86bedc4f153d4cdb2a0b1e9d16fbc7d7cd98fa8bd9f",
+      "size": 4709
+    },
+    {
+      "path": "scripts/test_home_vitality_core.mjs",
+      "exists": true,
+      "sha256": "392e8c4ad1f5afe2ba3f162ba7e5213b383ecd70d993976b509d6312de22ebe6",
+      "size": 3862
+    },
+    {
+      "path": "src/home-vitality-core.js",
+      "exists": true,
+      "sha256": "148ba3a1564d87c38c320ce498aa63cc0e5a2882732d627e96c42e8746af730e",
+      "size": 8645
+    },
+    {
+      "path": "src/main.js",
+      "exists": true,
+      "sha256": "7dbbb3c3e43d2ca8f53d9a5c1a943e5c6779cf3dadc26e8214b8289bed7b798b",
+      "size": 354434
+    }
+  ],
+  "eventTail": {
+    "seq": 296,
+    "id": "EVT-0296",
+    "hash": "sha256:d3097c9848f1c1ab2238ef60dccefa8d531f5996af12bf25bb97bf66d6f0a6e8"
+  },
+  "evidenceTail": {
+    "seq": 111,
+    "id": "EVD-0111",
+    "hash": "sha256:beae69c8bc86114d384d138ac0d996bb0c6356c069331504eae64296dcb8261e"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-11T18:46:50Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run execution:resume-check"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0023"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:eb9f679ee30f76c3441bf8c0f4bfc6d30ac8174acef7c1b9da0a878ec40ef174"
+}

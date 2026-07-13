@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 314,
+  "revision": 328,
   "generation": 1,
-  "updatedAt": "2026-07-13T08:37:13Z",
+  "updatedAt": "2026-07-13T08:44:27Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -32,80 +32,66 @@
   "actionStatus": "none",
   "acceptanceLevel": "design",
   "activeSlice": {
-    "id": "P3-S3",
-    "title": "Vision fail-closed taxonomy and match debug metadata",
+    "id": "P3-S4",
+    "title": "Offline home-vitality readiness scaffolding",
     "status": "verified",
-    "startedAt": "2026-07-13T08:21:44Z",
+    "startedAt": "2026-07-13T08:40:13Z",
     "scope": [
+      "src/home-vitality-core.js",
+      "scripts/test_home_vitality_core.mjs",
       "src/main.js",
-      "src/failure-evidence-core.js",
-      "scripts/test_failure_evidence_core.mjs",
-      "src-tauri/src/main.rs",
-      "src-tauri/src/runtime/vision_match.rs"
+      "package.json"
     ],
     "nonGoals": [
-      "Do not integrate OpenCV",
       "Do not send live game input",
-      "Do not require full WGC implementation in this slice"
+      "Do not require real HWND capture for slice close",
+      "Do not integrate OpenCV"
     ],
     "safetyBoundaries": [
-      "missing_template and search_budget_exceeded never count as matched success",
-      "Match debug metadata is observational only and never authorizes input"
+      "Offline readiness never authorizes live input",
+      "Missing template/image targets remain fail-closed needs_capture"
     ],
     "acceptanceCriteria": [
       {
-        "id": "P3-S3-C1",
-        "text": "Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses",
+        "id": "P3-S4-C1",
+        "text": "home-vitality blueprint reports step count and required visual targets offline",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0101",
-          "EVD-0102",
-          "EVD-0104",
-          "EVD-0105"
+          "EVD-0110"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S3-C2",
-        "text": "Rust StepDispatchResult exposes match box fields when a template match is attempted",
+        "id": "P3-S4-C2",
+        "text": "missing entry.home/template assets are classified needs_capture rather than ready",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0101",
-          "EVD-0102",
-          "EVD-0104",
-          "EVD-0105"
+          "EVD-0110"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S3-C3",
-        "text": "wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests",
+        "id": "P3-S4-C3",
+        "text": "OCR/hotkey/restore steps classified without claiming live success",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0101",
-          "EVD-0102",
-          "EVD-0104",
-          "EVD-0105"
+          "EVD-0110"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S3-C4",
-        "text": "Core regression and Vite build remain green",
+        "id": "P3-S4-C4",
+        "text": "core regression and Vite build remain green",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0101",
-          "EVD-0102",
-          "EVD-0103",
-          "EVD-0104",
-          "EVD-0105",
-          "EVD-0106"
+          "EVD-0110",
+          "EVD-0111"
         ],
         "requiredEvidenceCategories": [
           "build",
@@ -113,7 +99,7 @@
         ]
       }
     ],
-    "nextAction": "Commit ledger rebind; begin P4-S1 offline home-vitality task scaffolding without live game input"
+    "nextAction": "Commit P3-S4 product+ledger; leave docs/execution dirty after rebind if needed"
   },
   "phases": [
     {
@@ -231,55 +217,101 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "f266ea2bc842d2bc0a3b0fb429b7c4348b8515c6",
+    "observedHead": "778ebe6d2c8d8253fc47a98bd9901700ffa4f03f",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
-      "docs/execution/state.json"
+      "docs/execution/state.json",
+      "package.json",
+      "scripts/test_home_vitality_core.mjs",
+      "src/home-vitality-core.js",
+      "src/main.js"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
-      " M docs/execution/state.json"
+      " M docs/execution/state.json",
+      " M package.json",
+      "?? scripts/test_home_vitality_core.mjs",
+      "?? src/home-vitality-core.js",
+      " M src/main.js"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "6f938d7687c13dcff6f3ffabaf5dca794046f5e5c551339c3bae7ce60d79b06d",
-        "size": 11797
+        "sha256": "a72c21bab4ceadf6859c12fa573733ca5d92ed885b3692c3a5b36d7f2b283b43",
+        "size": 11607
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+        "exists": true,
+        "sha256": "10fdce8581aed3b49a66426808ec846eb24ce39f97ccf230c86b4697ec223c25",
+        "size": 12348
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "1796518c2591e31a831994b30034e259ceef821d07d1c6a5508986eb2cd1ae8b",
-        "size": 493644
+        "sha256": "ac1e6a45447a0cf6345a139240743518531e7ccc9da4e516217de64a8a0d18fd",
+        "size": 501737
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "17780d9920a2a4a7d1a617982613cf4ffe2f5585e517fb630de8effeb466e692",
-        "size": 236214
+        "sha256": "cb836e183d2765310c7474276ab3d4e84cffca9033bbe59c5edf4c440ab6848b",
+        "size": 244126
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "9f624fe99a316d541401ac02c0d4565077f67f2236527e58dad50a89de96401c",
-        "size": 36125
+        "sha256": "24b44229ce13ec1e121547419c2762809326171b1b86a5e44a12a1c847a59669",
+        "size": 40739
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "656ce5f0620a6cf252a1c86bedc4f153d4cdb2a0b1e9d16fbc7d7cd98fa8bd9f",
+        "size": 4709
+      },
+      {
+        "path": "scripts/test_home_vitality_core.mjs",
+        "exists": true,
+        "sha256": "392e8c4ad1f5afe2ba3f162ba7e5213b383ecd70d993976b509d6312de22ebe6",
+        "size": 3862
+      },
+      {
+        "path": "src/home-vitality-core.js",
+        "exists": true,
+        "sha256": "148ba3a1564d87c38c320ce498aa63cc0e5a2882732d627e96c42e8746af730e",
+        "size": 8645
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "7dbbb3c3e43d2ca8f53d9a5c1a943e5c6779cf3dadc26e8214b8289bed7b798b",
+        "size": 354434
       }
     ],
-    "workingTreeFingerprint": "sha256:95029b2d2f0616fee2ec31df754f4761a8a7a3c61cf55dd60dce6a328de3de90",
+    "workingTreeFingerprint": "sha256:41ce24f3cce216f7f365fed1c2af9a80047c148cfe72aa2d71cf2a1aa3a97dc1",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json"
       },
       {
         "status": " M",
@@ -298,6 +330,30 @@
         "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_home_vitality_core.mjs",
+        "displayPath": "scripts/test_home_vitality_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/home-vitality-core.js",
+        "displayPath": "src/home-vitality-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
       }
     ]
   },
@@ -413,24 +469,24 @@
     ]
   },
   "eventTail": {
-    "seq": 287,
-    "id": "EVT-0287",
-    "hash": "sha256:829982b996f9a9bc631464b74d7386db165fe2841962d8ebadad222a7251117e"
+    "seq": 297,
+    "id": "EVT-0297",
+    "hash": "sha256:12ce97bbada1a9ce31e96d3f9e5106dcdbaca306e56a9d38497626ab0b0d7a4c"
   },
   "evidenceTail": {
-    "seq": 106,
-    "id": "EVD-0106",
-    "hash": "sha256:2c7c00b23c52081a1928ac196c6899c039c5c31527e84252eb167b887fa76863"
+    "seq": 111,
+    "id": "EVD-0111",
+    "hash": "sha256:beae69c8bc86114d384d138ac0d996bb0c6356c069331504eae64296dcb8261e"
   },
-  "checkpointCounter": 23,
+  "checkpointCounter": 24,
   "lastCheckpoint": {
-    "id": "CP-0023",
+    "id": "CP-0024",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
-    "createdAt": "2026-07-13T08:25:31Z",
+    "path": "docs/execution/checkpoints/CP-0024-p3-s4-verified.json",
+    "createdAt": "2026-07-13T08:44:28Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:4aacb3eb7cb3f5d5fd5bc962959e4a53578902102ff252b0a208c59d5c910d9d"
+    "hash": "sha256:eb9f679ee30f76c3441bf8c0f4bfc6d30ac8174acef7c1b9da0a878ec40ef174"
   },
   "resume": {
     "blockers": [
@@ -442,7 +498,7 @@
     "doNotDo": [
       "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
     ],
-    "lastSafeResumeSnapshotId": "CP-0023"
+    "lastSafeResumeSnapshotId": "CP-0024"
   },
   "completedSlices": [
     {
@@ -1120,6 +1176,101 @@
       "nextAction": "Begin P3-S3: frontend fail-closed for missing_template/search_budget and match box fields for overlay",
       "phaseId": "P3",
       "verifiedAt": "2026-07-13T08:21:44Z"
+    },
+    {
+      "id": "P3-S3",
+      "title": "Vision fail-closed taxonomy and match debug metadata",
+      "status": "verified",
+      "startedAt": "2026-07-13T08:21:44Z",
+      "scope": [
+        "src/main.js",
+        "src/failure-evidence-core.js",
+        "scripts/test_failure_evidence_core.mjs",
+        "src-tauri/src/main.rs",
+        "src-tauri/src/runtime/vision_match.rs"
+      ],
+      "nonGoals": [
+        "Do not integrate OpenCV",
+        "Do not send live game input",
+        "Do not require full WGC implementation in this slice"
+      ],
+      "safetyBoundaries": [
+        "missing_template and search_budget_exceeded never count as matched success",
+        "Match debug metadata is observational only and never authorizes input"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "P3-S3-C1",
+          "text": "Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0101",
+            "EVD-0102",
+            "EVD-0104",
+            "EVD-0105",
+            "EVD-0107",
+            "EVD-0108"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S3-C2",
+          "text": "Rust StepDispatchResult exposes match box fields when a template match is attempted",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0101",
+            "EVD-0102",
+            "EVD-0104",
+            "EVD-0105",
+            "EVD-0107",
+            "EVD-0108"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S3-C3",
+          "text": "wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0101",
+            "EVD-0102",
+            "EVD-0104",
+            "EVD-0105",
+            "EVD-0107",
+            "EVD-0108"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S3-C4",
+          "text": "Core regression and Vite build remain green",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0101",
+            "EVD-0102",
+            "EVD-0103",
+            "EVD-0104",
+            "EVD-0105",
+            "EVD-0106",
+            "EVD-0107",
+            "EVD-0108",
+            "EVD-0109"
+          ],
+          "requiredEvidenceCategories": [
+            "build",
+            "test"
+          ]
+        }
+      ],
+      "nextAction": "Begin P4-S1 offline home-vitality task scaffolding without live game input",
+      "phaseId": "P3",
+      "verifiedAt": "2026-07-13T08:40:13Z"
     }
   ]
 }

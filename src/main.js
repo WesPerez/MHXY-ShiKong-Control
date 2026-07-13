@@ -37,6 +37,11 @@ import {
   failureStepFromReport as failureStepFromReportCore,
 } from "./failure-evidence-core.js";
 import {
+  HOME_VITALITY_BLUEPRINT_ID,
+  assessHomeVitalityReadiness,
+  summarizeHomeVitalityGaps,
+} from "./home-vitality-core.js";
+import {
   isLiveValidationEvidence,
   liveValidationRunHistoryEntry,
   mergeLiveValidationRunHistory,
@@ -452,6 +457,34 @@ const quickStepActions = [
     focusSelector: "#param-target-select",
   },
 ];
+
+function assessActiveHomeVitalityReadiness(options = {}) {
+  const availableTemplateKeys = options.availableTemplateKeys || [];
+  const targetAssets = {};
+  for (const target of state.workspace?.targets || []) {
+    targetAssets[target.id] = {
+      dataUrl: target.dataUrl || "",
+      roi: target.roi || null,
+      loaded: Boolean(target.dataUrl || target.roi),
+    };
+  }
+  return assessHomeVitalityReadiness({
+    availableTemplateKeys,
+    targetAssets,
+  });
+}
+
+function homeVitalityGapSummary(options = {}) {
+  return summarizeHomeVitalityGaps(assessActiveHomeVitalityReadiness(options));
+}
+
+if (typeof window !== "undefined") {
+  window.__homeVitalityReadiness = {
+    blueprintId: HOME_VITALITY_BLUEPRINT_ID,
+    assess: assessActiveHomeVitalityReadiness,
+    gaps: homeVitalityGapSummary,
+  };
+}
 
 const workflowBlueprints = [
   {
