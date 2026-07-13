@@ -1,0 +1,319 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0019",
+  "createdAt": "2026-07-13T07:41:53Z",
+  "type": "state_snapshot",
+  "reason": "Rebound P2-S2 evidence to HEAD 1f99f57",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f47be-d3fe-7853-89c5-d8208c7555ce",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P2",
+  "slice": {
+    "id": "P2-S2",
+    "title": "五视口真实渲染与检查器交互验收",
+    "status": "verified",
+    "startedAt": "2026-07-11T13:06:16Z",
+    "scope": [
+      "index.html,src/styles.css,src/main.js,Playwright screenshots and viewport metrics"
+    ],
+    "nonGoals": [
+      "本切片不启动 Tauri 应用、不读取或迁移真实 AppData、不枚举游戏窗口、不发送输入"
+    ],
+    "safetyBoundaries": [
+      "只启动本任务拥有的 localhost 预览进程；完成后仅停止该 PID；浏览器只做只读 UI 交互"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P2-S2-C1",
+        "text": "当前工作树 Vite 预览以可核验 PID/命令启动并可访问",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077",
+          "EVD-0081"
+        ],
+        "requiredEvidenceCategories": [
+          "app_runtime",
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C2",
+        "text": "1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077",
+          "EVD-0081"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C3",
+        "text": "检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077",
+          "EVD-0081"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C4",
+        "text": "视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0078",
+          "EVD-0079",
+          "EVD-0080",
+          "EVD-0082",
+          "EVD-0083"
+        ],
+        "requiredEvidenceCategories": [
+          "build",
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "Start P3 health-verified capture provider work",
+    "blockers": [
+      "缺少本地预览进程启动与只读 UI 测试授权"
+    ]
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "1f99f57a50d7b231b0da911091ccec43b8e39f1a",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json"
+    ],
+    "dirtyStatus": [
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json"
+    ],
+    "dirtyEntries": [
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
+        "displayPath": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "8c83cb30f01fbb112d9998c76a08d48aa514ccc1c3680f73bd6e0e0b1b142031",
+        "size": 11584
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
+        "exists": true,
+        "sha256": "d0cd1d6954647e59d5cc7386e25bbcec0c9c3983f083fa7964d97d7ab97c81e5",
+        "size": 9361
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "cc5e2a13240662c40c0c1042d1a48850812a5554ecfb13f38911ad61d42fb2b8",
+        "size": 449925
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "d2300edd17f71719b9ee6e77708c8e92d508978883d1c351d49bbd1a4e71775c",
+        "size": 199637
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "c03e0282e2c8f243e4eed64930fb9d8027f45cd06ed47e732f88761fefbbdfa3",
+        "size": 28051
+      }
+    ],
+    "workingTreeFingerprint": "sha256:2ff9c8e7be37a4f0432a8e81ba0383f8c6b29c6f76fe7e7baf4c4128a7490966"
+  },
+  "gitDiffSha256": "e8606a4d1bf00e9bc507ff07242bb1998f18b7b857a7e1ec2ea374f20be55519",
+  "dirtyFileHashes": [
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "8c83cb30f01fbb112d9998c76a08d48aa514ccc1c3680f73bd6e0e0b1b142031",
+      "size": 11584
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
+      "exists": true,
+      "sha256": "d0cd1d6954647e59d5cc7386e25bbcec0c9c3983f083fa7964d97d7ab97c81e5",
+      "size": 9361
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "cc5e2a13240662c40c0c1042d1a48850812a5554ecfb13f38911ad61d42fb2b8",
+      "size": 449925
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "d2300edd17f71719b9ee6e77708c8e92d508978883d1c351d49bbd1a4e71775c",
+      "size": 199637
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "c03e0282e2c8f243e4eed64930fb9d8027f45cd06ed47e732f88761fefbbdfa3",
+      "size": 28051
+    }
+  ],
+  "eventTail": {
+    "seq": 238,
+    "id": "EVT-0238",
+    "hash": "sha256:1d87d3c53bdb7a8a55db841fea986a0e4544991f83fe40b9e00ae64b449c0ba8"
+  },
+  "evidenceTail": {
+    "seq": 83,
+    "id": "EVD-0083",
+    "hash": "sha256:1a155a3da43aa1dd4967c8faae09ba357bf2fc789c444822710e60f854de25e1"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-11T18:46:50Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run execution:resume-check"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0018"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:3ca507eba9a17cc799f2f8b7ad318e0f8a1b950c52b0d4038056908195ba7efe"
+}

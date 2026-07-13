@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:7fd7acc46084d250f8169f3b80a95f339dd200c6cc1efa7b0c52d30797887388 -->
-<!-- checkpoint-id: CP-0018 -->
+<!-- state-digest: sha256:b7b956366c8d569798c057f69b1de4f3b8e055a0d1b240e677ae8ab42711aeaf -->
+<!-- checkpoint-id: CP-0019 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -8,26 +8,26 @@
 
 ## 恢复首屏
 
-- 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T07:39:56Z`
-- 更新时间（北京时间）：`2026-07-13T15:39:56+08:00`
+- 恢复结论：**STOP：存在未决副作用，只允许只读对账**
+- 更新时间（UTC）：`2026-07-13T07:42:06Z`
+- 更新时间（北京时间）：`2026-07-13T15:42:06+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P2`
 - 当前切片：`P2-S2` - 五视口真实渲染与检查器交互验收
-- 阶段状态：`verified`；切片状态：`verified`；动作状态：`succeeded`
+- 阶段状态：`verified`；切片状态：`verified`；动作状态：`running`
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
-- 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：最近事件：副作用动作 ACT-COMMIT-P2S2-001 -> succeeded（EVT-0235；不是当前验收通过证据）
-- 唯一下一动作：Start P3 health-verified capture provider work
+- 当前工作：未决动作 `ACT-COMMIT-P2S2-REBIND-001` 处于 `running`，等待只读对账
+- 最新当前有效证据：P2-S2 rebind on HEAD: full core regression（EVD-0083，当前工作区绑定有效）
+- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P2S2-REBIND-001；结果明确前禁止重放
 - 当前切片执行 blocker：缺少本地预览进程启动与只读 UI 测试授权
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
-- 最新 checkpoint：`CP-0018`；safeToResume=`true`；safeToRunLiveInput=`false`
-- 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`132786s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 最新 checkpoint：`CP-0019`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 当前允许：只读审计、连续性元数据对账。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`132916s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -76,18 +76,22 @@
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P2-S2-C1` | 当前工作树 Vite 预览以可核验 PID/命令启动并可访问 | `passed` | `app_runtime`, `test` | `EVD-0077` |
-| `P2-S2-C2` | 1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达 | `passed` | `test` | `EVD-0077` |
-| `P2-S2-C3` | 检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板 | `passed` | `test` | `EVD-0077` |
-| `P2-S2-C4` | 视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过 | `passed` | `build`, `test` | `EVD-0078`, `EVD-0079`, `EVD-0080` |
+| `P2-S2-C1` | 当前工作树 Vite 预览以可核验 PID/命令启动并可访问 | `passed` | `app_runtime`, `test` | `EVD-0077`, `EVD-0081` |
+| `P2-S2-C2` | 1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达 | `passed` | `test` | `EVD-0077`, `EVD-0081` |
+| `P2-S2-C3` | 检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板 | `passed` | `test` | `EVD-0077`, `EVD-0081` |
+| `P2-S2-C4` | 视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过 | `passed` | `build`, `test` | `EVD-0078`, `EVD-0079`, `EVD-0080`, `EVD-0082`, `EVD-0083` |
 
 ## 当前动作
 
-- 当前没有未决副作用动作。
+- actionId：`ACT-COMMIT-P2S2-REBIND-001`
+- 类型：`git_commit`
+- 目标：`P2-S2 evidence rebind ledger`
+- 副作用级别：`git_commit`
+- 状态：`running`
 
 ## 下一步
 
-- 唯一下一动作：Start P3 health-verified capture provider work
+- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P2S2-REBIND-001；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -103,17 +107,20 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`3c7ee80927d1bc75d67ddc49a728953d6a7f8624`
+- observed HEAD：`1f99f57a50d7b231b0da911091ccec43b8e39f1a`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:5b0131ec7027cad234c6ba1dde34ef34078c52957c092cd162fe8d362b6a5252`
-- 最新 checkpoint：`CP-0018` (state_snapshot)
+- working tree fingerprint：`sha256:2ff9c8e7be37a4f0432a8e81ba0383f8c6b29c6f76fe7e7baf4c4128a7490966`
+- 最新 checkpoint：`CP-0019` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
 
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
+- `docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json`
+- `docs/execution/events.jsonl`
+- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -145,29 +152,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0073` | `build` | `passed` | `stale` | P2-S1 当前工作树 Vite 生产构建通过<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0074` | `test` | `passed` | `stale` | P2-S2 Playwright verifier 加入后全部 core 与连续性回归通过；真实 UI 尚未执行<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0075` | `test` | `passed` | `stale` | P2-S2 五视口 verifier 静态覆盖、布局审计和安全审计通过；真实 UI 尚未执行<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0076` | `build` | `passed` | `stale` | P2-S2 Playwright verifier 加入后 Vite 生产构建通过<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0077` | `test` | `passed` | `stale` | P2-S2 five-viewport Playwright on owned vite build/preview: 10/10 passed; no page-level horizontal overflow; lists reachable; inspector keyboard/pointer navigation works<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0078` | `build` | `passed` | `stale` | P2-S2 after real viewport pass: Vite production build still succeeds<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0079` | `test` | `passed` | `stale` | P2-S2 after real viewport pass: full Node/Python core regression including continuity tests<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0080` | `test` | `passed` | `stale` | P2-S2 after real viewport pass: full Node/Python core regression including continuity tests<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0081` | `test` | `passed` | `valid` | P2-S2 rebind on HEAD: Playwright 10/10 five-viewport verification<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0082` | `build` | `passed` | `valid` | P2-S2 rebind on HEAD: Vite production build<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0083` | `test` | `passed` | `valid` | P2-S2 rebind on HEAD: full core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 226 | `2026-07-13T07:33:59Z` | `test_run` | P2-S2 five-viewport Playwright on owned vite build/preview: 10/10 passed; no page-level horizontal overflow; lists reachable; inspector keyboard/pointer navigation works |
-| 227 | `2026-07-13T07:34:47Z` | `scope_change` | 设置 P2-S2-C4 的证据类别门禁 |
-| 228 | `2026-07-13T07:34:49Z` | `test_run` | P2-S2 after real viewport pass: Vite production build still succeeds |
-| 229 | `2026-07-13T07:35:05Z` | `test_run` | P2-S2 after real viewport pass: full Node/Python core regression including continuity tests |
-| 230 | `2026-07-13T07:36:34Z` | `test_run` | P2-S2 after real viewport pass: full Node/Python core regression including continuity tests |
 | 231 | `2026-07-13T07:37:48Z` | `slice_state_changed` | P2-S2 five-viewport real UI verification complete: EVD-0077 Playwright 10/10, EVD-0078 build, EVD-0079/0080 node-all core regressions |
 | 232 | `2026-07-13T07:37:49Z` | `decision` | P2-S2 closed with production vite preview + Edge channel Playwright because Chromium download was blocked at 0 bytes |
 | 233 | `2026-07-13T07:37:51Z` | `checkpoint` | 创建 CP-0018：P2-S2 criteria all passed with real Playwright UI evidence |
 | 234 | `2026-07-13T07:39:39Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P2S2-001 |
 | 235 | `2026-07-13T07:39:44Z` | `action_result` | 副作用动作 ACT-COMMIT-P2S2-001 -> succeeded |
+| 236 | `2026-07-13T07:40:28Z` | `test_run` | P2-S2 rebind on HEAD: Playwright 10/10 five-viewport verification |
+| 237 | `2026-07-13T07:40:41Z` | `test_run` | P2-S2 rebind on HEAD: Vite production build |
+| 238 | `2026-07-13T07:41:30Z` | `test_run` | P2-S2 rebind on HEAD: full core regression |
+| 239 | `2026-07-13T07:41:54Z` | `checkpoint` | 创建 CP-0019：Rebound P2-S2 evidence to HEAD 1f99f57 |
+| 240 | `2026-07-13T07:42:06Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P2S2-REBIND-001 |
 
 ## 异常恢复
 
