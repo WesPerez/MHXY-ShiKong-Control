@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 369,
+  "revision": 376,
   "generation": 1,
-  "updatedAt": "2026-07-13T09:17:05Z",
+  "updatedAt": "2026-07-13T09:23:44Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -58,7 +58,8 @@
         "text": "pure helper maps match box fields and rejects incomplete geometry",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0122"
+          "EVD-0122",
+          "EVD-0124"
         ],
         "requiredEvidenceCategories": [
           "test"
@@ -69,7 +70,8 @@
         "text": "session step results and failure evidence preserve match box fields",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0122"
+          "EVD-0122",
+          "EVD-0124"
         ],
         "requiredEvidenceCategories": [
           "test"
@@ -81,7 +83,9 @@
         "status": "passed",
         "evidenceIds": [
           "EVD-0122",
-          "EVD-0123"
+          "EVD-0123",
+          "EVD-0124",
+          "EVD-0125"
         ],
         "requiredEvidenceCategories": [
           "build",
@@ -89,7 +93,7 @@
         ]
       }
     ],
-    "nextAction": "Commit P3-S6 match overlay product + ledger; leave app owned or process_stop; next P4-S1 home-vitality capture binding or P3 polish"
+    "nextAction": "Begin P4-S1: offline bind entry.home template from mapped jiayuan asset without live input"
   },
   "phases": [
     {
@@ -205,105 +209,57 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "536201d910a1279ee36d289dc84d61c562e23f3c",
+    "observedHead": "3716f9f4906a5ea3e139b530c43b26a33262f1dd",
     "verifiedHead": "4eb8f9e41ffad8ad703a38819fa2262d127ad0e8",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "4eb8f9e41ffad8ad703a38819fa2262d127ad0e8",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json",
+      "docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
-      "docs/execution/state.json",
-      "index.html",
-      "package.json",
-      "scripts/test_match_overlay_core.mjs",
-      "src/main.js",
-      "src/match-overlay-core.js",
-      "src/styles.css"
+      "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json",
+      "?? docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
-      " M docs/execution/state.json",
-      " M index.html",
-      " M package.json",
-      "?? scripts/test_match_overlay_core.mjs",
-      " M src/main.js",
-      "?? src/match-overlay-core.js",
-      " M src/styles.css"
+      " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "66497251c8dacab6662afbd7991e513832d27a635ab55dab7b47fbb0fbb37db9",
-        "size": 11761
+        "sha256": "893401e7f550b790c4916c629a388e9c5b5b5969b6d58bade8903da1095e4633",
+        "size": 11499
       },
       {
-        "path": "docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json",
+        "path": "docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json",
         "exists": true,
-        "sha256": "ec88ea59a65fd962e982134e392336a05adda1ae7e5fb2bc8feaf196a8016128",
-        "size": 15558
+        "sha256": "8a3d32216a35f122939c4b79452a52aa818567123f7c6e5b8bccf431b3228d85",
+        "size": 12074
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "d4f974921618c83cea469d08ffd3eed9d09140616535ead1d5179e0ddbf9d42a",
-        "size": 535427
+        "sha256": "c7bd5ed55cbbfeef8ce34ad0c2bfbecd17cbb7be27c631ad360eeceacc1ea430",
+        "size": 540111
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "29a3e3879c9b61909100e2c920cf67f509024207b612368073ea4b29f11d1e87",
-        "size": 265885
+        "sha256": "8c8d94e0ecffeb33fd7a70815c4ed64f8873c4e14d64cd4109ab6fc9546a7917",
+        "size": 268922
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "c1b1950ce121a767c0ba501eeeb13dc2b8238c4c164d89c1bbd5bca50044d9a6",
-        "size": 49011
-      },
-      {
-        "path": "index.html",
-        "exists": true,
-        "sha256": "7d4553af1826b29ff145a0c3bd9f948939c6cf52cb6bff2b047eb4e141cf542f",
-        "size": 34549
-      },
-      {
-        "path": "package.json",
-        "exists": true,
-        "sha256": "d782e7a9a63e50fb47ffb514c50c1c12fa6da0d369ffec99388e8575665a09ea",
-        "size": 4894
-      },
-      {
-        "path": "scripts/test_match_overlay_core.mjs",
-        "exists": true,
-        "sha256": "7fce47a4c40ec6f66fb4d898071b15f690e06ac468cd01817c61f96982610d3f",
-        "size": 2190
-      },
-      {
-        "path": "src/main.js",
-        "exists": true,
-        "sha256": "9bfb32654c249ada6a1b9f372df3e661fecce8b32f128658b992b5a2e660cb44",
-        "size": 356018
-      },
-      {
-        "path": "src/match-overlay-core.js",
-        "exists": true,
-        "sha256": "f417d15dbea980351c683ca413b030c048b547abaf8424b9b2e7c33f834b013d",
-        "size": 3027
-      },
-      {
-        "path": "src/styles.css",
-        "exists": true,
-        "sha256": "2b57af065e625318652996ff9113c0a410536b5093f0c619991065c69302163a",
-        "size": 45241
+        "sha256": "2dee11f7251e91fd9808daaa01f61f475300b4d5ac48d8c30b2eb87559feb96d",
+        "size": 46569
       }
     ],
-    "workingTreeFingerprint": "sha256:e1bc4b114d63e33eed3ee859fd7b4a98f8bd9e388b94d0f3f555b34e18945d2f",
+    "workingTreeFingerprint": "sha256:458f2669f217d5e6689cd8b86f0cf786c01fd33ffde68c7525e0f5f3fc2cb6dc",
     "dirtyEntries": [
       {
         "status": " M",
@@ -314,8 +270,8 @@
       {
         "status": "??",
         "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json"
+        "destinationPath": "docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json",
+        "displayPath": "docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json"
       },
       {
         "status": " M",
@@ -334,42 +290,6 @@
         "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "index.html",
-        "displayPath": "index.html"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "package.json",
-        "displayPath": "package.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_match_overlay_core.mjs",
-        "displayPath": "scripts/test_match_overlay_core.mjs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/main.js",
-        "displayPath": "src/main.js"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src/match-overlay-core.js",
-        "displayPath": "src/match-overlay-core.js"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/styles.css",
-        "displayPath": "src/styles.css"
       }
     ]
   },
@@ -405,7 +325,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-13T09:11:09Z",
+    "observedAt": "2026-07-13T09:23:43Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -494,8 +414,8 @@
         "ownership": "created_by_current_run",
         "present": true,
         "creationTime": "2026-07-13T09:11:08Z",
-        "lastObservedAt": "2026-07-13T09:11:09Z",
-        "lastSeenAt": "2026-07-13T09:11:09Z",
+        "lastObservedAt": "2026-07-13T09:23:43Z",
+        "lastSeenAt": "2026-07-13T09:23:43Z",
         "cleanupAllowed": false
       }
     ],
@@ -540,24 +460,24 @@
     ]
   },
   "eventTail": {
-    "seq": 330,
-    "id": "EVT-0330",
-    "hash": "sha256:8e948bc1a1630ec6d3c30d2fa1acce755300a0fc74089a5007c8d61d329de44b"
+    "seq": 336,
+    "id": "EVT-0336",
+    "hash": "sha256:7d3e7fe1813e3005e46930b35795d5b39743b17ca37d8e33c9de8174f2a7cd4c"
   },
   "evidenceTail": {
-    "seq": 123,
-    "id": "EVD-0123",
-    "hash": "sha256:bea8abd20ff3e305a52f2ec7c37686d4dced390bd5ccb26676d2921d81dce9a8"
+    "seq": 125,
+    "id": "EVD-0125",
+    "hash": "sha256:f53c5c0ef0d738086f357ccf80c46a4330b09765f4d0faf839930a19f3e5613c"
   },
-  "checkpointCounter": 27,
+  "checkpointCounter": 28,
   "lastCheckpoint": {
-    "id": "CP-0027",
+    "id": "CP-0028",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0027-p3-s6-match-overlay-verified.json",
-    "createdAt": "2026-07-13T09:17:05Z",
+    "path": "docs/execution/checkpoints/CP-0028-p3-s6-rebind-3716f9f.json",
+    "createdAt": "2026-07-13T09:23:45Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:0f8564012909d2afd3f9f36b8ffe20ba19e6f6f2d31ad4ff1e796c5da007752d"
+    "hash": "sha256:d5f644d152c22586415bdab7f0c0732f7796642368a82f8c4af4690d8d433a60"
   },
   "resume": {
     "blockers": [
@@ -569,7 +489,7 @@
     "doNotDo": [
       "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
     ],
-    "lastSafeResumeSnapshotId": "CP-0027"
+    "lastSafeResumeSnapshotId": "CP-0028"
   },
   "completedSlices": [
     {
