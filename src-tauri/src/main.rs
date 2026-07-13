@@ -13,8 +13,8 @@ use platform::{
     CaptureMetadata, CaptureProvider, CaptureReliability, HwndPoint, RgbFrame,
 };
 use runtime::{
-    ExecutionContextInput, ExecutionControl, OcrJobStage, OcrPoolError, OcrWorkerPool,
-    WindowLaneRegistry,
+    match_only_without_template_status, match_template_budgeted, ExecutionContextInput,
+    ExecutionControl, OcrJobStage, OcrPoolError, OcrWorkerPool, SearchRoi, WindowLaneRegistry,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -993,8 +993,20 @@ fn dispatch_image_step(
         let frame = &captured.rgb;
         let template = load_image_data_url_rgb(data_url)?;
         control.checkpoint()?;
-        let search_roi = scaled_roi(step.roi, frame.width, frame.height);
-        let matched = match_template(frame, &template, search_roi, || control.checkpoint())?;
+        let has_explicit_roi = step.roi.is_some();
+        let search_roi = scaled_roi(step.roi, frame.width, frame.height).map(|roi| SearchRoi {
+            x: roi.x,
+            y: roi.y,
+            w: roi.w,
+            h: roi.h,
+        });
+        let matched = match_template_budgeted(
+            frame,
+            &template,
+            search_roi,
+            has_explicit_roi,
+            || control.checkpoint(),
+        )?;
         control.checkpoint()?;
         let click_point = image_click_point(&matched, step, frame.width, frame.height)?;
         let mut output = step_result_with_input(
@@ -1062,16 +1074,31 @@ fn dispatch_image_step(
             output.y = Some(point.y);
             return Ok(output);
         }
+        if mode == MouseDispatchMode::MatchOnly {
+            let (status, detail, matched) = match_only_without_template_status();
+            let mut output = step_result(hwnd, &step.step_type, status, mode.roi_action(), detail);
+            output.matched = matched;
+            output.x = Some(point.x);
+            output.y = Some(point.y);
+            return Ok(output);
+        }
         let mut output = step_result(
             hwnd,
             &step.step_type,
             "planned",
             mode.roi_action(),
-            "ROI target is available, but no template image is bound for visual matching",
+            "ROI/point target is available for click planning, but no template image is bound for visual matching",
         );
-        output.matched = true;
+        output.matched = false;
         output.x = Some(point.x);
         output.y = Some(point.y);
+        return Ok(output);
+    }
+
+    if mode == MouseDispatchMode::MatchOnly {
+        let (status, detail, matched) = match_only_without_template_status();
+        let mut output = step_result(hwnd, &step.step_type, status, mode.image_action(), detail);
+        output.matched = matched;
         return Ok(output);
     }
 
@@ -1913,100 +1940,23 @@ fn match_template(
     frame: &RgbFrame,
     template: &RgbFrame,
     search_roi: Option<RoiRect>,
-    mut checkpoint: impl FnMut() -> Result<(), String>,
+    checkpoint: impl FnMut() -> Result<(), String>,
 ) -> Result<TemplateMatch, String> {
-    const CHECKPOINT_PIXEL_BUDGET: usize = 4096;
-
-    checkpoint()?;
-    if template.width == 0 || template.height == 0 {
-        return Err("template image is empty".to_string());
-    }
-    if template.width > frame.width || template.height > frame.height {
-        return Err(format!(
-            "template {}x{} is larger than frame {}x{}",
-            template.width, template.height, frame.width, frame.height
-        ));
-    }
-    let roi = search_roi.unwrap_or(RoiRect {
-        x: 0,
-        y: 0,
-        w: frame.width,
-        h: frame.height,
-    });
-    let search_right = roi.x.saturating_add(roi.w).min(frame.width);
-    let search_bottom = roi.y.saturating_add(roi.h).min(frame.height);
-    if search_right < roi.x.saturating_add(template.width)
-        || search_bottom < roi.y.saturating_add(template.height)
-    {
-        return Err("search ROI is smaller than template".to_string());
-    }
-    let max_x = search_right - template.width;
-    let max_y = search_bottom - template.height;
-
-    let mut best = TemplateMatch {
+    let has_explicit_roi = search_roi.is_some();
+    let search = search_roi.map(|roi| SearchRoi {
         x: roi.x,
         y: roi.y,
-        width: template.width,
-        height: template.height,
-        score: f32::MIN,
-    };
-    let mut pixels_since_checkpoint = 0usize;
-    for y in roi.y..=max_y {
-        for x in roi.x..=max_x {
-            let score = template_score(
-                frame,
-                template,
-                x,
-                y,
-                &mut pixels_since_checkpoint,
-                CHECKPOINT_PIXEL_BUDGET,
-                &mut checkpoint,
-            )?;
-            if score > best.score {
-                best.x = x;
-                best.y = y;
-                best.score = score;
-            }
-        }
-    }
-    checkpoint()?;
-    Ok(best)
-}
-
-fn template_score(
-    frame: &RgbFrame,
-    template: &RgbFrame,
-    left: u32,
-    top: u32,
-    pixels_since_checkpoint: &mut usize,
-    checkpoint_pixel_budget: usize,
-    checkpoint: &mut dyn FnMut() -> Result<(), String>,
-) -> Result<f32, String> {
-    let mut diff: u64 = 0;
-    for y in 0..template.height {
-        let frame_row = ((top + y) * frame.width + left) as usize * 3;
-        let template_row = (y * template.width) as usize * 3;
-        for x in 0..template.width as usize {
-            *pixels_since_checkpoint += 1;
-            if *pixels_since_checkpoint >= checkpoint_pixel_budget {
-                checkpoint()?;
-                *pixels_since_checkpoint = 0;
-            }
-            let frame_index = frame_row + x * 3;
-            let template_index = template_row + x * 3;
-            diff += (i16::from(frame.pixels[frame_index])
-                - i16::from(template.pixels[template_index]))
-            .unsigned_abs() as u64;
-            diff += (i16::from(frame.pixels[frame_index + 1])
-                - i16::from(template.pixels[template_index + 1]))
-            .unsigned_abs() as u64;
-            diff += (i16::from(frame.pixels[frame_index + 2])
-                - i16::from(template.pixels[template_index + 2]))
-            .unsigned_abs() as u64;
-        }
-    }
-    let max_diff = template.width as f32 * template.height as f32 * 3.0 * 255.0;
-    Ok(1.0 - (diff as f32 / max_diff))
+        w: roi.w,
+        h: roi.h,
+    });
+    let matched = match_template_budgeted(frame, template, search, has_explicit_roi, checkpoint)?;
+    Ok(TemplateMatch {
+        x: matched.x,
+        y: matched.y,
+        width: matched.width,
+        height: matched.height,
+        score: matched.score,
+    })
 }
 
 fn launch_configured_game_client() -> Result<GameLaunchResult, String> {
@@ -2864,6 +2814,30 @@ mod tests {
 
         assert!(error.contains("deadline exceeded"));
         assert_eq!(checkpoints, 2);
+    }
+
+    #[test]
+    fn unbudgeted_full_frame_template_search_fails_closed() {
+        let frame = RgbFrame {
+            width: 1280,
+            height: 720,
+            pixels: vec![20; 1280 * 720 * 3],
+        };
+        let template = RgbFrame {
+            width: 64,
+            height: 64,
+            pixels: vec![200; 64 * 64 * 3],
+        };
+        let error = match_template(&frame, &template, None, || Ok(())).unwrap_err();
+        assert!(error.contains("search_budget_exceeded"));
+    }
+
+    #[test]
+    fn match_only_without_template_never_reports_matched() {
+        let (status, detail, matched) = match_only_without_template_status();
+        assert_eq!(status, "missing_template");
+        assert!(!matched);
+        assert!(detail.contains("template"));
     }
 
     #[test]

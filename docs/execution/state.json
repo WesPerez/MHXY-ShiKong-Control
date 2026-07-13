@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 279,
+  "revision": 283,
   "generation": 1,
-  "updatedAt": "2026-07-13T08:06:01Z",
+  "updatedAt": "2026-07-13T08:08:12Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -28,80 +28,68 @@
   },
   "overallStatus": "active",
   "currentPhaseId": "P3",
-  "phaseStatus": "verifying",
-  "actionStatus": "succeeded",
+  "phaseStatus": "in_progress",
+  "actionStatus": "none",
   "acceptanceLevel": "design",
   "activeSlice": {
-    "id": "P3-S1",
-    "title": "health-verified capture providers and black/stale frame gates",
-    "status": "verified",
-    "startedAt": "2026-07-13T07:46:31Z",
+    "id": "P3-S2",
+    "title": "ROI-required template matching with search budget and fail-closed wait_image",
+    "status": "in_progress",
+    "startedAt": "2026-07-13T08:08:12Z",
     "scope": [
-      "src-tauri/src/platform.rs",
-      "src-tauri/src/runtime/capture_health.rs",
-      "src/capture-policy-core.js",
-      "scripts/audit_capture_policy.py",
-      "scripts/test_capture_policy_core.mjs"
+      "src-tauri/src/main.rs",
+      "src-tauri/src/runtime/vision_match.rs",
+      "src-tauri/src/runtime/mod.rs",
+      "scripts/audit_capture_policy.py"
     ],
     "nonGoals": [
-      "Do not implement full OpenCV template engine in this slice",
-      "Do not send live game input or migrate AppData",
-      "Do not require Tauri app live window capture for slice close; unit/static proof is enough for provider health policy"
+      "Do not integrate OpenCV in this slice",
+      "Do not send live game input"
     ],
     "safetyBoundaries": [
-      "Desktop capture remains preview-only and never authorizes control decisions",
-      "Control capture fails closed on black, uniform, size-mismatch, or stale frames"
+      "wait_image/detect_page without template never report matched=true",
+      "Unbudgeted full-frame brute-force search fails closed"
     ],
     "acceptanceCriteria": [
       {
-        "id": "P3-S1-C1",
-        "text": "Capture policy exposes health-verified target providers and never trusts desktop/preview frames for control",
-        "status": "passed",
-        "evidenceIds": [
-          "EVD-0090"
-        ],
-        "requiredEvidenceCategories": [
-          "source_audit",
-          "test"
-        ]
-      },
-      {
-        "id": "P3-S1-C2",
-        "text": "Black, uniform, size-mismatch, and stale frames are classified and block control decisions",
-        "status": "passed",
-        "evidenceIds": [
-          "EVD-0090"
-        ],
+        "id": "P3-S2-C1",
+        "text": "wait_image without template returns missing_template and matched=false",
+        "status": "pending",
+        "evidenceIds": [],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S1-C3",
-        "text": "PrintWindow/GDI strict capture path is covered by unit/static audits and fails closed without fallback for control",
-        "status": "passed",
-        "evidenceIds": [
-          "EVD-0090"
-        ],
+        "id": "P3-S2-C2",
+        "text": "template search enforces ROI/search budget and fails closed when over budget",
+        "status": "pending",
+        "evidenceIds": [],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S1-C4",
-        "text": "Node/Python capture audits and core regression remain green after the provider change",
-        "status": "passed",
-        "evidenceIds": [
-          "EVD-0090",
-          "EVD-0091"
-        ],
+        "id": "P3-S2-C3",
+        "text": "match_template still supports cancel/deadline checkpoints and finds exact matches inside ROI",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S2-C4",
+        "text": "Rust vision unit tests and Node/Python core regression remain green",
+        "status": "pending",
+        "evidenceIds": [],
         "requiredEvidenceCategories": [
           "build",
           "test"
         ]
       }
     ],
-    "nextAction": "Commit P3-S1 and continue P3 vision hardening"
+    "nextAction": "Implement vision match budget, require ROI or bounded full-frame search, fix planned+matched wait_image hole"
   },
   "phases": [
     {
@@ -125,7 +113,7 @@
     {
       "id": "P3",
       "title": "严格捕获和视觉引擎",
-      "status": "verifying",
+      "status": "in_progress",
       "summary": "修复捕获、ROI、模板、OCR 和预览一致性。"
     },
     {
@@ -219,41 +207,49 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "683cbacf37c9fe0e037e842b2f6ca8dd2ea2e0f3",
+    "observedHead": "00f4f280e8b5ac407bcab11663cc86fecdc92839",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
       "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
       " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "065b78c1289ab8bbdb5417a75276b1afbd7c10dea0911db6a0909ac21ecf1ea9",
-        "size": 11539
+        "sha256": "ca08e4998f0afd415294674f193f3bd1a1f4ea0f6d066098d95836a259090bb3",
+        "size": 11327
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "230765c2f949d1d6ae194748193be69cf28d5a7fc6dbdf3b0723e559f397c30d",
-        "size": 469533
+        "sha256": "85e37c29ac64a54c1316b8d3adb8ecb999149d1aab7ebd13b8743741ac86de77",
+        "size": 472535
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "2684613b499d19ddbbfedf6b009a1e8d40a51d2d474486549c0a031219e71095",
+        "size": 215198
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "7b5594981f9b807e53df7ff3e96f9ad4979d757c782aeb04ba1a91c923ea5b6d",
-        "size": 30285
+        "sha256": "7e3be837ee356277cf5157c47af5cc681ba25ad9060eb3b20492d8394dd8be2e",
+        "size": 32996
       }
     ],
-    "workingTreeFingerprint": "sha256:68bed4e245cdafdf090d3844e2f2c68211763aa19c80b70d139535b6b6e4dc43",
+    "workingTreeFingerprint": "sha256:795643ce3124dc25917738ed2cbfe113cff36511d1044e29612cbc32065a198c",
     "dirtyEntries": [
       {
         "status": " M",
@@ -266,6 +262,12 @@
         "sourcePath": null,
         "destinationPath": "docs/execution/events.jsonl",
         "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
       },
       {
         "status": " M",
@@ -387,14 +389,14 @@
     ]
   },
   "eventTail": {
-    "seq": 258,
-    "id": "EVT-0258",
-    "hash": "sha256:91c9ccfde608cb10bef57c8d9cbc3c6c3c6a1fb103bded04ad7e78f992a83030"
+    "seq": 262,
+    "id": "EVT-0262",
+    "hash": "sha256:b4503ceb05b9ea33def1f7899f10609a71474a1e96ef372b52f159d66694bff5"
   },
   "evidenceTail": {
-    "seq": 91,
-    "id": "EVD-0091",
-    "hash": "sha256:c8080c1464feb45655d5648f03bccfbe176a7a78921bd0692eec0cabd4d25cf1"
+    "seq": 93,
+    "id": "EVD-0093",
+    "hash": "sha256:423b280f98fe3ba0fb995b77fd9730e2ca33acd7389106f8bd3e6ede3744990c"
   },
   "checkpointCounter": 21,
   "lastCheckpoint": {
@@ -927,6 +929,85 @@
       ],
       "phaseId": "P2",
       "verifiedAt": "2026-07-13T07:46:31Z"
+    },
+    {
+      "id": "P3-S1",
+      "title": "health-verified capture providers and black/stale frame gates",
+      "status": "verified",
+      "startedAt": "2026-07-13T07:46:31Z",
+      "scope": [
+        "src-tauri/src/platform.rs",
+        "src-tauri/src/runtime/capture_health.rs",
+        "src/capture-policy-core.js",
+        "scripts/audit_capture_policy.py",
+        "scripts/test_capture_policy_core.mjs"
+      ],
+      "nonGoals": [
+        "Do not implement full OpenCV template engine in this slice",
+        "Do not send live game input or migrate AppData",
+        "Do not require Tauri app live window capture for slice close; unit/static proof is enough for provider health policy"
+      ],
+      "safetyBoundaries": [
+        "Desktop capture remains preview-only and never authorizes control decisions",
+        "Control capture fails closed on black, uniform, size-mismatch, or stale frames"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "P3-S1-C1",
+          "text": "Capture policy exposes health-verified target providers and never trusts desktop/preview frames for control",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0090",
+            "EVD-0092"
+          ],
+          "requiredEvidenceCategories": [
+            "source_audit",
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S1-C2",
+          "text": "Black, uniform, size-mismatch, and stale frames are classified and block control decisions",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0090",
+            "EVD-0092"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S1-C3",
+          "text": "PrintWindow/GDI strict capture path is covered by unit/static audits and fails closed without fallback for control",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0090",
+            "EVD-0092"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S1-C4",
+          "text": "Node/Python capture audits and core regression remain green after the provider change",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0090",
+            "EVD-0091",
+            "EVD-0092",
+            "EVD-0093"
+          ],
+          "requiredEvidenceCategories": [
+            "build",
+            "test"
+          ]
+        }
+      ],
+      "nextAction": "Continue P3 vision engine: ROI/template budget and fail-closed matching improvements",
+      "phaseId": "P3",
+      "verifiedAt": "2026-07-13T08:08:12Z"
     }
   ]
 }

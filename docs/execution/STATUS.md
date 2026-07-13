@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:caba35239fa7cd7eb68deee79f440ae989fec1436fb419e2dba8bcab0e6e7591 -->
+<!-- state-digest: sha256:a2244912adb2814407ff842b898df9daf88169fcbf43fb747546252664132b5d -->
 <!-- checkpoint-id: CP-0021 -->
 # 长任务执行状态
 
@@ -9,25 +9,25 @@
 ## 恢复首屏
 
 - 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T08:06:01Z`
-- 更新时间（北京时间）：`2026-07-13T16:06:01+08:00`
+- 更新时间（UTC）：`2026-07-13T08:08:12Z`
+- 更新时间（北京时间）：`2026-07-13T16:08:12+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P3`
-- 当前切片：`P3-S1` - health-verified capture providers and black/stale frame gates
-- 阶段状态：`verifying`；切片状态：`verified`；动作状态：`succeeded`
-- 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
+- 当前切片：`P3-S2` - ROI-required template matching with search budget and fail-closed wait_image
+- 阶段状态：`in_progress`；切片状态：`in_progress`；动作状态：`none`
+- 当前切片验收：已满足 `0`，待验证或阻塞 `4`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
 - 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：最近事件：副作用动作 ACT-COMMIT-P3S1-001 -> succeeded（EVT-0258；不是当前验收通过证据）
-- 唯一下一动作：Commit P3-S1 and continue P3 vision hardening
+- 最新当前有效证据：P3-S1 rebind on HEAD: Vite build（EVD-0093，当前工作区绑定有效）
+- 唯一下一动作：Implement vision match budget, require ROI or bounded full-frame search, fix planned+matched wait_image hole
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
 - 最新 checkpoint：`CP-0021`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`134351s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`134482s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -50,7 +50,7 @@
 | `P0` 数据保护与可重复基线 | `verified` | 保护真实 v6 工作区、建立匿名迁移 fixture 和可重复验证基线。 |
 | `P1` 运行安全硬化 | `verified` | 消除窗口身份、权限、误跑和输入安全 P0/P1 风险。 |
 | `P2` 工作台可达性与单步调试 | `verified` | 重构默认窗口下的操作路径，建立每个功能即时可见、可测的工作台。 |
-| `P3` 严格捕获和视觉引擎 | `verifying` | 修复捕获、ROI、模板、OCR 和预览一致性。 |
+| `P3` 严格捕获和视觉引擎 | `in_progress` | 修复捕获、ROI、模板、OCR 和预览一致性。 |
 | `P4` 第一个真实纵向任务 | `pending` | 以家园活力完成 UI 到游戏后置验证的真实闭环。 |
 | `P5` 持久化和素材文件化 | `pending` | 按方案评估 SQLite/结构化 JSON，补版本迁移、原子写入和备份。 |
 | `P6` 第二至第五个真实任务 | `pending` | 逐个纵向闭环更多真实任务，不用草稿数量代替可用性。 |
@@ -62,31 +62,29 @@
 
 ### 范围
 
-- src-tauri/src/platform.rs
-- src-tauri/src/runtime/capture_health.rs
-- src/capture-policy-core.js
+- src-tauri/src/main.rs
+- src-tauri/src/runtime/vision_match.rs
+- src-tauri/src/runtime/mod.rs
 - scripts/audit_capture_policy.py
-- scripts/test_capture_policy_core.mjs
 
 ### 非目标
 
-- Do not implement full OpenCV template engine in this slice
-- Do not send live game input or migrate AppData
-- Do not require Tauri app live window capture for slice close; unit/static proof is enough for provider health policy
+- Do not integrate OpenCV in this slice
+- Do not send live game input
 
 ### 安全边界
 
-- Desktop capture remains preview-only and never authorizes control decisions
-- Control capture fails closed on black, uniform, size-mismatch, or stale frames
+- wait_image/detect_page without template never report matched=true
+- Unbudgeted full-frame brute-force search fails closed
 
 ### 验收条件
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P3-S1-C1` | Capture policy exposes health-verified target providers and never trusts desktop/preview frames for control | `passed` | `source_audit`, `test` | `EVD-0090` |
-| `P3-S1-C2` | Black, uniform, size-mismatch, and stale frames are classified and block control decisions | `passed` | `test` | `EVD-0090` |
-| `P3-S1-C3` | PrintWindow/GDI strict capture path is covered by unit/static audits and fails closed without fallback for control | `passed` | `test` | `EVD-0090` |
-| `P3-S1-C4` | Node/Python capture audits and core regression remain green after the provider change | `passed` | `build`, `test` | `EVD-0090`, `EVD-0091` |
+| `P3-S2-C1` | wait_image without template returns missing_template and matched=false | `pending` | `test` | none |
+| `P3-S2-C2` | template search enforces ROI/search budget and fails closed when over budget | `pending` | `test` | none |
+| `P3-S2-C3` | match_template still supports cancel/deadline checkpoints and finds exact matches inside ROI | `pending` | `test` | none |
+| `P3-S2-C4` | Rust vision unit tests and Node/Python core regression remain green | `pending` | `build`, `test` | none |
 
 ## 当前动作
 
@@ -94,7 +92,7 @@
 
 ## 下一步
 
-- 唯一下一动作：Commit P3-S1 and continue P3 vision hardening
+- 唯一下一动作：Implement vision match budget, require ROI or bounded full-frame search, fix planned+matched wait_image hole
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -110,10 +108,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`683cbacf37c9fe0e037e842b2f6ca8dd2ea2e0f3`
+- observed HEAD：`00f4f280e8b5ac407bcab11663cc86fecdc92839`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:68bed4e245cdafdf090d3844e2f2c68211763aa19c80b70d139535b6b6e4dc43`
+- working tree fingerprint：`sha256:795643ce3124dc25917738ed2cbfe113cff36511d1044e29612cbc32065a198c`
 - 最新 checkpoint：`CP-0021` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -122,6 +120,7 @@
 
 - `docs/execution/STATUS.md`
 - `docs/execution/events.jsonl`
+- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -153,29 +152,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0084` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: Playwright 10/10<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0085` | `build` | `passed` | `stale` | P2-S2 final HEAD rebind: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0086` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0087` | `test` | `passed` | `stale` | P2-S2 working-tree rebind after final ledger commits: Playwright 10/10<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0088` | `build` | `passed` | `stale` | P2-S2 working-tree rebind: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0089` | `test` | `passed` | `stale` | P2-S2 working-tree rebind: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0090` | `test` | `passed` | `stale` | P3-S1 health-verified capture providers and black/stale frame gates: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0091` | `build` | `passed` | `stale` | P3-S1 after capture health changes: Vite production build green<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0092` | `test` | `passed` | `valid` | P3-S1 rebind on HEAD: capture health core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0093` | `build` | `passed` | `valid` | P3-S1 rebind on HEAD: Vite build<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 249 | `2026-07-13T07:44:15Z` | `test_run` | P2-S2 working-tree rebind: Vite build |
-| 250 | `2026-07-13T07:45:04Z` | `test_run` | P2-S2 working-tree rebind: core regression |
-| 251 | `2026-07-13T07:46:31Z` | `slice_started` | 开始切片 P3-S1：health-verified capture providers and black/stale frame gates |
-| 252 | `2026-07-13T07:55:23Z` | `test_run` | P3-S1 health-verified capture providers and black/stale frame gates: full core regression green |
 | 253 | `2026-07-13T07:55:25Z` | `test_run` | P3-S1 after capture health changes: Vite production build green |
 | 254 | `2026-07-13T08:05:47Z` | `slice_state_changed` | P3-S1 health-verified capture providers complete: PrintWindow+GDI chain, black/stale health gates, unit and core evidence EVD-0090/0091 |
 | 255 | `2026-07-13T08:05:48Z` | `checkpoint` | 创建 CP-0021：P3-S1 criteria passed with health-verified capture provider implementation |
 | 256 | `2026-07-13T08:05:49Z` | `decision` | P3-S1 implemented PrintWindow primary + GDI secondary with black/uniform/stale health fail-closed |
 | 257 | `2026-07-13T08:06:00Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P3S1-001 |
 | 258 | `2026-07-13T08:06:00Z` | `action_result` | 副作用动作 ACT-COMMIT-P3S1-001 -> succeeded |
+| 259 | `2026-07-13T08:06:59Z` | `test_run` | P3-S1 rebind on HEAD: capture health core regression |
+| 260 | `2026-07-13T08:07:10Z` | `test_run` | P3-S1 rebind on HEAD: Vite build |
+| 261 | `2026-07-13T08:07:16Z` | `decision` | P3-S1 product commit 683cbac is landed; evidence rebound on HEAD 00f4f28 |
+| 262 | `2026-07-13T08:08:12Z` | `slice_started` | 开始切片 P3-S2：ROI-required template matching with search budget and fail-closed wait_image |
 
 ## 异常恢复
 
