@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 277,
+  "revision": 279,
   "generation": 1,
-  "updatedAt": "2026-07-13T08:06:00Z",
+  "updatedAt": "2026-07-13T08:06:01Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -29,7 +29,7 @@
   "overallStatus": "active",
   "currentPhaseId": "P3",
   "phaseStatus": "verifying",
-  "actionStatus": "running",
+  "actionStatus": "succeeded",
   "acceptanceLevel": "design",
   "activeSlice": {
     "id": "P3-S1",
@@ -219,117 +219,47 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "794a4fab5225bb5b27b41174a613655ffd4919dd",
+    "observedHead": "683cbacf37c9fe0e037e842b2f6ca8dd2ea2e0f3",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0021-p3-s1-verified.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
-      "docs/execution/state.json",
-      "scripts/audit_capture_policy.py",
-      "scripts/test_capture_policy_core.mjs",
-      "src-tauri/src/platform.rs",
-      "src-tauri/src/runtime/capture_health.rs",
-      "src-tauri/src/runtime/mod.rs",
-      "src/capture-policy-core.js"
+      "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0021-p3-s1-verified.json",
       " M docs/execution/events.jsonl",
-      " M docs/execution/evidence.jsonl",
-      " M docs/execution/state.json",
-      " M scripts/audit_capture_policy.py",
-      " M scripts/test_capture_policy_core.mjs",
-      " M src-tauri/src/platform.rs",
-      "?? src-tauri/src/runtime/capture_health.rs",
-      " M src-tauri/src/runtime/mod.rs",
-      " M src/capture-policy-core.js"
+      " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "00d9849ded6ca9547580a9427d626d4886276632195a26ab9ae8cc80d16063d9",
-        "size": 12058
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0021-p3-s1-verified.json",
-        "exists": true,
-        "sha256": "367020726b8cf1c237419cbbefdcab540443376bcc2e49546533877bc1b07d76",
-        "size": 14320
+        "sha256": "065b78c1289ab8bbdb5417a75276b1afbd7c10dea0911db6a0909ac21ecf1ea9",
+        "size": 11539
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "b644b7a9ef167be246de449612e0071cfb63ba1e5e80cbdd62db3813f46fdcdb",
-        "size": 468296
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "08e40027f21be0f0f33f413c1cd26f5afecda40b645a1f037a5fe9c8d7ccd805",
-        "size": 212269
+        "sha256": "230765c2f949d1d6ae194748193be69cf28d5a7fc6dbdf3b0723e559f397c30d",
+        "size": 469533
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "7cd6c35358747c3352c07ffe5ceb0972c1aa8da03cc7b3cea9a3ab86321c7ad8",
-        "size": 34750
-      },
-      {
-        "path": "scripts/audit_capture_policy.py",
-        "exists": true,
-        "sha256": "7c617a82182083f89e81f1ec4b783d1912d75bcaed6c5c487c6eb32f867bc997",
-        "size": 6998
-      },
-      {
-        "path": "scripts/test_capture_policy_core.mjs",
-        "exists": true,
-        "sha256": "e731fe5c7a10739c87c8c198a70db624a55e63ed3b9ddf3224e9babd8735498c",
-        "size": 1771
-      },
-      {
-        "path": "src-tauri/src/platform.rs",
-        "exists": true,
-        "sha256": "a4bbc42033f67a5a5e7a356d238fceb579dfceae3a4efc35bb83e3f9928aff3a",
-        "size": 47481
-      },
-      {
-        "path": "src-tauri/src/runtime/capture_health.rs",
-        "exists": true,
-        "sha256": "82f68cd8543fd3c0059ebfb8b48870067930015c82352d4d7cf83a0f2cfbd406",
-        "size": 9888
-      },
-      {
-        "path": "src-tauri/src/runtime/mod.rs",
-        "exists": true,
-        "sha256": "c912349909d3ef8404564bcb7fafb264602d1730061807891491a2f278b19718",
-        "size": 440
-      },
-      {
-        "path": "src/capture-policy-core.js",
-        "exists": true,
-        "sha256": "ca7699e2a6cd304485d6400b43bd93794aa1bf1be5fa6a39d9e0c952687cfde5",
-        "size": 1123
+        "sha256": "7b5594981f9b807e53df7ff3e96f9ad4979d757c782aeb04ba1a91c923ea5b6d",
+        "size": 30285
       }
     ],
-    "workingTreeFingerprint": "sha256:495bef0e9d73075208f598fcaa4b57a53ad2d5bd5882ef65f5f55ea448d93eed",
+    "workingTreeFingerprint": "sha256:68bed4e245cdafdf090d3844e2f2c68211763aa19c80b70d139535b6b6e4dc43",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0021-p3-s1-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0021-p3-s1-verified.json"
       },
       {
         "status": " M",
@@ -340,54 +270,13 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_capture_policy.py",
-        "displayPath": "scripts/audit_capture_policy.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_capture_policy_core.mjs",
-        "displayPath": "scripts/test_capture_policy_core.mjs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/platform.rs",
-        "displayPath": "src-tauri/src/platform.rs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/capture_health.rs",
-        "displayPath": "src-tauri/src/runtime/capture_health.rs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/mod.rs",
-        "displayPath": "src-tauri/src/runtime/mod.rs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/capture-policy-core.js",
-        "displayPath": "src/capture-policy-core.js"
       }
     ]
   },
-  "inFlightAction": {
+  "inFlightAction": null,
+  "lastAction": {
     "actionId": "ACT-COMMIT-P3S1-001",
     "kind": "git_commit",
     "targetIdentity": "P3-S1 health-verified capture providers",
@@ -402,26 +291,9 @@
       "p3s1-criteria-verified",
       "git-status-project-owned-paths"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-COMMIT-P2S2-FINAL-LEDGER-001",
-    "kind": "git_commit",
-    "targetIdentity": "final P2-S2 ledger on HEAD 60b5e75",
-    "sideEffectClass": "git_commit",
-    "expectedPrecondition": "criteria valid on current HEAD",
-    "expectedPostcondition": "ledger commit only",
-    "idempotencyKey": "commit:p2s2-final:60b5e75:evd0084",
-    "startedAt": "2026-07-13T07:43:44Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "goal-externalAuthorization-git_commit",
-      "criteria-valid",
-      "docs-execution-dirty"
-    ],
     "status": "succeeded",
-    "endedAt": "2026-07-13T07:43:45Z",
-    "result": "final ledger committed"
+    "endedAt": "2026-07-13T08:06:00Z",
+    "result": "P3-S1 capture health commit created"
   },
   "safety": {
     "realInputSent": false,
@@ -515,9 +387,9 @@
     ]
   },
   "eventTail": {
-    "seq": 257,
-    "id": "EVT-0257",
-    "hash": "sha256:44f2504107e8b38c543e9d77c1f2130433ff69f4b1973665e2e59f593607fb9b"
+    "seq": 258,
+    "id": "EVT-0258",
+    "hash": "sha256:91c9ccfde608cb10bef57c8d9cbc3c6c3c6a1fb103bded04ad7e78f992a83030"
   },
   "evidenceTail": {
     "seq": 91,

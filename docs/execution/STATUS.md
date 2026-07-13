@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:30e6a279c2b9d70024fec59dbf6633685500f661eff27c21c9517150d11a9cab -->
+<!-- state-digest: sha256:caba35239fa7cd7eb68deee79f440ae989fec1436fb419e2dba8bcab0e6e7591 -->
 <!-- checkpoint-id: CP-0021 -->
 # 长任务执行状态
 
@@ -8,26 +8,26 @@
 
 ## 恢复首屏
 
-- 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-13T08:06:00Z`
-- 更新时间（北京时间）：`2026-07-13T16:06:00+08:00`
+- 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
+- 更新时间（UTC）：`2026-07-13T08:06:01Z`
+- 更新时间（北京时间）：`2026-07-13T16:06:01+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P3`
 - 当前切片：`P3-S1` - health-verified capture providers and black/stale frame gates
-- 阶段状态：`verifying`；切片状态：`verified`；动作状态：`running`
+- 阶段状态：`verifying`；切片状态：`verified`；动作状态：`succeeded`
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
-- 当前工作：未决动作 `ACT-COMMIT-P3S1-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：P3-S1 after capture health changes: Vite production build green（EVD-0091，当前工作区绑定有效）
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P3S1-001；结果明确前禁止重放
+- 当前工作：当前没有副作用动作在执行，停在下一动作之前
+- 最新当前有效证据：最近事件：副作用动作 ACT-COMMIT-P3S1-001 -> succeeded（EVT-0258；不是当前验收通过证据）
+- 唯一下一动作：Commit P3-S1 and continue P3 vision hardening
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
 - 最新 checkpoint：`CP-0021`；safeToResume=`true`；safeToRunLiveInput=`false`
-- 当前允许：只读审计、连续性元数据对账。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`134350s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`134351s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -90,15 +90,11 @@
 
 ## 当前动作
 
-- actionId：`ACT-COMMIT-P3S1-001`
-- 类型：`git_commit`
-- 目标：`P3-S1 health-verified capture providers`
-- 副作用级别：`git_commit`
-- 状态：`running`
+- 当前没有未决副作用动作。
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P3S1-001；结果明确前禁止重放
+- 唯一下一动作：Commit P3-S1 and continue P3 vision hardening
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -114,10 +110,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`794a4fab5225bb5b27b41174a613655ffd4919dd`
+- observed HEAD：`683cbacf37c9fe0e037e842b2f6ca8dd2ea2e0f3`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:495bef0e9d73075208f598fcaa4b57a53ad2d5bd5882ef65f5f55ea448d93eed`
+- working tree fingerprint：`sha256:68bed4e245cdafdf090d3844e2f2c68211763aa19c80b70d139535b6b6e4dc43`
 - 最新 checkpoint：`CP-0021` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -125,16 +121,8 @@
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0021-p3-s1-verified.json`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
-- `scripts/audit_capture_policy.py`
-- `scripts/test_capture_policy_core.mjs`
-- `src-tauri/src/platform.rs`
-- `src-tauri/src/runtime/capture_health.rs`
-- `src-tauri/src/runtime/mod.rs`
-- `src/capture-policy-core.js`
 
 ## 运行进程与产物
 
@@ -168,17 +156,16 @@
 | `EVD-0084` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: Playwright 10/10<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0085` | `build` | `passed` | `stale` | P2-S2 final HEAD rebind: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0086` | `test` | `passed` | `stale` | P2-S2 final HEAD rebind: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0087` | `test` | `passed` | `stale` | P2-S2 working-tree rebind after final ledger commits: Playwright 10/10<br>证据工作树指纹与当前现场不同 |
-| `EVD-0088` | `build` | `passed` | `stale` | P2-S2 working-tree rebind: Vite build<br>证据工作树指纹与当前现场不同 |
-| `EVD-0089` | `test` | `passed` | `stale` | P2-S2 working-tree rebind: core regression<br>证据工作树指纹与当前现场不同 |
-| `EVD-0090` | `test` | `passed` | `valid` | P3-S1 health-verified capture providers and black/stale frame gates: full core regression green<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0091` | `build` | `passed` | `valid` | P3-S1 after capture health changes: Vite production build green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0087` | `test` | `passed` | `stale` | P2-S2 working-tree rebind after final ledger commits: Playwright 10/10<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0088` | `build` | `passed` | `stale` | P2-S2 working-tree rebind: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0089` | `test` | `passed` | `stale` | P2-S2 working-tree rebind: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0090` | `test` | `passed` | `stale` | P3-S1 health-verified capture providers and black/stale frame gates: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0091` | `build` | `passed` | `stale` | P3-S1 after capture health changes: Vite production build green<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 248 | `2026-07-13T07:44:13Z` | `test_run` | P2-S2 working-tree rebind after final ledger commits: Playwright 10/10 |
 | 249 | `2026-07-13T07:44:15Z` | `test_run` | P2-S2 working-tree rebind: Vite build |
 | 250 | `2026-07-13T07:45:04Z` | `test_run` | P2-S2 working-tree rebind: core regression |
 | 251 | `2026-07-13T07:46:31Z` | `slice_started` | 开始切片 P3-S1：health-verified capture providers and black/stale frame gates |
@@ -188,6 +175,7 @@
 | 255 | `2026-07-13T08:05:48Z` | `checkpoint` | 创建 CP-0021：P3-S1 criteria passed with health-verified capture provider implementation |
 | 256 | `2026-07-13T08:05:49Z` | `decision` | P3-S1 implemented PrintWindow primary + GDI secondary with black/uniform/stale health fail-closed |
 | 257 | `2026-07-13T08:06:00Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P3S1-001 |
+| 258 | `2026-07-13T08:06:00Z` | `action_result` | 副作用动作 ACT-COMMIT-P3S1-001 -> succeeded |
 
 ## 异常恢复
 
