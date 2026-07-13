@@ -1,0 +1,282 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0017",
+  "createdAt": "2026-07-13T07:00:20Z",
+  "type": "state_snapshot",
+  "reason": "Record local commit 28aca6b of full P0-P2 progress; verifiedHead still previous baseline until gates re-run on new HEAD",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f47be-d3fe-7853-89c5-d8208c7555ce",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P2",
+  "slice": {
+    "id": "P2-S2",
+    "title": "五视口真实渲染与检查器交互验收",
+    "status": "blocked",
+    "startedAt": "2026-07-11T13:06:16Z",
+    "scope": [
+      "index.html,src/styles.css,src/main.js,Playwright screenshots and viewport metrics"
+    ],
+    "nonGoals": [
+      "本切片不启动 Tauri 应用、不读取或迁移真实 AppData、不枚举游戏窗口、不发送输入"
+    ],
+    "safetyBoundaries": [
+      "只启动本任务拥有的 localhost 预览进程；完成后仅停止该 PID；浏览器只做只读 UI 交互"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P2-S2-C1",
+        "text": "当前工作树 Vite 预览以可核验 PID/命令启动并可访问",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "app_runtime"
+        ]
+      },
+      {
+        "id": "P2-S2-C2",
+        "text": "1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C3",
+        "text": "检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P2-S2-C4",
+        "text": "视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过",
+        "status": "pending",
+        "evidenceIds": [],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "Resume P2-S2 five-viewport Playwright against owned localhost preview; then continue P3-P9",
+    "blockers": [
+      "缺少本地预览进程启动与只读 UI 测试授权"
+    ]
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "28aca6b8927f0fd55bc0fa8615b91ca22aec6e4d",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/state.json"
+    ],
+    "dirtyStatus": [
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/state.json"
+    ],
+    "dirtyEntries": [
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+        "displayPath": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "cc4fab88954e7547fe0993473090cd356128cade077ee02e2cbf1db5c5b1d501",
+        "size": 11566
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+        "exists": true,
+        "sha256": "673579572e78e1600a4a42459e29c1058828971651c495e4d5b3deb320be8af3",
+        "size": 8522
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "c31a248be1821bd1a6222f2f95d70658ba191421facffbfffc8642eff307e336",
+        "size": 427620
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "2b11e68d71943cc876024d978a8974a635536bea4875ce1c9a6b8dd7d6213b73",
+        "size": 27611
+      }
+    ],
+    "workingTreeFingerprint": "sha256:bbff2af68b3005344f294132767729371a5f64eb088983be7cdb7f77e069d258"
+  },
+  "gitDiffSha256": "0191dab544df887a13ab3ccd319854e2926db00c4464818898120b2593116225",
+  "dirtyFileHashes": [
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "cc4fab88954e7547fe0993473090cd356128cade077ee02e2cbf1db5c5b1d501",
+      "size": 11566
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+      "exists": true,
+      "sha256": "673579572e78e1600a4a42459e29c1058828971651c495e4d5b3deb320be8af3",
+      "size": 8522
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "c31a248be1821bd1a6222f2f95d70658ba191421facffbfffc8642eff307e336",
+      "size": 427620
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "2b11e68d71943cc876024d978a8974a635536bea4875ce1c9a6b8dd7d6213b73",
+      "size": 27611
+    }
+  ],
+  "eventTail": {
+    "seq": 218,
+    "id": "EVT-0218",
+    "hash": "sha256:6a87c6c357fbca9c64803500dbec35e829c61e05bd8ef235a65eae42c9b0e879"
+  },
+  "evidenceTail": {
+    "seq": 76,
+    "id": "EVD-0076",
+    "hash": "sha256:8640e3a0a95e6244522613b9174c8a0b8c9e939b776d96fca38284866cefaf60"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-11T18:46:50Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run test:ui-viewports"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0016"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:449f79c3bc01eef0f4c5ad48d94702c5ffc4f82fd1a19ca9035efab9104c7222"
+}

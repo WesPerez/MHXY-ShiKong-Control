@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 226,
+  "revision": 232,
   "generation": 1,
-  "updatedAt": "2026-07-13T06:57:23Z",
+  "updatedAt": "2026-07-13T07:00:27Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -83,7 +83,7 @@
         ]
       }
     ],
-    "nextAction": "保持 P2-S2 原唯一下一动作；后续先修复本轮审查发现的 P1/P2 问题再考虑提交",
+    "nextAction": "Resume P2-S2 five-viewport Playwright against owned localhost preview; then continue P3-P9",
     "blockers": [
       "缺少本地预览进程启动与只读 UI 测试授权"
     ]
@@ -204,596 +204,52 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "observedHead": "28aca6b8927f0fd55bc0fa8615b91ca22aec6e4d",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
-      "AGENTS.md",
-      "README.md",
-      "docs/current-progress-and-handoff.md",
-      "docs/execution/PROTOCOL.md",
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
-      "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
-      "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
-      "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
-      "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
-      "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
-      "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
-      "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
-      "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
-      "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
-      "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
-      "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
-      "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
-      "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
-      "docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json",
-      "docs/execution/checkpoints/CP-0016-repository-directory-rename.json",
+      "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
-      "docs/execution/state.json",
-      "docs/next-agent-goal-prompt.md",
-      "docs/project-audit-and-master-plan.md",
-      "docs/workflow-model.md",
-      "index.html",
-      "package-lock.json",
-      "package.json",
-      "playwright.workbench.config.mjs",
-      "scripts/anonymize_workspace_fixture.py",
-      "scripts/audit_capture_policy.py",
-      "scripts/audit_execution_state.py",
-      "scripts/audit_input_safety.py",
-      "scripts/audit_ocr_worker.py",
-      "scripts/audit_p0_safety_boundary.py",
-      "scripts/audit_queue_readiness.py",
-      "scripts/audit_runtime_lane.py",
-      "scripts/audit_workbench_layout.py",
-      "scripts/audit_workbench_viewport_test.py",
-      "scripts/audit_workspace_migration.py",
-      "scripts/execution_progress.py",
-      "scripts/fixtures/workspace-v6-anonymized.json",
-      "scripts/playwright/workbench-viewports.spec.mjs",
-      "scripts/preflight_p0_workspace.py",
-      "scripts/test_capture_policy_core.mjs",
-      "scripts/test_control_flow_core.mjs",
-      "scripts/test_execution_progress.py",
-      "scripts/test_failure_evidence_core.mjs",
-      "scripts/test_live_validation_core.mjs",
-      "scripts/test_run_dispatch_core.mjs",
-      "scripts/test_workbench_layout_core.mjs",
-      "scripts/test_workspace_migration_core.mjs",
-      "scripts/verify_p0_workspace_backup.py",
-      "src-tauri/Cargo.toml",
-      "src-tauri/src/main.rs",
-      "src-tauri/src/platform.rs",
-      "src-tauri/src/runtime/mod.rs",
-      "src-tauri/src/runtime/ocr_pool.rs",
-      "src-tauri/src/runtime/window_lane.rs",
-      "src/capture-policy-core.js",
-      "src/control-flow-core.js",
-      "src/failure-evidence-core.js",
-      "src/main.js",
-      "src/run-dispatch-core.js",
-      "src/styles.css",
-      "src/workbench-layout-core.js",
-      "src/workspace-normalization-core.js"
+      "docs/execution/state.json"
     ],
     "dirtyStatus": [
-      "?? AGENTS.md",
-      " M README.md",
-      "?? docs/current-progress-and-handoff.md",
-      "?? docs/execution/PROTOCOL.md",
-      "?? docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0001-continuity-baseline.json",
-      "?? docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
-      "?? docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
-      "?? docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
-      "?? docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
-      "?? docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
-      "?? docs/execution/checkpoints/CP-0007-p1-s1-final.json",
-      "?? docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
-      "?? docs/execution/checkpoints/CP-0009-p1-s2-final.json",
-      "?? docs/execution/checkpoints/CP-0010-p1-s3-final.json",
-      "?? docs/execution/checkpoints/CP-0011-p1-s4-final.json",
-      "?? docs/execution/checkpoints/CP-0012-p1-s5-final.json",
-      "?? docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
-      "?? docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
-      "?? docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json",
-      "?? docs/execution/checkpoints/CP-0016-repository-directory-rename.json",
-      "?? docs/execution/events.jsonl",
-      "?? docs/execution/evidence.jsonl",
-      "?? docs/execution/state.json",
-      "?? docs/next-agent-goal-prompt.md",
-      "?? docs/project-audit-and-master-plan.md",
-      " M docs/workflow-model.md",
-      " M index.html",
-      " M package-lock.json",
-      " M package.json",
-      "?? playwright.workbench.config.mjs",
-      "?? scripts/anonymize_workspace_fixture.py",
-      "?? scripts/audit_capture_policy.py",
-      "?? scripts/audit_execution_state.py",
-      " M scripts/audit_input_safety.py",
-      "?? scripts/audit_ocr_worker.py",
-      "?? scripts/audit_p0_safety_boundary.py",
-      " M scripts/audit_queue_readiness.py",
-      "?? scripts/audit_runtime_lane.py",
-      "?? scripts/audit_workbench_layout.py",
-      "?? scripts/audit_workbench_viewport_test.py",
-      " M scripts/audit_workspace_migration.py",
-      "?? scripts/execution_progress.py",
-      "?? scripts/fixtures/workspace-v6-anonymized.json",
-      "?? scripts/playwright/workbench-viewports.spec.mjs",
-      "?? scripts/preflight_p0_workspace.py",
-      "?? scripts/test_capture_policy_core.mjs",
-      " M scripts/test_control_flow_core.mjs",
-      "?? scripts/test_execution_progress.py",
-      " M scripts/test_failure_evidence_core.mjs",
-      " M scripts/test_live_validation_core.mjs",
-      "?? scripts/test_run_dispatch_core.mjs",
-      "?? scripts/test_workbench_layout_core.mjs",
-      " M scripts/test_workspace_migration_core.mjs",
-      "?? scripts/verify_p0_workspace_backup.py",
-      " M src-tauri/Cargo.toml",
-      " M src-tauri/src/main.rs",
-      " M src-tauri/src/platform.rs",
-      "?? src-tauri/src/runtime/mod.rs",
-      "?? src-tauri/src/runtime/ocr_pool.rs",
-      "?? src-tauri/src/runtime/window_lane.rs",
-      "?? src/capture-policy-core.js",
-      " M src/control-flow-core.js",
-      " M src/failure-evidence-core.js",
-      " M src/main.js",
-      "?? src/run-dispatch-core.js",
-      " M src/styles.css",
-      "?? src/workbench-layout-core.js",
-      "?? src/workspace-normalization-core.js"
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
-        "path": "AGENTS.md",
-        "exists": true,
-        "sha256": "5de233372f79bfd87ae326fc7849bf78e42727abd8d0e8279174b944c445b3eb",
-        "size": 5854
-      },
-      {
-        "path": "README.md",
-        "exists": true,
-        "sha256": "763d62e4e1f28680992d1d8731ff4cb52d7e0e13f1e2d2bebb8df2e107d44d1a",
-        "size": 17394
-      },
-      {
-        "path": "docs/current-progress-and-handoff.md",
-        "exists": true,
-        "sha256": "77ebb0217c19305f9fe0209290e9bd3c6137b401b470fd06befb30ebde9735c6",
-        "size": 7951
-      },
-      {
-        "path": "docs/execution/PROTOCOL.md",
-        "exists": true,
-        "sha256": "ea08df17495e8bb1d8e279f2a0ffc836157f1da1bc411129c6f3d217772ff9b3",
-        "size": 30945
-      },
-      {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "183db619a19cae6e39d1f3d9fa25504cfbe715de1e1ffe697f13102a0e8a4988",
-        "size": 14554
+        "sha256": "1b1663a4a7e06be316d58c6e855923f60918f899f4898ba24be6c3d9d7b8457a",
+        "size": 11769
       },
       {
-        "path": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
+        "path": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
         "exists": true,
-        "sha256": "40804f1dc38b6b08be6f1e7f30b08bf52d77dc2aec429efde34917a049d101af",
-        "size": 8103
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
-        "exists": true,
-        "sha256": "191822f8a1e8fd4ccafbe455004fcc9d3255c7bbf287afe7d348df6fb00642a9",
-        "size": 8284
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
-        "exists": true,
-        "sha256": "920227ff3af5e9cfbecaa423b06251a3c25b1fba1a84f55476375f2d429eb885",
-        "size": 11090
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
-        "exists": true,
-        "sha256": "f50e540169810b2445ce4cfd27cc2b168e2be2c6190198f68367b3dab4a82404",
-        "size": 19757
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
-        "exists": true,
-        "sha256": "c807a1465a3bd249080e3c821b23ace269ebf9828a2e6aa90e39a74fab6c6216",
-        "size": 25787
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
-        "exists": true,
-        "sha256": "9c90befaedbb97d5fc4b11cf05f847d364bd906ff6d2c11b46be68e70d80daff",
-        "size": 27725
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
-        "exists": true,
-        "sha256": "ecfa2eccf2dc04efef4ad13a6cefc6b7f861193f5cfcb0f017f8812595759917",
-        "size": 28606
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
-        "exists": true,
-        "sha256": "9283d1eac846d99b0d7f6ffd446c84cff3a549e34c24b5fa579afdae7ee3b83d",
-        "size": 32020
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
-        "exists": true,
-        "sha256": "1d0a80114af4a7202b618ac4d2deebdef5ab0f865eec6e252fbcb5055391cf14",
-        "size": 32517
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
-        "exists": true,
-        "sha256": "67cd6e528c73e350bcacb8787dc1f9b51b0f5577072b99cc72e780bde16ddf08",
-        "size": 34070
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
-        "exists": true,
-        "sha256": "afbfbbab6b76d0394f86feed52d11885ed41a4cc034ac5cc48ad089da01f8826",
-        "size": 37898
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
-        "exists": true,
-        "sha256": "6f5c068e18589ee631afd0a6456d2634b3409aa1fd1bca93bad13a5092fb155c",
-        "size": 43230
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
-        "exists": true,
-        "sha256": "ce5916b146ad97aa52a453c0d0af532fd18dc20bd10bf2f82da8c6de991dd2eb",
-        "size": 46916
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
-        "exists": true,
-        "sha256": "f45f8735b92c1df9138f110c68f1a6480b4b5dc2480b32eb7f69cf6e7fe87420",
-        "size": 50392
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json",
-        "exists": true,
-        "sha256": "7d4b563c95bcb2365a9ab63970775afa27d1bc90d2b05b8380137cd703b9e800",
-        "size": 52682
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0016-repository-directory-rename.json",
-        "exists": true,
-        "sha256": "419108219f637f4f145a129c4a056bb8a10b48f1c19f2e0e34ee7945e0f288b3",
-        "size": 54133
+        "sha256": "1fe46fc1704045c3ee985321bc906c77ce1e4fd0a6f91e3fb22134d98a913608",
+        "size": 9361
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "7c664b303728463054e999519923c794a5429ee7bab8b61c9fd18e5235828b95",
-        "size": 425045
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "cb18ad8617f827d421120c83d16c824b49c1a7df2a7cd1b146265da8c3c61973",
-        "size": 187904
+        "sha256": "6e81904c2c66e2b95643a73fbe588118067402aaa1af656c43a51fa7915d7e32",
+        "size": 429972
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "b1565b0fc0f8ecc6d4385f2d74b2247600dae44959ec076482dd78b265b6deb2",
-        "size": 61410
-      },
-      {
-        "path": "docs/next-agent-goal-prompt.md",
-        "exists": true,
-        "sha256": "38f9ef85327f54ca4e8bba103e83df37a3e142653d553e86f0e3d760e1e35da6",
-        "size": 15027
-      },
-      {
-        "path": "docs/project-audit-and-master-plan.md",
-        "exists": true,
-        "sha256": "f49796860e5497399eb6d1a8c08ac40fa03172e6c326c9c23bec7a2c1025bfc9",
-        "size": 80897
-      },
-      {
-        "path": "docs/workflow-model.md",
-        "exists": true,
-        "sha256": "9549cf07adfbaec91edcb911c57e7a864df281a6af126a4421d38c72b68c0e36",
-        "size": 37300
-      },
-      {
-        "path": "index.html",
-        "exists": true,
-        "sha256": "00f3968dcfa6d87a5b57d177a19a0e939d8a2dc740b87684fd48dcd5275e5992",
-        "size": 33761
-      },
-      {
-        "path": "package-lock.json",
-        "exists": true,
-        "sha256": "d8c9c04bcebc7a3f4781b8d6df771dbf09b8e35702a8ff3f50ee9ac0b66ee260",
-        "size": 43760
-      },
-      {
-        "path": "package.json",
-        "exists": true,
-        "sha256": "25696c2638e213e65dbfeb1d3e3202cf298a61eb0c326235c4c889aa582705ba",
-        "size": 4547
-      },
-      {
-        "path": "playwright.workbench.config.mjs",
-        "exists": true,
-        "sha256": "3ea5278ab24ccec527a72bcf8162080cd4342e8085dbfd8d0a2f04f954739309",
-        "size": 995
-      },
-      {
-        "path": "scripts/anonymize_workspace_fixture.py",
-        "exists": true,
-        "sha256": "6c6e519b09f1a274ded9ea67a6b2cbfc700d4f57d9fbfb518ea19c197d17b8a9",
-        "size": 7696
-      },
-      {
-        "path": "scripts/audit_capture_policy.py",
-        "exists": true,
-        "sha256": "1037171c2ea5db60058ca46c7acebd2e42116718aaf3aefb48a55df3538d1b94",
-        "size": 5819
-      },
-      {
-        "path": "scripts/audit_execution_state.py",
-        "exists": true,
-        "sha256": "cf18236942612a04018e1ea0731f02cb64983c6c8649e064c2daefc888a82bdf",
-        "size": 31268
-      },
-      {
-        "path": "scripts/audit_input_safety.py",
-        "exists": true,
-        "sha256": "e149a3b930d38dffd77ad0dd91937428bef7972989d1610320977f00b6648090",
-        "size": 31911
-      },
-      {
-        "path": "scripts/audit_ocr_worker.py",
-        "exists": true,
-        "sha256": "e50f21aab0d525919089d8f4c5681a3cbf5d6ec84a4dd97f1fbbbfb44b6afea7",
-        "size": 7575
-      },
-      {
-        "path": "scripts/audit_p0_safety_boundary.py",
-        "exists": true,
-        "sha256": "d52e59c78d83d6a9fedd756d07a5c2c83d1d3f659ce176c597c4efc3d6a1c78b",
-        "size": 4917
-      },
-      {
-        "path": "scripts/audit_queue_readiness.py",
-        "exists": true,
-        "sha256": "717ff63d2c8434697dae0583005e26eff2057ed951e795a833be0f7494d9458d",
-        "size": 31196
-      },
-      {
-        "path": "scripts/audit_runtime_lane.py",
-        "exists": true,
-        "sha256": "ad0d15411c44ca0099b0e3eff305749d14e99a64dd42d62d5efffb0a49183e43",
-        "size": 7848
-      },
-      {
-        "path": "scripts/audit_workbench_layout.py",
-        "exists": true,
-        "sha256": "18d4576f880b5a0bf2293dcdfe2390f2686d49b49964353b1917f2c015a80277",
-        "size": 5758
-      },
-      {
-        "path": "scripts/audit_workbench_viewport_test.py",
-        "exists": true,
-        "sha256": "440f9d9be6cc34d2aedba00633ca4397cd548f4967cfc0a9903f008f5f2d6020",
-        "size": 4808
-      },
-      {
-        "path": "scripts/audit_workspace_migration.py",
-        "exists": true,
-        "sha256": "4128a84688777187ac8ae518fb5b1ba0c33de6c484286ba97e469918a37ffabb",
-        "size": 6501
-      },
-      {
-        "path": "scripts/execution_progress.py",
-        "exists": true,
-        "sha256": "efbb4243be454b385caae790bd30d4e50d5bcce8f6bca64b6d69de7f307441b5",
-        "size": 118856
-      },
-      {
-        "path": "scripts/fixtures/workspace-v6-anonymized.json",
-        "exists": true,
-        "sha256": "c79aabfa6f3eea357320e9d8936241401380e07c9f02865cd17bdd7610fda2ca",
-        "size": 41433
-      },
-      {
-        "path": "scripts/playwright/workbench-viewports.spec.mjs",
-        "exists": true,
-        "sha256": "01cf8325b494ca207ab8e10dbe2524ec4f9306d6584a79192bd48d6579186c00",
-        "size": 3599
-      },
-      {
-        "path": "scripts/preflight_p0_workspace.py",
-        "exists": true,
-        "sha256": "7ed4ec031bd673ceecdfd6bff80ce6f3259577b53118057fc82b98929ef20709",
-        "size": 5554
-      },
-      {
-        "path": "scripts/test_capture_policy_core.mjs",
-        "exists": true,
-        "sha256": "45a46170d40347484650e80a4291cecff59c3332ac943e7e16eece3da95cd04b",
-        "size": 1487
-      },
-      {
-        "path": "scripts/test_control_flow_core.mjs",
-        "exists": true,
-        "sha256": "a50be0da256ff71b270ebc35ec44952013030ab0e94c65d6946b20e830c35a24",
-        "size": 19805
-      },
-      {
-        "path": "scripts/test_execution_progress.py",
-        "exists": true,
-        "sha256": "93418ad467432691bef364d631e517d31275e672f81499790a811e308b7ff08c",
-        "size": 41559
-      },
-      {
-        "path": "scripts/test_failure_evidence_core.mjs",
-        "exists": true,
-        "sha256": "44f229cbeca5e8eb9e97c5dc41e7f75c723be9ed23661c59c4c5e37bbc20f99d",
-        "size": 5440
-      },
-      {
-        "path": "scripts/test_live_validation_core.mjs",
-        "exists": true,
-        "sha256": "fb534f3cc954fb3a188e5b60dff5975f145966a85b1dc7e4c7661f6291c3d4ca",
-        "size": 7067
-      },
-      {
-        "path": "scripts/test_run_dispatch_core.mjs",
-        "exists": true,
-        "sha256": "0c8cace0c923520850e26514a29032cc9ef1fd76b2935fc3ce959580766e857b",
-        "size": 3895
-      },
-      {
-        "path": "scripts/test_workbench_layout_core.mjs",
-        "exists": true,
-        "sha256": "f20402d0f09da02721cd7a4c0c17ceb54427de5e4e1fde69891358f9392b5052",
-        "size": 1980
-      },
-      {
-        "path": "scripts/test_workspace_migration_core.mjs",
-        "exists": true,
-        "sha256": "de5d2c5da8cdf40f943632f11d86235e8581a9428021914e516ff33d309eed19",
-        "size": 7604
-      },
-      {
-        "path": "scripts/verify_p0_workspace_backup.py",
-        "exists": true,
-        "sha256": "2aedbb0dd30d6c8b25684970629c317495eb68b2d8c13de7c78d5bbbf77cd1be",
-        "size": 6131
-      },
-      {
-        "path": "src-tauri/Cargo.toml",
-        "exists": true,
-        "sha256": "89b224920fdf28340a0d293ce549d6f5cfb9eccff374453d5e4e08a53e8210ec",
-        "size": 831
-      },
-      {
-        "path": "src-tauri/src/main.rs",
-        "exists": true,
-        "sha256": "894c2dfad12b362e3d99117c587e6e9553a3e9e2262fa7217cc5e8b7f5a042b8",
-        "size": 105793
-      },
-      {
-        "path": "src-tauri/src/platform.rs",
-        "exists": true,
-        "sha256": "23a5e58ceff9a6d0f66578e096671953df2209c77e4cab253e7a238d0d28bf63",
-        "size": 39455
-      },
-      {
-        "path": "src-tauri/src/runtime/mod.rs",
-        "exists": true,
-        "sha256": "f50b78ce6c44c2e1eed6f8a0d0a179da49ec5fdfb0b93d7a7d5f435ce94558d2",
-        "size": 186
-      },
-      {
-        "path": "src-tauri/src/runtime/ocr_pool.rs",
-        "exists": true,
-        "sha256": "5489e43059356e908c9b6e616c39cd1acaa53b918cf9a10ce5485e8a6716c972",
-        "size": 20914
-      },
-      {
-        "path": "src-tauri/src/runtime/window_lane.rs",
-        "exists": true,
-        "sha256": "c3ff85db5f7beb0a09ee36c701e4134bcd0010b6d1b0281372f40f80fb1536b7",
-        "size": 23599
-      },
-      {
-        "path": "src/capture-policy-core.js",
-        "exists": true,
-        "sha256": "bc68289d914e2ba474e4ddf6a588185c365b4dc6172c2ee447f975254b51174f",
-        "size": 936
-      },
-      {
-        "path": "src/control-flow-core.js",
-        "exists": true,
-        "sha256": "e925734714aabb06784334dd022ab99a7ab310ad365de5d2c38c7c2428ddbd20",
-        "size": 32437
-      },
-      {
-        "path": "src/failure-evidence-core.js",
-        "exists": true,
-        "sha256": "f42c670a82cdf51e4a317b05cb8f7f5d321ddde633d487a7559807c62904b8ec",
-        "size": 7095
-      },
-      {
-        "path": "src/main.js",
-        "exists": true,
-        "sha256": "c03635029c989ae69b19d915e3983539548fe1ee171f7474371143698e4d6b98",
-        "size": 348972
-      },
-      {
-        "path": "src/run-dispatch-core.js",
-        "exists": true,
-        "sha256": "ee487d4f927180ffd649b20aa4240522c6dabdd52aa9cda52d7309c2a6a66d56",
-        "size": 2864
-      },
-      {
-        "path": "src/styles.css",
-        "exists": true,
-        "sha256": "01f969f59da2b6b150fabd1aa25ffb12c3abf468bb157e28e705615b14ca7f47",
-        "size": 42191
-      },
-      {
-        "path": "src/workbench-layout-core.js",
-        "exists": true,
-        "sha256": "ac5e12510723835771d5700c10ec54140fd940136a840941205913947bf06e16",
-        "size": 1454
-      },
-      {
-        "path": "src/workspace-normalization-core.js",
-        "exists": true,
-        "sha256": "25a06597abc1b18d9bf05a531e37ccaa223690e6beaa771c930e8067becc758f",
-        "size": 16557
+        "sha256": "39b2243b79a7e44b0e8698ec6c85836f9378f54d0bee682f3fc86ab907254f97",
+        "size": 28994
       }
     ],
-    "workingTreeFingerprint": "sha256:06b677eac89f7f4c9ad6913d4fb67120d3e5b29a2d1c4dda0d3854ae3d010435",
+    "workingTreeFingerprint": "sha256:bbff2af68b3005344f294132767729371a5f64eb088983be7cdb7f77e069d258",
     "dirtyEntries": [
       {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "AGENTS.md",
-        "displayPath": "AGENTS.md"
-      },
-      {
         "status": " M",
-        "sourcePath": null,
-        "destinationPath": "README.md",
-        "displayPath": "README.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/current-progress-and-handoff.md",
-        "displayPath": "docs/current-progress-and-handoff.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/PROTOCOL.md",
-        "displayPath": "docs/execution/PROTOCOL.md"
-      },
-      {
-        "status": "??",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
@@ -801,390 +257,41 @@
       {
         "status": "??",
         "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json",
-        "displayPath": "docs/execution/checkpoints/CP-0001-continuity-baseline.json"
+        "destinationPath": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+        "displayPath": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json"
       },
       {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json",
-        "displayPath": "docs/execution/checkpoints/CP-0002-continuity-parser-fix.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json",
-        "displayPath": "docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json",
-        "displayPath": "docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0005-p0-s1-verified.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0006-p1-s1-verified.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0007-p1-s1-final.json",
-        "displayPath": "docs/execution/checkpoints/CP-0007-p1-s1-final.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0008-p1-s2-verified.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0009-p1-s2-final.json",
-        "displayPath": "docs/execution/checkpoints/CP-0009-p1-s2-final.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0010-p1-s3-final.json",
-        "displayPath": "docs/execution/checkpoints/CP-0010-p1-s3-final.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0011-p1-s4-final.json",
-        "displayPath": "docs/execution/checkpoints/CP-0011-p1-s4-final.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0012-p1-s5-final.json",
-        "displayPath": "docs/execution/checkpoints/CP-0012-p1-s5-final.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json",
-        "displayPath": "docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json",
-        "displayPath": "docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json",
-        "displayPath": "docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0016-repository-directory-rename.json",
-        "displayPath": "docs/execution/checkpoints/CP-0016-repository-directory-rename.json"
-      },
-      {
-        "status": "??",
+        "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/events.jsonl",
         "displayPath": "docs/execution/events.jsonl"
       },
       {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": "??",
+        "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/next-agent-goal-prompt.md",
-        "displayPath": "docs/next-agent-goal-prompt.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/project-audit-and-master-plan.md",
-        "displayPath": "docs/project-audit-and-master-plan.md"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "docs/workflow-model.md",
-        "displayPath": "docs/workflow-model.md"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "index.html",
-        "displayPath": "index.html"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "package-lock.json",
-        "displayPath": "package-lock.json"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "package.json",
-        "displayPath": "package.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "playwright.workbench.config.mjs",
-        "displayPath": "playwright.workbench.config.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/anonymize_workspace_fixture.py",
-        "displayPath": "scripts/anonymize_workspace_fixture.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_capture_policy.py",
-        "displayPath": "scripts/audit_capture_policy.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_execution_state.py",
-        "displayPath": "scripts/audit_execution_state.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_input_safety.py",
-        "displayPath": "scripts/audit_input_safety.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_ocr_worker.py",
-        "displayPath": "scripts/audit_ocr_worker.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_p0_safety_boundary.py",
-        "displayPath": "scripts/audit_p0_safety_boundary.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_queue_readiness.py",
-        "displayPath": "scripts/audit_queue_readiness.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_runtime_lane.py",
-        "displayPath": "scripts/audit_runtime_lane.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_workbench_layout.py",
-        "displayPath": "scripts/audit_workbench_layout.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_workbench_viewport_test.py",
-        "displayPath": "scripts/audit_workbench_viewport_test.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_workspace_migration.py",
-        "displayPath": "scripts/audit_workspace_migration.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/execution_progress.py",
-        "displayPath": "scripts/execution_progress.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/fixtures/workspace-v6-anonymized.json",
-        "displayPath": "scripts/fixtures/workspace-v6-anonymized.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/playwright/workbench-viewports.spec.mjs",
-        "displayPath": "scripts/playwright/workbench-viewports.spec.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/preflight_p0_workspace.py",
-        "displayPath": "scripts/preflight_p0_workspace.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_capture_policy_core.mjs",
-        "displayPath": "scripts/test_capture_policy_core.mjs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_control_flow_core.mjs",
-        "displayPath": "scripts/test_control_flow_core.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_execution_progress.py",
-        "displayPath": "scripts/test_execution_progress.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_failure_evidence_core.mjs",
-        "displayPath": "scripts/test_failure_evidence_core.mjs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_live_validation_core.mjs",
-        "displayPath": "scripts/test_live_validation_core.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_run_dispatch_core.mjs",
-        "displayPath": "scripts/test_run_dispatch_core.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_workbench_layout_core.mjs",
-        "displayPath": "scripts/test_workbench_layout_core.mjs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/test_workspace_migration_core.mjs",
-        "displayPath": "scripts/test_workspace_migration_core.mjs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/verify_p0_workspace_backup.py",
-        "displayPath": "scripts/verify_p0_workspace_backup.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/Cargo.toml",
-        "displayPath": "src-tauri/Cargo.toml"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/main.rs",
-        "displayPath": "src-tauri/src/main.rs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/platform.rs",
-        "displayPath": "src-tauri/src/platform.rs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/mod.rs",
-        "displayPath": "src-tauri/src/runtime/mod.rs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/ocr_pool.rs",
-        "displayPath": "src-tauri/src/runtime/ocr_pool.rs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/window_lane.rs",
-        "displayPath": "src-tauri/src/runtime/window_lane.rs"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src/capture-policy-core.js",
-        "displayPath": "src/capture-policy-core.js"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/control-flow-core.js",
-        "displayPath": "src/control-flow-core.js"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/failure-evidence-core.js",
-        "displayPath": "src/failure-evidence-core.js"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/main.js",
-        "displayPath": "src/main.js"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src/run-dispatch-core.js",
-        "displayPath": "src/run-dispatch-core.js"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/styles.css",
-        "displayPath": "src/styles.css"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src/workbench-layout-core.js",
-        "displayPath": "src/workbench-layout-core.js"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "src/workspace-normalization-core.js",
-        "displayPath": "src/workspace-normalization-core.js"
       }
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-COMMIT-EXECUTION-LEDGER-001",
+    "kind": "git_commit",
+    "targetIdentity": "docs/execution ledger after 28aca6b",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "product snapshot already committed as 28aca6b; only docs/execution metadata dirty",
+    "expectedPostcondition": "execution ledger commit records post-commit state and CP-0017; no product code changes",
+    "idempotencyKey": "commit:execution-ledger:28aca6b:CP-0017",
+    "startedAt": "2026-07-13T07:00:27Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "user-explicit-request-commit-all-current-diffs",
+      "goal-externalAuthorization-git_commit",
+      "dirty-paths-only-docs-execution"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-COMMIT-P0-P2-SNAPSHOT-001",
     "kind": "git_commit",
     "targetIdentity": "HEAD:main working tree P0-P2 snapshot",
@@ -1199,25 +306,9 @@
       "goal-externalAuthorization-git_commit",
       "git-status-all-paths-under-repo"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-REPO-RENAME-20260712",
-    "kind": "config_change",
-    "targetIdentity": "E:\\Project\\Common\\MHXY-ShiKong-Control -> E:\\Project\\Common\\mhxy-shikong-control",
-    "sideEffectClass": "config_change",
-    "expectedPrecondition": "resume-check passed; no in-flight action; target resolves to current repository",
-    "expectedPostcondition": "new directory exists; git worktree and origin remain valid; active path references updated",
-    "idempotencyKey": "mhxy-shikong-control-directory-rename-20260712",
-    "startedAt": "2026-07-11T23:22:53Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "user explicitly requested local folder and project reference migration"
-    ],
     "status": "succeeded",
-    "leaseTokenHash": "89da72f549c1872c17c16c62447394ec86d1c862938dbb69212500fc65a3619a",
-    "endedAt": "2026-07-11T23:25:24Z",
-    "result": "repository directory moved to E:\\Project\\Common\\mhxy-shikong-control; origin preserved; active filesystem references updated"
+    "endedAt": "2026-07-13T06:57:44Z",
+    "result": "local commit 28aca6b8927f0fd55bc0fa8615b91ca22aec6e4d on main; 69 files; parent 3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9; not pushed"
   },
   "safety": {
     "realInputSent": false,
@@ -1311,38 +402,36 @@
     ]
   },
   "eventTail": {
-    "seq": 216,
-    "id": "EVT-0216",
-    "hash": "sha256:5825d9ab4a188fc8ae6653a0fea5878878fdfba66504edc5b985b3e5b3468f76"
+    "seq": 220,
+    "id": "EVT-0220",
+    "hash": "sha256:251cc254ba0451257ad53b99ffb807cdde65c3ad5c4a69167255f656df616214"
   },
   "evidenceTail": {
     "seq": 76,
     "id": "EVD-0076",
     "hash": "sha256:8640e3a0a95e6244522613b9174c8a0b8c9e939b776d96fca38284866cefaf60"
   },
-  "checkpointCounter": 16,
+  "checkpointCounter": 17,
   "lastCheckpoint": {
-    "id": "CP-0016",
+    "id": "CP-0017",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0016-repository-directory-rename.json",
-    "createdAt": "2026-07-11T23:26:48Z",
+    "path": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
+    "createdAt": "2026-07-13T07:00:20Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:60c5d5e753701792ba130d4c6529b2586c1aebb74c6e57e74a2258d4c291f33f"
+    "hash": "sha256:449f79c3bc01eef0f4c5ad48d94702c5ffc4f82fd1a19ca9035efab9104c7222"
   },
   "resume": {
     "blockers": [
       "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
     ],
     "nextCommands": [
-      "npm run audit:execution-state",
-      "git status --short --ignored",
-      "npm run execution:preflight-p0"
+      "npm run test:ui-viewports"
     ],
     "doNotDo": [
       "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
     ],
-    "lastSafeResumeSnapshotId": "CP-0016"
+    "lastSafeResumeSnapshotId": "CP-0017"
   },
   "completedSlices": [
     {

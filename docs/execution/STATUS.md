@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:fe9e75f4948efa375edc0e028aabbf8255c604a48f97fdf351289f5de385a9ca -->
-<!-- checkpoint-id: CP-0016 -->
+<!-- state-digest: sha256:99517b085ec6a0833af7339b95938d284ab7700c028dc4fe2ab5e89959d53a41 -->
+<!-- checkpoint-id: CP-0017 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -9,8 +9,8 @@
 ## 恢复首屏
 
 - 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-13T06:57:23Z`
-- 更新时间（北京时间）：`2026-07-13T14:57:23+08:00`
+- 更新时间（UTC）：`2026-07-13T07:00:27Z`
+- 更新时间（北京时间）：`2026-07-13T15:00:27+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
@@ -19,15 +19,15 @@
 - 阶段状态：`blocked`；切片状态：`blocked`；动作状态：`running`
 - 当前切片验收：已满足 `0`，待验证或阻塞 `4`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
-- 当前工作：未决动作 `ACT-COMMIT-P0-P2-SNAPSHOT-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：P0 workspace backup verified without overwriting the source or an existing destination（EVD-0030，当前工作区绑定有效）
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P0-P2-SNAPSHOT-001；结果明确前禁止重放
+- 当前工作：未决动作 `ACT-COMMIT-EXECUTION-LEDGER-001` 处于 `running`，等待只读对账
+- 最新当前有效证据：最近事件：登记副作用动作 ACT-COMMIT-EXECUTION-LEDGER-001（EVT-0220；不是当前验收通过证据）
+- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-EXECUTION-LEDGER-001；结果明确前禁止重放
 - 当前切片执行 blocker：缺少本地预览进程启动与只读 UI 测试授权
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
-- 最新 checkpoint：`CP-0016`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 最新 checkpoint：`CP-0017`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`130233s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`130417s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -83,18 +83,16 @@
 
 ## 当前动作
 
-- actionId：`ACT-COMMIT-P0-P2-SNAPSHOT-001`
+- actionId：`ACT-COMMIT-EXECUTION-LEDGER-001`
 - 类型：`git_commit`
-- 目标：`HEAD:main working tree P0-P2 snapshot`
+- 目标：`docs/execution ledger after 28aca6b`
 - 副作用级别：`git_commit`
 - 状态：`running`
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-P0-P2-SNAPSHOT-001；结果明确前禁止重放
-- 命令：`npm run audit:execution-state`
-- 命令：`git status --short --ignored`
-- 命令：`npm run execution:preflight-p0`
+- 唯一下一动作：对账未决副作用动作 ACT-COMMIT-EXECUTION-LEDGER-001；结果明确前禁止重放
+- 命令：`npm run test:ui-viewports`
 
 ## 阻塞与风险
 
@@ -109,85 +107,20 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
+- observed HEAD：`28aca6b8927f0fd55bc0fa8615b91ca22aec6e4d`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:06b677eac89f7f4c9ad6913d4fb67120d3e5b29a2d1c4dda0d3854ae3d010435`
-- 最新 checkpoint：`CP-0016` (state_snapshot)
+- working tree fingerprint：`sha256:bbff2af68b3005344f294132767729371a5f64eb088983be7cdb7f77e069d258`
+- 最新 checkpoint：`CP-0017` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
 
 ### 当前非 ignored 改动
 
-- `AGENTS.md`
-- `README.md`
-- `docs/current-progress-and-handoff.md`
-- `docs/execution/PROTOCOL.md`
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0001-continuity-baseline.json`
-- `docs/execution/checkpoints/CP-0002-continuity-parser-fix.json`
-- `docs/execution/checkpoints/CP-0003-hardened-continuity-baseline.json`
-- `docs/execution/checkpoints/CP-0004-hardened-long-task-resume.json`
-- `docs/execution/checkpoints/CP-0005-p0-s1-verified.json`
-- `docs/execution/checkpoints/CP-0006-p1-s1-verified.json`
-- `docs/execution/checkpoints/CP-0007-p1-s1-final.json`
-- `docs/execution/checkpoints/CP-0008-p1-s2-verified.json`
-- `docs/execution/checkpoints/CP-0009-p1-s2-final.json`
-- `docs/execution/checkpoints/CP-0010-p1-s3-final.json`
-- `docs/execution/checkpoints/CP-0011-p1-s4-final.json`
-- `docs/execution/checkpoints/CP-0012-p1-s5-final.json`
-- `docs/execution/checkpoints/CP-0013-p2-s1-static-layout.json`
-- `docs/execution/checkpoints/CP-0014-p2-s2-verifier-ready.json`
-- `docs/execution/checkpoints/CP-0015-p2-s2-goal-handoff.json`
-- `docs/execution/checkpoints/CP-0016-repository-directory-rename.json`
+- `docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
-- `docs/next-agent-goal-prompt.md`
-- `docs/project-audit-and-master-plan.md`
-- `docs/workflow-model.md`
-- `index.html`
-- `package-lock.json`
-- `package.json`
-- `playwright.workbench.config.mjs`
-- `scripts/anonymize_workspace_fixture.py`
-- `scripts/audit_capture_policy.py`
-- `scripts/audit_execution_state.py`
-- `scripts/audit_input_safety.py`
-- `scripts/audit_ocr_worker.py`
-- `scripts/audit_p0_safety_boundary.py`
-- `scripts/audit_queue_readiness.py`
-- `scripts/audit_runtime_lane.py`
-- `scripts/audit_workbench_layout.py`
-- `scripts/audit_workbench_viewport_test.py`
-- `scripts/audit_workspace_migration.py`
-- `scripts/execution_progress.py`
-- `scripts/fixtures/workspace-v6-anonymized.json`
-- `scripts/playwright/workbench-viewports.spec.mjs`
-- `scripts/preflight_p0_workspace.py`
-- `scripts/test_capture_policy_core.mjs`
-- `scripts/test_control_flow_core.mjs`
-- `scripts/test_execution_progress.py`
-- `scripts/test_failure_evidence_core.mjs`
-- `scripts/test_live_validation_core.mjs`
-- `scripts/test_run_dispatch_core.mjs`
-- `scripts/test_workbench_layout_core.mjs`
-- `scripts/test_workspace_migration_core.mjs`
-- `scripts/verify_p0_workspace_backup.py`
-- `src-tauri/Cargo.toml`
-- `src-tauri/src/main.rs`
-- `src-tauri/src/platform.rs`
-- `src-tauri/src/runtime/mod.rs`
-- `src-tauri/src/runtime/ocr_pool.rs`
-- `src-tauri/src/runtime/window_lane.rs`
-- `src/capture-policy-core.js`
-- `src/control-flow-core.js`
-- `src/failure-evidence-core.js`
-- `src/main.js`
-- `src/run-dispatch-core.js`
-- `src/styles.css`
-- `src/workbench-layout-core.js`
-- `src/workspace-normalization-core.js`
 
 ## 运行进程与产物
 
@@ -218,29 +151,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0069` | `build` | `passed` | `stale` | P1-S5 当前工作树 Vite 生产构建通过<br>证据工作树指纹与当前现场不同 |
-| `EVD-0070` | `test` | `passed` | `stale` | P1-S5 固定 OCR workers、有限队列、取消超时和跨 worker 并行 Rust 门禁通过<br>证据工作树指纹与当前现场不同 |
-| `EVD-0071` | `test` | `passed` | `stale` | P2-S1 检查器 tab、目标视口布局契约与全部 core 回归通过<br>证据工作树指纹与当前现场不同 |
-| `EVD-0072` | `test` | `passed` | `stale` | P2-S1 工作台语义结构、非零列表轨道、响应式滚动和 DOM id 静态审计通过<br>证据工作树指纹与当前现场不同 |
-| `EVD-0073` | `build` | `passed` | `stale` | P2-S1 当前工作树 Vite 生产构建通过<br>证据工作树指纹与当前现场不同 |
-| `EVD-0074` | `test` | `passed` | `stale` | P2-S2 Playwright verifier 加入后全部 core 与连续性回归通过；真实 UI 尚未执行<br>证据工作树指纹与当前现场不同 |
-| `EVD-0075` | `test` | `passed` | `stale` | P2-S2 五视口 verifier 静态覆盖、布局审计和安全审计通过；真实 UI 尚未执行<br>证据工作树指纹与当前现场不同 |
-| `EVD-0076` | `build` | `passed` | `stale` | P2-S2 Playwright verifier 加入后 Vite 生产构建通过<br>证据工作树指纹与当前现场不同 |
+| `EVD-0069` | `build` | `passed` | `stale` | P1-S5 当前工作树 Vite 生产构建通过<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0070` | `test` | `passed` | `stale` | P1-S5 固定 OCR workers、有限队列、取消超时和跨 worker 并行 Rust 门禁通过<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0071` | `test` | `passed` | `stale` | P2-S1 检查器 tab、目标视口布局契约与全部 core 回归通过<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0072` | `test` | `passed` | `stale` | P2-S1 工作台语义结构、非零列表轨道、响应式滚动和 DOM id 静态审计通过<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0073` | `build` | `passed` | `stale` | P2-S1 当前工作树 Vite 生产构建通过<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0074` | `test` | `passed` | `stale` | P2-S2 Playwright verifier 加入后全部 core 与连续性回归通过；真实 UI 尚未执行<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0075` | `test` | `passed` | `stale` | P2-S2 五视口 verifier 静态覆盖、布局审计和安全审计通过；真实 UI 尚未执行<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0076` | `build` | `passed` | `stale` | P2-S2 Playwright verifier 加入后 Vite 生产构建通过<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 207 | `2026-07-11T18:46:49Z` | `runtime_observation` | 2026-07-12 恢复复核未发现该 PID 或任何 MyGame_x64r.exe 进程 |
-| 208 | `2026-07-11T18:46:50Z` | `runtime_observation` | 2026-07-12 恢复复核未发现该 PID 或任何 MyGame_x64r.exe 进程 |
-| 209 | `2026-07-11T18:46:51Z` | `slice_state_changed` | 更新验收轴 restartPersistenceVerified -> not_verified |
-| 210 | `2026-07-11T18:46:52Z` | `decision` | 完成历史任务与当前累计进度交接文档，并生成可直接放入 Codex Goal 的 P0-P9 自主执行提示词 |
 | 211 | `2026-07-11T18:46:54Z` | `checkpoint` | 创建 CP-0015：历史任务归因、P0-P2 当前事实、P3-P9 待办、授权边界和下一 Agent 长期 Goal 提示词已落盘 |
 | 212 | `2026-07-11T23:22:53Z` | `action_intent` | 登记副作用动作 ACT-REPO-RENAME-20260712 |
 | 213 | `2026-07-11T23:25:24Z` | `action_result` | 副作用动作 ACT-REPO-RENAME-20260712 -> succeeded |
 | 214 | `2026-07-11T23:26:47Z` | `decision` | 仓库与本地目录已统一为 mhxy-shikong-control；origin、活动绝对路径和测试 fixture 已迁移，哈希链历史路径按协议保留 |
 | 215 | `2026-07-11T23:26:49Z` | `checkpoint` | 创建 CP-0016：完成 GitHub 仓库名、本地目录和活动路径引用迁移 |
 | 216 | `2026-07-13T06:57:23Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-P0-P2-SNAPSHOT-001 |
+| 217 | `2026-07-13T06:57:44Z` | `action_result` | 副作用动作 ACT-COMMIT-P0-P2-SNAPSHOT-001 -> succeeded |
+| 218 | `2026-07-13T06:57:46Z` | `commit` | Committed full current P0-P2 worktree snapshot as 28aca6b |
+| 219 | `2026-07-13T07:00:21Z` | `checkpoint` | 创建 CP-0017：Record local commit 28aca6b of full P0-P2 progress; verifiedHead still previous baseline until gates re-run on new HEAD |
+| 220 | `2026-07-13T07:00:27Z` | `action_intent` | 登记副作用动作 ACT-COMMIT-EXECUTION-LEDGER-001 |
 
 ## 异常恢复
 
