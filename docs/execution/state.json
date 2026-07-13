@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 258,
+  "revision": 260,
   "generation": 1,
-  "updatedAt": "2026-07-13T07:42:06Z",
+  "updatedAt": "2026-07-13T07:42:07Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -29,7 +29,7 @@
   "overallStatus": "active",
   "currentPhaseId": "P2",
   "phaseStatus": "verified",
-  "actionStatus": "running",
+  "actionStatus": "succeeded",
   "acceptanceLevel": "design",
   "activeSlice": {
     "id": "P2-S2",
@@ -221,69 +221,47 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "1f99f57a50d7b231b0da911091ccec43b8e39f1a",
+    "observedHead": "1f5a1842379a742727280bb721f7cd3e1d04011b",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
       " M docs/execution/events.jsonl",
-      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "e63ec9348b4add80c4eea34287835ec924a9078829525763a7b8da152c5c52eb",
-        "size": 11771
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
-        "exists": true,
-        "sha256": "6f5a00e279b83fccffa47a723dbc85ca7f30c408e4507dc7b00261cb38311ea1",
-        "size": 10182
+        "sha256": "f2d57a4e1746e8e8e21051c3d04d285bc4d19a4abfd384172e67b66a4b1480e3",
+        "size": 11401
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "a1048efad4d69e5035c998b8140c97c29b8346e593e30e0297a581e7f07ce9ed",
-        "size": 452148
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "d2300edd17f71719b9ee6e77708c8e92d508978883d1c351d49bbd1a4e71775c",
-        "size": 199637
+        "sha256": "30e92089fac62d78da9394e5fdb873c9428ac22b827e3f890f317c9f5d287806",
+        "size": 453399
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "77e594c5e9089543d2b5f30cf59db5d5b08f701e40a6808c7a0df5c5dc67989c",
-        "size": 29332
+        "sha256": "8767e311ce522eda7d1cb73b5afe5008a7f8d479af6c300669538692b7020b5b",
+        "size": 27535
       }
     ],
-    "workingTreeFingerprint": "sha256:2ff9c8e7be37a4f0432a8e81ba0383f8c6b29c6f76fe7e7baf4c4128a7490966",
+    "workingTreeFingerprint": "sha256:bc4b1e29685275df84f07e5354c141ab920c7c80c60ddac3b5e175cfb755c164",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json",
-        "displayPath": "docs/execution/checkpoints/CP-0019-p2-s2-head-rebound.json"
       },
       {
         "status": " M",
@@ -294,18 +272,13 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
       }
     ]
   },
-  "inFlightAction": {
+  "inFlightAction": null,
+  "lastAction": {
     "actionId": "ACT-COMMIT-P2S2-REBIND-001",
     "kind": "git_commit",
     "targetIdentity": "P2-S2 evidence rebind ledger",
@@ -320,26 +293,9 @@
       "p2s2-evidence-rebound",
       "docs-execution-only-dirty"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-COMMIT-P2S2-001",
-    "kind": "git_commit",
-    "targetIdentity": "P2-S2 viewport verification tooling and ledger",
-    "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P2-S2 criteria verified; no in-flight action",
-    "expectedPostcondition": "local commit of P2-S2 verifier improvements, continuity test fix, and execution ledger",
-    "idempotencyKey": "commit:p2s2:fc49aaf:evd0077",
-    "startedAt": "2026-07-13T07:39:39Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "goal-externalAuthorization-git_commit",
-      "p2s2-criteria-verified",
-      "git-status-project-owned-paths"
-    ],
     "status": "succeeded",
-    "endedAt": "2026-07-13T07:39:44Z",
-    "result": "local commit for P2-S2 verification tooling and ledger"
+    "endedAt": "2026-07-13T07:42:07Z",
+    "result": "ledger rebound commit"
   },
   "safety": {
     "realInputSent": false,
@@ -433,9 +389,9 @@
     ]
   },
   "eventTail": {
-    "seq": 240,
-    "id": "EVT-0240",
-    "hash": "sha256:4523c68d8f4115dea54fd9fb9945501ca9b5673bdd4e6ad7854f0a2adce4b3cf"
+    "seq": 241,
+    "id": "EVT-0241",
+    "hash": "sha256:251a930286846c7f628d7334906904407b50fa28941c8f8afac2c70a89ca1acd"
   },
   "evidenceTail": {
     "seq": 83,
