@@ -117,11 +117,15 @@ export function isFailureStepResult(result) {
       "cancelled",
       "timeout",
       "missing_asset",
+      "missing_template",
+      "search_budget_exceeded",
       "below_threshold",
       "text_miss",
       "ocr_unavailable",
       "ocr_queue_full",
       "missing_expect",
+      "capture_unavailable",
+      "capture_unreliable",
     ].includes(status) ||
     Boolean(result?.detail && /失败|error|unsupported|identity|threshold|missing/i.test(String(result.detail)))
   );
@@ -144,6 +148,10 @@ function compactStepResult(step) {
     score: step.score ?? null,
     x: step.x ?? null,
     y: step.y ?? null,
+    matchX: step.matchX ?? step.match_x ?? null,
+    matchY: step.matchY ?? step.match_y ?? null,
+    matchWidth: step.matchWidth ?? step.match_width ?? null,
+    matchHeight: step.matchHeight ?? step.match_height ?? null,
     startedAt: text(step.startedAt || ""),
     endedAt: text(step.endedAt || ""),
     durationMs: finiteNumber(step.durationMs, 0),

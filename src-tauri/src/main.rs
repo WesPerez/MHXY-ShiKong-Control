@@ -214,6 +214,10 @@ struct StepDispatchResult {
     x: Option<u32>,
     y: Option<u32>,
     score: Option<f32>,
+    match_x: Option<u32>,
+    match_y: Option<u32>,
+    match_width: Option<u32>,
+    match_height: Option<u32>,
     capture_provider: Option<CaptureProvider>,
     capture_reliability: Option<CaptureReliability>,
     captured_at_ms: Option<u64>,
@@ -1001,16 +1005,30 @@ fn dispatch_image_step(
             h: roi.h,
         });
         let matched =
-            match_template_budgeted(frame, &template, search_roi, has_explicit_roi, || {
+            match match_template_budgeted(frame, &template, search_roi, has_explicit_roi, || {
                 control.checkpoint()
-            })?;
-        let matched = TemplateMatch {
-            x: matched.x,
-            y: matched.y,
-            width: matched.width,
-            height: matched.height,
-            score: matched.score,
-        };
+            }) {
+                Ok(matched) => TemplateMatch {
+                    x: matched.x,
+                    y: matched.y,
+                    width: matched.width,
+                    height: matched.height,
+                    score: matched.score,
+                },
+                Err(error) if error.contains("search_budget_exceeded") => {
+                    let mut output = step_result(
+                        hwnd,
+                        &step.step_type,
+                        "search_budget_exceeded",
+                        mode.image_action(),
+                        error,
+                    );
+                    output.matched = false;
+                    attach_capture_metadata(&mut output, &captured.metadata);
+                    return Ok(output);
+                }
+                Err(error) => return Err(error),
+            };
         control.checkpoint()?;
         let click_point = image_click_point(&matched, step, frame.width, frame.height)?;
         let mut output = step_result_with_input(
@@ -1036,6 +1054,7 @@ fn dispatch_image_step(
         output.matched = matched.score >= threshold;
         output.x = Some(click_point.x);
         output.y = Some(click_point.y);
+        attach_match_box(&mut output, &matched);
         attach_capture_metadata(&mut output, &captured.metadata);
         if mode.sends_input() && matched.score >= threshold {
             let result = commit_visual_input(control, &captured.metadata, || {
@@ -1545,6 +1564,10 @@ fn step_result_with_input(
         x: None,
         y: None,
         score,
+        match_x: None,
+        match_y: None,
+        match_width: None,
+        match_height: None,
         capture_provider: None,
         capture_reliability: None,
         captured_at_ms: None,
@@ -1561,6 +1584,13 @@ fn attach_capture_metadata(result: &mut StepDispatchResult, metadata: &CaptureMe
     result.frame_hash = Some(metadata.frame_hash.clone());
     result.capture_width = Some(metadata.width);
     result.capture_height = Some(metadata.height);
+}
+
+fn attach_match_box(result: &mut StepDispatchResult, matched: &TemplateMatch) {
+    result.match_x = Some(matched.x);
+    result.match_y = Some(matched.y);
+    result.match_width = Some(matched.width);
+    result.match_height = Some(matched.height);
 }
 
 fn append_step_metadata(result: &mut StepDispatchResult, step: &WorkflowStepInput) {
@@ -2843,6 +2873,25 @@ mod tests {
         assert_eq!(status, "missing_template");
         assert!(!matched);
         assert!(detail.contains("template"));
+    }
+
+    #[test]
+    fn step_result_carries_match_box_fields() {
+        let mut output =
+            step_result_with_input(1, "wait_image", "matched", "match", "ok", false, Some(0.95));
+        let matched = TemplateMatch {
+            x: 10,
+            y: 20,
+            width: 32,
+            height: 40,
+            score: 0.95,
+        };
+        attach_match_box(&mut output, &matched);
+        assert_eq!(output.match_x, Some(10));
+        assert_eq!(output.match_y, Some(20));
+        assert_eq!(output.match_width, Some(32));
+        assert_eq!(output.match_height, Some(40));
+        assert!(!output.input_sent);
     }
 
     #[test]

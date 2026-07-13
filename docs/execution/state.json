@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 292,
+  "revision": 306,
   "generation": 1,
-  "updatedAt": "2026-07-13T08:17:59Z",
+  "updatedAt": "2026-07-13T08:25:32Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -32,73 +32,71 @@
   "actionStatus": "none",
   "acceptanceLevel": "design",
   "activeSlice": {
-    "id": "P3-S2",
-    "title": "ROI-required template matching with search budget and fail-closed wait_image",
+    "id": "P3-S3",
+    "title": "Vision fail-closed taxonomy and match debug metadata",
     "status": "verified",
-    "startedAt": "2026-07-13T08:08:12Z",
+    "startedAt": "2026-07-13T08:21:44Z",
     "scope": [
+      "src/main.js",
+      "src/failure-evidence-core.js",
+      "scripts/test_failure_evidence_core.mjs",
       "src-tauri/src/main.rs",
-      "src-tauri/src/runtime/vision_match.rs",
-      "src-tauri/src/runtime/mod.rs",
-      "scripts/audit_capture_policy.py"
+      "src-tauri/src/runtime/vision_match.rs"
     ],
     "nonGoals": [
-      "Do not integrate OpenCV in this slice",
-      "Do not send live game input"
+      "Do not integrate OpenCV",
+      "Do not send live game input",
+      "Do not require full WGC implementation in this slice"
     ],
     "safetyBoundaries": [
-      "wait_image/detect_page without template never report matched=true",
-      "Unbudgeted full-frame brute-force search fails closed"
+      "missing_template and search_budget_exceeded never count as matched success",
+      "Match debug metadata is observational only and never authorizes input"
     ],
     "acceptanceCriteria": [
       {
-        "id": "P3-S2-C1",
-        "text": "wait_image without template returns missing_template and matched=false",
+        "id": "P3-S3-C1",
+        "text": "Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0094",
-          "EVD-0095",
-          "EVD-0096"
+          "EVD-0101",
+          "EVD-0102"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S2-C2",
-        "text": "template search enforces ROI/search budget and fails closed when over budget",
+        "id": "P3-S3-C2",
+        "text": "Rust StepDispatchResult exposes match box fields when a template match is attempted",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0094",
-          "EVD-0095",
-          "EVD-0096"
+          "EVD-0101",
+          "EVD-0102"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S2-C3",
-        "text": "match_template still supports cancel/deadline checkpoints and finds exact matches inside ROI",
+        "id": "P3-S3-C3",
+        "text": "wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0094",
-          "EVD-0095",
-          "EVD-0096"
+          "EVD-0101",
+          "EVD-0102"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       },
       {
-        "id": "P3-S2-C4",
-        "text": "Rust vision unit tests and Node/Python core regression remain green",
+        "id": "P3-S3-C4",
+        "text": "Core regression and Vite build remain green",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0094",
-          "EVD-0095",
-          "EVD-0096",
-          "EVD-0097"
+          "EVD-0101",
+          "EVD-0102",
+          "EVD-0103"
         ],
         "requiredEvidenceCategories": [
           "build",
@@ -106,7 +104,7 @@
         ]
       }
     ],
-    "nextAction": "git commit P3-S2 product + ledger"
+    "nextAction": "git commit P3-S3"
   },
   "phases": [
     {
@@ -224,97 +222,89 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "8747ff9a708217ae5784b354140b07fdcc1a869b",
+    "observedHead": "32285112845c17f0fcc5d3e617707eb14879294e",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0022-p3-s2-verified.json",
+      "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
       "docs/execution/state.json",
+      "scripts/test_failure_evidence_core.mjs",
       "src-tauri/src/main.rs",
-      "src-tauri/src/platform.rs",
-      "src-tauri/src/runtime/capture_health.rs",
-      "src-tauri/src/runtime/mod.rs",
-      "src-tauri/src/runtime/vision_match.rs"
+      "src/failure-evidence-core.js",
+      "src/main.js"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0022-p3-s2-verified.json",
+      "?? docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json",
+      " M scripts/test_failure_evidence_core.mjs",
       " M src-tauri/src/main.rs",
-      " M src-tauri/src/platform.rs",
-      " M src-tauri/src/runtime/capture_health.rs",
-      " M src-tauri/src/runtime/mod.rs",
-      " M src-tauri/src/runtime/vision_match.rs"
+      " M src/failure-evidence-core.js",
+      " M src/main.js"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "d51043593929ac79485a24dea7ba6d114227ad9beda59cd921d13fd9542f3321",
-        "size": 11897
+        "sha256": "4fd85fd2344280f32cfa2972a3470bbe43bb406dc76b83db90d0b4cb1742e5e1",
+        "size": 11771
       },
       {
-        "path": "docs/execution/checkpoints/CP-0022-p3-s2-verified.json",
+        "path": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
         "exists": true,
-        "sha256": "dec70ef18725760bb94c2a19684a5151ca49e7c3d6c0872dec192e5686b4462b",
-        "size": 13504
+        "sha256": "872dadfd6e2229ba2fce682c6b4f2724f1500a0bccdd995991f9fa571eb5417d",
+        "size": 12699
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "0b2f5ff42ed95d0fa6871822602869bf5f6d75c04bb049ab450c2938792b14cd",
-        "size": 479982
+        "sha256": "d7437ffbeab17e71eab775630596117f0e358925c5bf04ab022d2f0ded9548d6",
+        "size": 489946
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "ed7ed217c0823674a42cb5d1c57dd47b9827406075517e6c48d5285554be9f80",
-        "size": 222111
+        "sha256": "a31f035c20751691a37b9df92aa58f6557fed317ec15fda7e9781ee9de14cfc7",
+        "size": 231656
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "e31bed7a449d2d9a856e6eacdcd9129ae11eb67cb999b868dd0071c4b76f55e0",
-        "size": 36159
+        "sha256": "84edfbee3752ea2bae6aa7cd30ccdbd126419d6864754d1f9130e7012efe54ba",
+        "size": 38197
+      },
+      {
+        "path": "scripts/test_failure_evidence_core.mjs",
+        "exists": true,
+        "sha256": "42213e2ed76a1181c1e62ffc6edccdcb1960ff431c615b3196cdfad7cc5f2d81",
+        "size": 5725
       },
       {
         "path": "src-tauri/src/main.rs",
         "exists": true,
-        "sha256": "f32b92939aa5f9a6c4137c78b96fad732658a99f934f9efaeffbebb817fbf7c5",
-        "size": 108297
+        "sha256": "d38598ab044915794f4674f714f0462d2e404bdad87e22f17c2fdd51f358ad8d",
+        "size": 106890
       },
       {
-        "path": "src-tauri/src/platform.rs",
+        "path": "src/failure-evidence-core.js",
         "exists": true,
-        "sha256": "9978a0c1a38d3d6d3e14ab62472c2f7bde995c64386b19eed3535b698b1591c4",
-        "size": 47650
+        "sha256": "b7523b0559ae3ca875c12af192295845b868a048edc981d9c4e6599cf5a30743",
+        "size": 7632
       },
       {
-        "path": "src-tauri/src/runtime/capture_health.rs",
+        "path": "src/main.js",
         "exists": true,
-        "sha256": "c4ca459c642dd2cb90ef72ef4ae9c55554bf6038e72283d976c7589b0bdce9ef",
-        "size": 10181
-      },
-      {
-        "path": "src-tauri/src/runtime/mod.rs",
-        "exists": true,
-        "sha256": "2385e9669dcc6f160ca6dc80c7b2edc50d6ed7cea8d246f514bead1a700a80fa",
-        "size": 547
-      },
-      {
-        "path": "src-tauri/src/runtime/vision_match.rs",
-        "exists": true,
-        "sha256": "b6cdca2c921b9aa36ffb098479d5fd5f2a20ad49844fa32e83acdb1c69c92abc",
-        "size": 10359
+        "sha256": "f3c0380fd1d04f57a9dcaa0602e06913900103ada4e682e9db0cfa797872dbb2",
+        "size": 353460
       }
     ],
-    "workingTreeFingerprint": "sha256:32780dae7809287ec3756cf5605a9a7d7b7e00785accff314b5fc21f7b97667f",
+    "workingTreeFingerprint": "sha256:c9575de8233d0ba0d2f4e7fbec296d00f0aa8556922edd2007de94530426a854",
     "dirtyEntries": [
       {
         "status": " M",
@@ -325,8 +315,8 @@
       {
         "status": "??",
         "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0022-p3-s2-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0022-p3-s2-verified.json"
+        "destinationPath": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json"
       },
       {
         "status": " M",
@@ -349,32 +339,26 @@
       {
         "status": " M",
         "sourcePath": null,
+        "destinationPath": "scripts/test_failure_evidence_core.mjs",
+        "displayPath": "scripts/test_failure_evidence_core.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
         "destinationPath": "src-tauri/src/main.rs",
         "displayPath": "src-tauri/src/main.rs"
       },
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "src-tauri/src/platform.rs",
-        "displayPath": "src-tauri/src/platform.rs"
+        "destinationPath": "src/failure-evidence-core.js",
+        "displayPath": "src/failure-evidence-core.js"
       },
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/capture_health.rs",
-        "displayPath": "src-tauri/src/runtime/capture_health.rs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/mod.rs",
-        "displayPath": "src-tauri/src/runtime/mod.rs"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src-tauri/src/runtime/vision_match.rs",
-        "displayPath": "src-tauri/src/runtime/vision_match.rs"
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
       }
     ]
   },
@@ -490,24 +474,24 @@
     ]
   },
   "eventTail": {
-    "seq": 270,
-    "id": "EVT-0270",
-    "hash": "sha256:f5f7e078b0bffc0ad5e435643abb468258e83168e5b97426ed9ab258be211722"
+    "seq": 282,
+    "id": "EVT-0282",
+    "hash": "sha256:40a31205a7bb8700c2df515a654597cef4fd404081c388f3fecd1264fe5a4f4f"
   },
   "evidenceTail": {
-    "seq": 97,
-    "id": "EVD-0097",
-    "hash": "sha256:8b32083a60af6360d1889ef9acb5a0301b7b6aa6ac628832a48f4968c8da9fff"
+    "seq": 103,
+    "id": "EVD-0103",
+    "hash": "sha256:7310324d37d4c5b1968f7e021f32a82ee6839dc372b84a41c7039a767aa255f6"
   },
-  "checkpointCounter": 22,
+  "checkpointCounter": 23,
   "lastCheckpoint": {
-    "id": "CP-0022",
+    "id": "CP-0023",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0022-p3-s2-verified.json",
-    "createdAt": "2026-07-13T08:17:58Z",
+    "path": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+    "createdAt": "2026-07-13T08:25:31Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:6f7ea9e29c04df9142c0a131787cf0c20f73d9c684664d2a33817362ac589a7a"
+    "hash": "sha256:4aacb3eb7cb3f5d5fd5bc962959e4a53578902102ff252b0a208c59d5c910d9d"
   },
   "resume": {
     "blockers": [
@@ -519,7 +503,7 @@
     "doNotDo": [
       "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
     ],
-    "lastSafeResumeSnapshotId": "CP-0022"
+    "lastSafeResumeSnapshotId": "CP-0023"
   },
   "completedSlices": [
     {
@@ -1109,6 +1093,94 @@
       "nextAction": "Continue P3 vision engine: ROI/template budget and fail-closed matching improvements",
       "phaseId": "P3",
       "verifiedAt": "2026-07-13T08:08:12Z"
+    },
+    {
+      "id": "P3-S2",
+      "title": "ROI-required template matching with search budget and fail-closed wait_image",
+      "status": "verified",
+      "startedAt": "2026-07-13T08:08:12Z",
+      "scope": [
+        "src-tauri/src/main.rs",
+        "src-tauri/src/runtime/vision_match.rs",
+        "src-tauri/src/runtime/mod.rs",
+        "scripts/audit_capture_policy.py"
+      ],
+      "nonGoals": [
+        "Do not integrate OpenCV in this slice",
+        "Do not send live game input"
+      ],
+      "safetyBoundaries": [
+        "wait_image/detect_page without template never report matched=true",
+        "Unbudgeted full-frame brute-force search fails closed"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "P3-S2-C1",
+          "text": "wait_image without template returns missing_template and matched=false",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0094",
+            "EVD-0095",
+            "EVD-0096",
+            "EVD-0098",
+            "EVD-0099"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S2-C2",
+          "text": "template search enforces ROI/search budget and fails closed when over budget",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0094",
+            "EVD-0095",
+            "EVD-0096",
+            "EVD-0098",
+            "EVD-0099"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S2-C3",
+          "text": "match_template still supports cancel/deadline checkpoints and finds exact matches inside ROI",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0094",
+            "EVD-0095",
+            "EVD-0096",
+            "EVD-0098",
+            "EVD-0099"
+          ],
+          "requiredEvidenceCategories": [
+            "test"
+          ]
+        },
+        {
+          "id": "P3-S2-C4",
+          "text": "Rust vision unit tests and Node/Python core regression remain green",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0094",
+            "EVD-0095",
+            "EVD-0096",
+            "EVD-0097",
+            "EVD-0098",
+            "EVD-0099",
+            "EVD-0100"
+          ],
+          "requiredEvidenceCategories": [
+            "build",
+            "test"
+          ]
+        }
+      ],
+      "nextAction": "Begin P3-S3: frontend fail-closed for missing_template/search_budget and match box fields for overlay",
+      "phaseId": "P3",
+      "verifiedAt": "2026-07-13T08:21:44Z"
     }
   ]
 }

@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:ded9ca07b6c8b2a41532d33ba30358c9512c6ed4337677536fdf6d234bcb4ea1 -->
-<!-- checkpoint-id: CP-0022 -->
+<!-- state-digest: sha256:789bd39c9f822912e8ee714fa6ff2a0e2e8c5790281d54eb169d35fba8249b45 -->
+<!-- checkpoint-id: CP-0023 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -9,25 +9,25 @@
 ## 恢复首屏
 
 - 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T08:17:59Z`
-- 更新时间（北京时间）：`2026-07-13T16:17:59+08:00`
+- 更新时间（UTC）：`2026-07-13T08:25:32Z`
+- 更新时间（北京时间）：`2026-07-13T16:25:32+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
 - 当前阶段：`P3`
-- 当前切片：`P3-S2` - ROI-required template matching with search budget and fail-closed wait_image
+- 当前切片：`P3-S3` - Vision fail-closed taxonomy and match debug metadata
 - 阶段状态：`in_progress`；切片状态：`verified`；动作状态：`none`
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
 - 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：P3-S2 after vision match budget: Vite production build green（EVD-0097，当前工作区绑定有效）
-- 唯一下一动作：git commit P3-S2 product + ledger
+- 最新当前有效证据：P3-S3 vision taxonomy and match box: Vite build green（EVD-0103，当前工作区绑定有效）
+- 唯一下一动作：git commit P3-S3
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
-- 最新 checkpoint：`CP-0022`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 最新 checkpoint：`CP-0023`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`135069s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-11T18:46:50Z`；年龄=`135522s`；TTL=`300s`；expiresAt=`2026-07-11T18:51:50Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -62,29 +62,31 @@
 
 ### 范围
 
+- src/main.js
+- src/failure-evidence-core.js
+- scripts/test_failure_evidence_core.mjs
 - src-tauri/src/main.rs
 - src-tauri/src/runtime/vision_match.rs
-- src-tauri/src/runtime/mod.rs
-- scripts/audit_capture_policy.py
 
 ### 非目标
 
-- Do not integrate OpenCV in this slice
+- Do not integrate OpenCV
 - Do not send live game input
+- Do not require full WGC implementation in this slice
 
 ### 安全边界
 
-- wait_image/detect_page without template never report matched=true
-- Unbudgeted full-frame brute-force search fails closed
+- missing_template and search_budget_exceeded never count as matched success
+- Match debug metadata is observational only and never authorizes input
 
 ### 验收条件
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P3-S2-C1` | wait_image without template returns missing_template and matched=false | `passed` | `test` | `EVD-0094`, `EVD-0095`, `EVD-0096` |
-| `P3-S2-C2` | template search enforces ROI/search budget and fails closed when over budget | `passed` | `test` | `EVD-0094`, `EVD-0095`, `EVD-0096` |
-| `P3-S2-C3` | match_template still supports cancel/deadline checkpoints and finds exact matches inside ROI | `passed` | `test` | `EVD-0094`, `EVD-0095`, `EVD-0096` |
-| `P3-S2-C4` | Rust vision unit tests and Node/Python core regression remain green | `passed` | `build`, `test` | `EVD-0094`, `EVD-0095`, `EVD-0096`, `EVD-0097` |
+| `P3-S3-C1` | Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses | `passed` | `test` | `EVD-0101`, `EVD-0102` |
+| `P3-S3-C2` | Rust StepDispatchResult exposes match box fields when a template match is attempted | `passed` | `test` | `EVD-0101`, `EVD-0102` |
+| `P3-S3-C3` | wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests | `passed` | `test` | `EVD-0101`, `EVD-0102` |
+| `P3-S3-C4` | Core regression and Vite build remain green | `passed` | `build`, `test` | `EVD-0101`, `EVD-0102`, `EVD-0103` |
 
 ## 当前动作
 
@@ -92,7 +94,7 @@
 
 ## 下一步
 
-- 唯一下一动作：git commit P3-S2 product + ledger
+- 唯一下一动作：git commit P3-S3
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -108,26 +110,25 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`8747ff9a708217ae5784b354140b07fdcc1a869b`
+- observed HEAD：`32285112845c17f0fcc5d3e617707eb14879294e`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:32780dae7809287ec3756cf5605a9a7d7b7e00785accff314b5fc21f7b97667f`
-- 最新 checkpoint：`CP-0022` (state_snapshot)
+- working tree fingerprint：`sha256:c9575de8233d0ba0d2f4e7fbec296d00f0aa8556922edd2007de94530426a854`
+- 最新 checkpoint：`CP-0023` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
 
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0022-p3-s2-verified.json`
+- `docs/execution/checkpoints/CP-0023-p3-s3-verified.json`
 - `docs/execution/events.jsonl`
 - `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
+- `scripts/test_failure_evidence_core.mjs`
 - `src-tauri/src/main.rs`
-- `src-tauri/src/platform.rs`
-- `src-tauri/src/runtime/capture_health.rs`
-- `src-tauri/src/runtime/mod.rs`
-- `src-tauri/src/runtime/vision_match.rs`
+- `src/failure-evidence-core.js`
+- `src/main.js`
 
 ## 运行进程与产物
 
@@ -158,29 +159,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0090` | `test` | `passed` | `stale` | P3-S1 health-verified capture providers and black/stale frame gates: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0091` | `build` | `passed` | `stale` | P3-S1 after capture health changes: Vite production build green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0092` | `test` | `passed` | `stale` | P3-S1 rebind on HEAD: capture health core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0093` | `build` | `passed` | `stale` | P3-S1 rebind on HEAD: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0094` | `test` | `failed` | `not_passed` | P3-S2 ROI-budgeted template matching: cargo fmt/check/test/clippy green with fail-closed wait_image<br>命令/观察结果不是 passed |
-| `EVD-0095` | `test` | `passed` | `valid` | P3-S2 ROI-budgeted template matching: cargo fmt/check/test/clippy green with fail-closed wait_image<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0096` | `test` | `passed` | `valid` | P3-S2 after vision match budget: full core regression green<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0097` | `build` | `passed` | `valid` | P3-S2 after vision match budget: Vite production build green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0096` | `test` | `passed` | `stale` | P3-S2 after vision match budget: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0097` | `build` | `passed` | `stale` | P3-S2 after vision match budget: Vite production build green<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0098` | `test` | `passed` | `stale` | P3-S2 rebind on HEAD: cargo fmt/check/test/clippy green<br>证据工作树指纹与当前现场不同 |
+| `EVD-0099` | `test` | `passed` | `stale` | P3-S2 rebind on HEAD: core regression<br>证据工作树指纹与当前现场不同 |
+| `EVD-0100` | `build` | `passed` | `stale` | P3-S2 rebind on HEAD: Vite build<br>证据工作树指纹与当前现场不同 |
+| `EVD-0101` | `test` | `passed` | `valid` | P3-S3 vision taxonomy and match box fields: cargo fmt/check/test/clippy green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0102` | `test` | `passed` | `valid` | P3-S3 vision taxonomy and match box: full core regression green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0103` | `build` | `passed` | `valid` | P3-S3 vision taxonomy and match box: Vite build green<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 261 | `2026-07-13T08:07:16Z` | `decision` | P3-S1 product commit 683cbac is landed; evidence rebound on HEAD 00f4f28 |
-| 262 | `2026-07-13T08:08:12Z` | `slice_started` | 开始切片 P3-S2：ROI-required template matching with search budget and fail-closed wait_image |
-| 263 | `2026-07-13T08:11:25Z` | `reconciliation` | Align ledger after P3-S2 product commit 8747ff9 (vision_match + fail-closed wait_image); no pending side-effect actions |
-| 264 | `2026-07-13T08:15:11Z` | `test_run` | P3-S2 ROI-budgeted template matching: cargo fmt/check/test/clippy green with fail-closed wait_image |
-| 265 | `2026-07-13T08:16:26Z` | `test_run` | P3-S2 ROI-budgeted template matching: cargo fmt/check/test/clippy green with fail-closed wait_image |
-| 266 | `2026-07-13T08:17:22Z` | `test_run` | P3-S2 after vision match budget: full core regression green |
-| 267 | `2026-07-13T08:17:24Z` | `test_run` | P3-S2 after vision match budget: Vite production build green |
-| 268 | `2026-07-13T08:17:56Z` | `slice_state_changed` | P3-S2 verified: budgeted template match, ROI enforcement, fail-closed wait_image without template; EVD-0095/0096/0097 green |
-| 269 | `2026-07-13T08:17:59Z` | `checkpoint` | 创建 CP-0022：P3-S2 acceptance criteria passed with trusted profile evidence before product commit |
-| 270 | `2026-07-13T08:17:59Z` | `decision` | P3-S2 closed on worktree evidence; product commit next so verifiedHead can advance after rebind if needed |
+| 273 | `2026-07-13T08:19:28Z` | `test_run` | P3-S2 rebind on HEAD: core regression |
+| 274 | `2026-07-13T08:19:30Z` | `test_run` | P3-S2 rebind on HEAD: Vite build |
+| 275 | `2026-07-13T08:21:44Z` | `decision` | P3-S2 rebind complete on HEAD 3228511 (EVD-0098/0099/0100). Project gates still need verifiedHead==observedHead; criteria use observedHead. Proceed to P3-S3 vision result taxonomy and match debug metadata without OpenCV. |
+| 276 | `2026-07-13T08:21:44Z` | `slice_started` | 开始切片 P3-S3：Vision fail-closed taxonomy and match debug metadata |
+| 277 | `2026-07-13T08:24:16Z` | `test_run` | P3-S3 vision taxonomy and match box fields: cargo fmt/check/test/clippy green |
+| 278 | `2026-07-13T08:25:07Z` | `test_run` | P3-S3 vision taxonomy and match box: full core regression green |
+| 279 | `2026-07-13T08:25:09Z` | `test_run` | P3-S3 vision taxonomy and match box: Vite build green |
+| 280 | `2026-07-13T08:25:30Z` | `slice_state_changed` | P3-S3 verified: missing_template/search_budget_exceeded fail-closed taxonomy, match box metadata on StepDispatchResult; EVD-0101/0102/0103 green |
+| 281 | `2026-07-13T08:25:31Z` | `checkpoint` | 创建 CP-0023：P3-S3 acceptance criteria passed with trusted profile evidence before product commit |
+| 282 | `2026-07-13T08:25:32Z` | `decision` | P3-S3 closed on worktree evidence. Next: commit, then continue remaining P3 items (preview/execute parity overlays later) or begin P4 home-vitality e2e prep when capture/match gates are solid. |
 
 ## 异常恢复
 

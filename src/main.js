@@ -87,6 +87,8 @@ const imageClickPointOptions = new Set(["center", "top-left", "top-right", "bott
 const terminalBackendStatuses = new Set(["error", "unsupported", "cancelled"]);
 const backgroundFailureStatuses = new Set([
   "missing_asset",
+  "missing_template",
+  "search_budget_exceeded",
   "below_threshold",
   "text_miss",
   "ocr_unavailable",
@@ -7431,6 +7433,14 @@ async function executeRetryUntilStep(session, item) {
         detail: `${result.detail} (ready after ${attempt} attempt${attempt === 1 ? "" : "s"})`,
       };
     }
+    if (["missing_template", "search_budget_exceeded", "missing_asset"].includes(result.status)) {
+      return {
+        ...result,
+        action: "retry_until",
+        matched: false,
+        inputSent: false,
+      };
+    }
     if (!["below_threshold", "planned"].includes(result.status)) return result;
     const remainingTimeoutMs = Math.max(0, timeoutMs - activeElapsedMs(session, startedAt, pausedAtStart));
     if (remainingTimeoutMs <= 0) break;
@@ -7470,6 +7480,9 @@ function retryUntilHasVisualTarget(item) {
 
 function shouldRetryBackgroundStep(item, result) {
   if (result.status === "cancelled") return false;
+  if (["missing_template", "search_budget_exceeded", "missing_asset"].includes(result.status)) {
+    return false;
+  }
   if (["timeout", "ocr_queue_full"].includes(result.status)) {
     return item.onFail === "retry" || item.type === "ocr_assert";
   }
@@ -7484,7 +7497,11 @@ function backendInvokeFailureResult(error) {
     ? "cancelled"
     : normalized.includes("deadline") || normalized.includes("timed out")
       ? "timeout"
-      : "error";
+      : normalized.includes("search_budget_exceeded")
+        ? "search_budget_exceeded"
+        : normalized.includes("missing_template")
+          ? "missing_template"
+          : "error";
   return {
     status,
     action: "backend",

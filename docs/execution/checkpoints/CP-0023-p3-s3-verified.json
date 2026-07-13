@@ -1,0 +1,400 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0023",
+  "createdAt": "2026-07-13T08:25:31Z",
+  "type": "state_snapshot",
+  "reason": "P3-S3 acceptance criteria passed with trusted profile evidence before product commit",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 1,
+    "primaryThreadId": "019f5a42-5766-7be3-9861-f979ab529d26",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P3",
+  "slice": {
+    "id": "P3-S3",
+    "title": "Vision fail-closed taxonomy and match debug metadata",
+    "status": "verified",
+    "startedAt": "2026-07-13T08:21:44Z",
+    "scope": [
+      "src/main.js",
+      "src/failure-evidence-core.js",
+      "scripts/test_failure_evidence_core.mjs",
+      "src-tauri/src/main.rs",
+      "src-tauri/src/runtime/vision_match.rs"
+    ],
+    "nonGoals": [
+      "Do not integrate OpenCV",
+      "Do not send live game input",
+      "Do not require full WGC implementation in this slice"
+    ],
+    "safetyBoundaries": [
+      "missing_template and search_budget_exceeded never count as matched success",
+      "Match debug metadata is observational only and never authorizes input"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P3-S3-C1",
+        "text": "Frontend treats missing_template and search_budget_exceeded as fail-closed non-success statuses",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0101",
+          "EVD-0102"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S3-C2",
+        "text": "Rust StepDispatchResult exposes match box fields when a template match is attempted",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0101",
+          "EVD-0102"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S3-C3",
+        "text": "wait_image/detect_page without template remain missing_template with matched=false end-to-end in unit tests",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0101",
+          "EVD-0102"
+        ],
+        "requiredEvidenceCategories": [
+          "test"
+        ]
+      },
+      {
+        "id": "P3-S3-C4",
+        "text": "Core regression and Vite build remain green",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0101",
+          "EVD-0102",
+          "EVD-0103"
+        ],
+        "requiredEvidenceCategories": [
+          "build",
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "Commit P3-S3 product+ledger; then next P3 remainder or P4 prep"
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "32285112845c17f0fcc5d3e617707eb14879294e",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "scripts/test_failure_evidence_core.mjs",
+      "src-tauri/src/main.rs",
+      "src/failure-evidence-core.js",
+      "src/main.js"
+    ],
+    "dirtyStatus": [
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json",
+      " M scripts/test_failure_evidence_core.mjs",
+      " M src-tauri/src/main.rs",
+      " M src/failure-evidence-core.js",
+      " M src/main.js"
+    ],
+    "dirtyEntries": [
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_failure_evidence_core.mjs",
+        "displayPath": "scripts/test_failure_evidence_core.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/main.rs",
+        "displayPath": "src-tauri/src/main.rs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/failure-evidence-core.js",
+        "displayPath": "src/failure-evidence-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "dd09e718ed7b38be14715cce4068aebf25d007e9fde256cde9d13ceec233c25e",
+        "size": 11622
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+        "exists": true,
+        "sha256": "97dde7e998abce03ae63a58a4384cdefa8fb5262e0b4b187cde9270eec95dd4b",
+        "size": 11900
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "42924e949c8d4114411f073b9c791f6fb739240246d971ecb62314e492cfa885",
+        "size": 487899
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "a31f035c20751691a37b9df92aa58f6557fed317ec15fda7e9781ee9de14cfc7",
+        "size": 231656
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "01e05703b90e8368c96b843caf7b24d7f1a73dc70b951c85476bfead5f45a5fe",
+        "size": 37655
+      },
+      {
+        "path": "scripts/test_failure_evidence_core.mjs",
+        "exists": true,
+        "sha256": "42213e2ed76a1181c1e62ffc6edccdcb1960ff431c615b3196cdfad7cc5f2d81",
+        "size": 5725
+      },
+      {
+        "path": "src-tauri/src/main.rs",
+        "exists": true,
+        "sha256": "d38598ab044915794f4674f714f0462d2e404bdad87e22f17c2fdd51f358ad8d",
+        "size": 106890
+      },
+      {
+        "path": "src/failure-evidence-core.js",
+        "exists": true,
+        "sha256": "b7523b0559ae3ca875c12af192295845b868a048edc981d9c4e6599cf5a30743",
+        "size": 7632
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "f3c0380fd1d04f57a9dcaa0602e06913900103ada4e682e9db0cfa797872dbb2",
+        "size": 353460
+      }
+    ],
+    "workingTreeFingerprint": "sha256:c9575de8233d0ba0d2f4e7fbec296d00f0aa8556922edd2007de94530426a854"
+  },
+  "gitDiffSha256": "60509dba8160bba79da54667c6da35c2f8ad7ebfbd703e3a9b128e3f955eb7db",
+  "dirtyFileHashes": [
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "dd09e718ed7b38be14715cce4068aebf25d007e9fde256cde9d13ceec233c25e",
+      "size": 11622
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0023-p3-s3-verified.json",
+      "exists": true,
+      "sha256": "97dde7e998abce03ae63a58a4384cdefa8fb5262e0b4b187cde9270eec95dd4b",
+      "size": 11900
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "42924e949c8d4114411f073b9c791f6fb739240246d971ecb62314e492cfa885",
+      "size": 487899
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "a31f035c20751691a37b9df92aa58f6557fed317ec15fda7e9781ee9de14cfc7",
+      "size": 231656
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "01e05703b90e8368c96b843caf7b24d7f1a73dc70b951c85476bfead5f45a5fe",
+      "size": 37655
+    },
+    {
+      "path": "scripts/test_failure_evidence_core.mjs",
+      "exists": true,
+      "sha256": "42213e2ed76a1181c1e62ffc6edccdcb1960ff431c615b3196cdfad7cc5f2d81",
+      "size": 5725
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "exists": true,
+      "sha256": "d38598ab044915794f4674f714f0462d2e404bdad87e22f17c2fdd51f358ad8d",
+      "size": 106890
+    },
+    {
+      "path": "src/failure-evidence-core.js",
+      "exists": true,
+      "sha256": "b7523b0559ae3ca875c12af192295845b868a048edc981d9c4e6599cf5a30743",
+      "size": 7632
+    },
+    {
+      "path": "src/main.js",
+      "exists": true,
+      "sha256": "f3c0380fd1d04f57a9dcaa0602e06913900103ada4e682e9db0cfa797872dbb2",
+      "size": 353460
+    }
+  ],
+  "eventTail": {
+    "seq": 280,
+    "id": "EVT-0280",
+    "hash": "sha256:12079c02e4ae7969b6d298ede94e2a2098324ac72e11d4814b0c77caa87938b4"
+  },
+  "evidenceTail": {
+    "seq": 103,
+    "id": "EVD-0103",
+    "hash": "sha256:7310324d37d4c5b1968f7e021f32a82ee6839dc372b84a41c7039a767aa255f6"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-11T18:46:50Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ]
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run execution:resume-check"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0022"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:4aacb3eb7cb3f5d5fd5bc962959e4a53578902102ff252b0a208c59d5c910d9d"
+}

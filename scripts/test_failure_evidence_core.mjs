@@ -122,6 +122,8 @@ function testFailureStatusClassifierCatchesDetails() {
 function testFailureStatusClassifierCoversStepTypes() {
   const cases = [
     { stepType: "image_click", status: "missing_asset" },
+    { stepType: "wait_image", status: "missing_template" },
+    { stepType: "wait_image", status: "search_budget_exceeded" },
     { stepType: "wait_image", status: "below_threshold" },
     { stepType: "ocr_assert", status: "text_miss" },
     { stepType: "ocr_assert", status: "ocr_unavailable" },
