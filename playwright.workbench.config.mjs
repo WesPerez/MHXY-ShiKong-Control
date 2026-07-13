@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 const viewports = [
   ["desktop-1460x880", 1460, 880],
@@ -15,20 +15,26 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0,
   workers: 1,
+  timeout: 90_000,
+  expect: { timeout: 15_000 },
   reporter: [
     ["list"],
     ["json", { outputFile: "./assets/resource/ShiKong/reports/playwright-workbench/report.json" }],
   ],
   use: {
     baseURL: "http://127.0.0.1:4173",
+    ...devices["Desktop Edge"],
+    channel: "msedge",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+    navigationTimeout: 60_000,
+    actionTimeout: 15_000,
   },
   webServer: {
-    command: "npm run dev -- --port 4173 --strictPort",
+    command: "npm run build && npx vite preview --host 127.0.0.1 --port 4173 --strictPort",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   projects: viewports.map(([name, width, height]) => ({
     name,

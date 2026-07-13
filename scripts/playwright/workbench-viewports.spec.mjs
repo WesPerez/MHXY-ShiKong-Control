@@ -12,10 +12,10 @@ const reachableControls = [
 ];
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
-  await page.locator("#workflow-list .workflow-row").first().waitFor();
-  await page.locator("#step-list .step-row").first().waitFor();
-  await page.locator("body[data-workbench-mode]").waitFor();
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.locator("body[data-workbench-mode]").waitFor({ state: "attached", timeout: 60_000 });
+  await page.locator("#workflow-list .workflow-row").first().waitFor({ state: "visible", timeout: 60_000 });
+  await page.locator("#step-list .step-row").first().waitFor({ state: "visible", timeout: 60_000 });
 });
 
 test("workbench has no horizontal overflow and keeps primary lists reachable", async ({ page }, testInfo) => {

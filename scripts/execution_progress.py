@@ -104,6 +104,7 @@ PROFILE_CATEGORY_BY_NAME = {
     "rust-static": "test",
     "p0-preflight": "source_audit",
     "p0-safety-boundary": "cleanup_audit",
+    "ui-viewports": "test",
 }
 SPECIALIZED_VERIFIER_ALLOWLIST: Dict[str, set] = {
     "app_runtime": set(),
@@ -2204,6 +2205,14 @@ def command_run_evidence(args: argparse.Namespace) -> None:
             "commands": [[sys.executable, str(ROOT / "scripts" / "audit_p0_safety_boundary.py"), "--json"]],
             "artifacts": [],
         },
+        "ui-viewports": {
+            "category": "test",
+            "cwd": ROOT,
+            "commands": [[npm, "run", "test:ui-viewports"]],
+            "artifacts": [
+                "assets/resource/ShiKong/reports/playwright-workbench/report.json",
+            ],
+        },
     }
     profile = profiles[args.profile]
     command_text = " && ".join(" ".join(command) for command in profile["commands"])
@@ -2402,7 +2411,7 @@ def build_parser() -> argparse.ArgumentParser:
     repair_parser.set_defaults(func=command_repair_tail)
 
     run_parser = subparsers.add_parser("run-evidence", help="execute a bounded audit/test/build and record its real exit code and log")
-    run_parser.add_argument("--profile", required=True, choices=["node-all", "python-audits", "frontend-build", "rust-static", "p0-preflight", "p0-safety-boundary"])
+    run_parser.add_argument("--profile", required=True, choices=["node-all", "python-audits", "frontend-build", "rust-static", "p0-preflight", "p0-safety-boundary", "ui-viewports"])
     run_parser.add_argument("--claim", required=True)
     run_parser.add_argument("--criterion", action="append")
     run_parser.add_argument("--timeout-seconds", type=int, default=1800)

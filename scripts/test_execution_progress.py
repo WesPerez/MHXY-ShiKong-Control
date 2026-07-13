@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 
@@ -19,6 +20,17 @@ import verify_p0_workspace_backup as backup_verifier
 
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
+
+
+@contextlib.contextmanager
+def temporary_work_dir(prefix: str):
+    """Windows-safe temp dir: git repos under TemporaryDirectory can hang on cleanup."""
+    temp = tempfile.mkdtemp(prefix=prefix)
+    try:
+        yield temp
+    finally:
+        shutil.rmtree(temp, ignore_errors=True)
+
 
 
 def git(root: Path, *args: str) -> str:
@@ -157,7 +169,7 @@ class ExecutionProgressTests(unittest.TestCase):
         )
 
     def test_resume_check_is_read_only_and_reports_current_snapshot(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-resume-check-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-resume-check-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -172,7 +184,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertTrue(report["permissions"]["canRunReadOnlyChecks"])
 
     def test_verified_slice_is_archived_before_next_slice_in_same_phase(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-multi-slice-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-multi-slice-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -208,7 +220,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertEqual(next_state["completedSlices"][-1]["phaseId"], "P1")
 
     def test_failed_criterion_policy_can_be_corrected_without_erasing_evidence(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-criterion-policy-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-criterion-policy-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -240,7 +252,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertEqual(criterion["requiredEvidenceCategories"], ["test"])
 
     def test_manual_runtime_passed_evidence_is_rejected_before_persist(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-provenance-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-provenance-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -273,7 +285,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertEqual(progress.load_jsonl(progress.EVIDENCE_PATH), [])
 
     def test_unknown_action_requires_specialized_reconciliation(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-unknown-finish-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-unknown-finish-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -304,7 +316,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertEqual(state["inFlightAction"]["actionId"], "ACT-UNKNOWN-001")
 
     def test_owner_reconcile_releases_lease_left_after_persisted_result(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-stale-lease-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-stale-lease-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -346,7 +358,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertFalse(progress.action_token_path("ACT-LEASE-CRASH-001").exists())
 
     def test_profile_category_and_specialized_verifier_are_allowlisted(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-provenance-map-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-provenance-map-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -386,7 +398,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertEqual(progress.load_jsonl(progress.EVIDENCE_PATH), [])
 
     def test_resume_check_returns_blocked_for_malformed_ledger(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-malformed-resume-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-malformed-resume-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -400,7 +412,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertFalse(report["permissions"]["canStartSideEffect"])
 
     def test_checkpoint_diff_hash_includes_staged_changes(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-staged-diff-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-staged-diff-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -456,7 +468,7 @@ class ExecutionProgressTests(unittest.TestCase):
         self.assertNotIn("\n## injected-heading", rendered)
 
     def test_execution_metadata_rename_to_source_counts_as_product_drift(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-rename-boundary-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-rename-boundary-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -472,7 +484,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertTrue(any("docs/execution/rename-source.txt -> src/rename-destination.txt" in path for path in snapshot["dirtyPaths"]))
 
     def test_clean_repo_note_records_its_own_dirty_paths(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-clean-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-clean-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -492,7 +504,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertIn("docs/execution/STATUS.md", actual["dirtyPaths"])
 
     def test_linked_worktree_uses_git_resolved_lock_path(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-worktree-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-worktree-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             worktree = base / "linked"
@@ -505,7 +517,7 @@ class ExecutionProgressTests(unittest.TestCase):
                     self.assertTrue(lock_path.exists())
 
     def test_porcelain_z_preserves_spaces_unicode_and_rename(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-paths-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-paths-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             original = root / "名称 old.txt"
@@ -521,7 +533,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertIn(display, snapshot["dirtyPaths"])
 
     def test_unknown_action_stays_in_flight_and_blocks_new_action(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-action-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-action-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -552,7 +564,7 @@ class ExecutionProgressTests(unittest.TestCase):
                     progress.command_action_start(second)
 
     def test_repair_tail_quarantines_only_the_final_fragment(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-repair-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-repair-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -583,7 +595,7 @@ class ExecutionProgressTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):
                 parser.parse_args(["evidence", "--category", "banana", "--claim", "invalid", "--status", "passed"])
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-verify-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-verify-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -598,7 +610,7 @@ class ExecutionProgressTests(unittest.TestCase):
                     progress.command_slice_state(args)
 
     def test_repair_tail_rejects_complete_hash_mismatch(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-hash-repair-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-hash-repair-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -622,7 +634,7 @@ class ExecutionProgressTests(unittest.TestCase):
                     progress.command_repair_tail(repair)
 
     def test_foreign_clone_cannot_release_machine_lease(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-lease-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-lease-") as temp:
             base = Path(temp)
             root_a = create_clean_progress_repo(base / "a")
             root_b = create_clean_progress_repo(base / "b")
@@ -670,7 +682,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertFalse(progress.EXTERNAL_LEASE_PATH.exists())
 
     def test_p0_backup_verifier_copies_exclusively_and_records_trusted_evidence(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-backup-verify-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-backup-verify-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             appdata = base / "appdata"
@@ -707,7 +719,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 self.assertTrue(progress.evidence_satisfies_criterion(criterion, evidence[0], state))
 
     def test_p0_backup_intent_rejects_existing_destination_and_verifier_rejects_changed_source(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-backup-gates-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-backup-gates-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             appdata = base / "appdata"
@@ -744,7 +756,7 @@ class ExecutionProgressTests(unittest.TestCase):
                 ))
 
     def test_safe_live_checkpoint_rejects_unverified_head(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-prelive-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-prelive-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):
@@ -772,7 +784,7 @@ class ExecutionProgressTests(unittest.TestCase):
                     progress.command_checkpoint(checkpoint)
 
     def test_action_id_path_escape_and_manual_build_evidence_are_rejected(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="mhxy-progress-failclosed-") as temp:
+        with temporary_work_dir(prefix="mhxy-progress-failclosed-") as temp:
             base = Path(temp)
             root = create_clean_progress_repo(base)
             with PatchedProgressPaths(root, base / "external"):

@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 236,
+  "revision": 249,
   "generation": 1,
-  "updatedAt": "2026-07-13T07:00:52Z",
+  "updatedAt": "2026-07-13T07:39:39Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -28,13 +28,13 @@
   },
   "overallStatus": "active",
   "currentPhaseId": "P2",
-  "phaseStatus": "blocked",
-  "actionStatus": "succeeded",
+  "phaseStatus": "verified",
+  "actionStatus": "running",
   "acceptanceLevel": "design",
   "activeSlice": {
     "id": "P2-S2",
     "title": "五视口真实渲染与检查器交互验收",
-    "status": "blocked",
+    "status": "verified",
     "startedAt": "2026-07-11T13:06:16Z",
     "scope": [
       "index.html,src/styles.css,src/main.js,Playwright screenshots and viewport metrics"
@@ -49,17 +49,22 @@
       {
         "id": "P2-S2-C1",
         "text": "当前工作树 Vite 预览以可核验 PID/命令启动并可访问",
-        "status": "pending",
-        "evidenceIds": [],
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077"
+        ],
         "requiredEvidenceCategories": [
-          "app_runtime"
+          "app_runtime",
+          "test"
         ]
       },
       {
         "id": "P2-S2-C2",
         "text": "1460x880、1280x720、1120x720、920x680、820x720 均无页面级横向滚动且任务/步骤列表可达",
-        "status": "pending",
-        "evidenceIds": [],
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077"
+        ],
         "requiredEvidenceCategories": [
           "test"
         ]
@@ -67,8 +72,10 @@
       {
         "id": "P2-S2-C3",
         "text": "检查器 tab 鼠标和键盘切换、补全定位与失败步骤定位能揭示正确面板",
-        "status": "pending",
-        "evidenceIds": [],
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0077"
+        ],
         "requiredEvidenceCategories": [
           "test"
         ]
@@ -76,14 +83,19 @@
       {
         "id": "P2-S2-C4",
         "text": "视觉发现的布局问题修复后 Node/Python/Vite 回归继续通过",
-        "status": "pending",
-        "evidenceIds": [],
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0078",
+          "EVD-0079",
+          "EVD-0080"
+        ],
         "requiredEvidenceCategories": [
+          "build",
           "test"
         ]
       }
     ],
-    "nextAction": "Continue P2-S2 five-viewport Playwright on owned localhost preview",
+    "nextAction": "Start P3 health-verified capture provider work",
     "blockers": [
       "缺少本地预览进程启动与只读 UI 测试授权"
     ]
@@ -104,7 +116,7 @@
     {
       "id": "P2",
       "title": "工作台可达性与单步调试",
-      "status": "blocked",
+      "status": "verified",
       "summary": "重构默认窗口下的操作路径，建立每个功能即时可见、可测的工作台。"
     },
     {
@@ -204,33 +216,97 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "68b3557ec6064069d7ea1245c5d15de6be7c83e6",
+    "observedHead": "fc49aaffd0a458aa6b3cab17eb2ee1261f7a97be",
     "verifiedHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/state.json"
+      "docs/execution/checkpoints/CP-0018-p2-s2-verified.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "playwright.workbench.config.mjs",
+      "scripts/audit_workbench_viewport_test.py",
+      "scripts/execution_progress.py",
+      "scripts/playwright/workbench-viewports.spec.mjs",
+      "scripts/test_execution_progress.py"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      " M docs/execution/state.json"
+      "?? docs/execution/checkpoints/CP-0018-p2-s2-verified.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json",
+      " M playwright.workbench.config.mjs",
+      " M scripts/audit_workbench_viewport_test.py",
+      " M scripts/execution_progress.py",
+      " M scripts/playwright/workbench-viewports.spec.mjs",
+      " M scripts/test_execution_progress.py"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "fc5045356bed25e0f1690bc562d007ccce4c05eabb5a46d39c8423b12ab2a121",
-        "size": 11385
+        "sha256": "d178d1b7d79518bcff01f1d516ea599ec49c875da89d9390ec00e844dc977c0c",
+        "size": 12237
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0018-p2-s2-verified.json",
+        "exists": true,
+        "sha256": "e06857ea0aae7f3e81ce3b5c6d213de8eadcdfb76b61b06f122d701f94d1489c",
+        "size": 13527
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "b7a0af56f6038c646e860484b7d6b21a1107a7af49bbabc39fcf0d65aeb6cf11",
+        "size": 446524
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "8a155113cb527d9e557de210cdcb570a35db515c4b8f95da9be6a63772b42353",
+        "size": 195012
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "e67223b52d2d3cc03f4191be21dcaf949eccb7f932f2e749e627436fbda12e71",
-        "size": 26040
+        "sha256": "34853455f13e34be3850ef43b489e1216ec6170173baebe0ff6f4a9489551274",
+        "size": 32151
+      },
+      {
+        "path": "playwright.workbench.config.mjs",
+        "exists": true,
+        "sha256": "7f2637917b80cfefc0d2b06bdb28738fa1076170b8d30f6ce37d87ce5da35398",
+        "size": 1204
+      },
+      {
+        "path": "scripts/audit_workbench_viewport_test.py",
+        "exists": true,
+        "sha256": "72adecc5ac7d57561a7fbafb0146bfb4a279c93cc431d6a5954c04117f791871",
+        "size": 5109
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "exists": true,
+        "sha256": "53e250bf106231c201dd8a5299cc304b79198a1f004469d00b78edae43fb7cc4",
+        "size": 121615
+      },
+      {
+        "path": "scripts/playwright/workbench-viewports.spec.mjs",
+        "exists": true,
+        "sha256": "cebed60832c31c62adf8fc54297caf017eb215cf13f230758350780a251899da",
+        "size": 3747
+      },
+      {
+        "path": "scripts/test_execution_progress.py",
+        "exists": true,
+        "sha256": "7e48552a5a3624403991fc731e17c09b23baaeefd24791eca387045400d0c68a",
+        "size": 42485
       }
     ],
-    "workingTreeFingerprint": "sha256:385b9cf99a7fb4ae4a60d8d91417d7a0ceb3b76a261f7c9bc5bbdee3216fe196",
+    "workingTreeFingerprint": "sha256:a451d11b07c39e0676d101ad13496b01cf01636ea296ebe9f3873077cbcd11a3",
     "dirtyEntries": [
       {
         "status": " M",
@@ -239,32 +315,97 @@
         "displayPath": "docs/execution/STATUS.md"
       },
       {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0018-p2-s2-verified.json",
+        "displayPath": "docs/execution/checkpoints/CP-0018-p2-s2-verified.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "playwright.workbench.config.mjs",
+        "displayPath": "playwright.workbench.config.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workbench_viewport_test.py",
+        "displayPath": "scripts/audit_workbench_viewport_test.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/playwright/workbench-viewports.spec.mjs",
+        "displayPath": "scripts/playwright/workbench-viewports.spec.mjs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_execution_progress.py",
+        "displayPath": "scripts/test_execution_progress.py"
       }
     ]
   },
-  "inFlightAction": null,
-  "lastAction": {
-    "actionId": "ACT-COMMIT-EXECUTION-LEDGER-001",
+  "inFlightAction": {
+    "actionId": "ACT-COMMIT-P2S2-001",
     "kind": "git_commit",
-    "targetIdentity": "docs/execution ledger after 28aca6b",
+    "targetIdentity": "P2-S2 viewport verification tooling and ledger",
     "sideEffectClass": "git_commit",
-    "expectedPrecondition": "product snapshot already committed as 28aca6b; only docs/execution metadata dirty",
-    "expectedPostcondition": "execution ledger commit records post-commit state and CP-0017; no product code changes",
-    "idempotencyKey": "commit:execution-ledger:28aca6b:CP-0017",
-    "startedAt": "2026-07-13T07:00:27Z",
+    "expectedPrecondition": "P2-S2 criteria verified; no in-flight action",
+    "expectedPostcondition": "local commit of P2-S2 verifier improvements, continuity test fix, and execution ledger",
+    "idempotencyKey": "commit:p2s2:fc49aaf:evd0077",
+    "startedAt": "2026-07-13T07:39:39Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
     "ownershipEvidence": [
-      "user-explicit-request-commit-all-current-diffs",
       "goal-externalAuthorization-git_commit",
-      "dirty-paths-only-docs-execution"
+      "p2s2-criteria-verified",
+      "git-status-project-owned-paths"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
+    "actionId": "ACT-P2S2-PLAYWRIGHT-001",
+    "kind": "process_start",
+    "targetIdentity": "playwright+vite@127.0.0.1:4173 for P2-S2 viewports",
+    "sideEffectClass": "process_start",
+    "expectedPrecondition": "resume-check allows code work; port 4173 free; playwright 1.61.1 installed; tests owned by this task",
+    "expectedPostcondition": "viewport tests complete with report/screenshots; owned server stopped; no leftover unmanaged process",
+    "idempotencyKey": "p2s2:playwright:fc49aaf:4173",
+    "startedAt": "2026-07-13T07:02:09Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "goal-externalAuthorization-local_preview_server_owned_process_only",
+      "playwright.webServer.command=npm run dev -- --port 4173 --strictPort",
+      "cwd=E:\\Project\\Common\\mhxy-shikong-control"
     ],
     "status": "succeeded",
-    "endedAt": "2026-07-13T07:00:32Z",
-    "result": "ledger commit on top of 28aca6b for docs/execution metadata and CP-0017"
+    "leaseTokenHash": "e54f7a5b4c750cac1d5c83774eb6b6b67f61ae679dea79394b274bddf291c9b2",
+    "endedAt": "2026-07-13T07:33:28Z",
+    "result": "Playwright 10/10 passed via Edge channel + vite build/preview on 127.0.0.1:4173; report assets/resource/ShiKong/reports/playwright-workbench/report.json; owned webServer stopped after suite; screenshots for 5 viewports present"
   },
   "safety": {
     "realInputSent": false,
@@ -358,36 +499,36 @@
     ]
   },
   "eventTail": {
-    "seq": 222,
-    "id": "EVT-0222",
-    "hash": "sha256:a3f2743ac7c0331f906dd17df8f8c5ea69bb353988c42d0565c0643f5c86ef64"
+    "seq": 234,
+    "id": "EVT-0234",
+    "hash": "sha256:8ee80dfde436152f8eaee52b82716bb2daf8e13c2d9874d07905658ff459f04b"
   },
   "evidenceTail": {
-    "seq": 76,
-    "id": "EVD-0076",
-    "hash": "sha256:8640e3a0a95e6244522613b9174c8a0b8c9e939b776d96fca38284866cefaf60"
+    "seq": 80,
+    "id": "EVD-0080",
+    "hash": "sha256:0affe9da17a3fc7a2d140b01a394973584a3a7519599d4c49e50f856bfea2d68"
   },
-  "checkpointCounter": 17,
+  "checkpointCounter": 18,
   "lastCheckpoint": {
-    "id": "CP-0017",
+    "id": "CP-0018",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0017-p0-p2-snapshot-commit.json",
-    "createdAt": "2026-07-13T07:00:20Z",
+    "path": "docs/execution/checkpoints/CP-0018-p2-s2-verified.json",
+    "createdAt": "2026-07-13T07:37:50Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:449f79c3bc01eef0f4c5ad48d94702c5ffc4f82fd1a19ca9035efab9104c7222"
+    "hash": "sha256:5c3cf29e8d1cdff9cd949081a419d42f21a5c5e37c0a8f65fca936ea19aadd37"
   },
   "resume": {
     "blockers": [
       "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
     ],
     "nextCommands": [
-      "npm run test:ui-viewports"
+      "npm run execution:resume-check"
     ],
     "doNotDo": [
       "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
     ],
-    "lastSafeResumeSnapshotId": "CP-0017"
+    "lastSafeResumeSnapshotId": "CP-0018"
   },
   "completedSlices": [
     {

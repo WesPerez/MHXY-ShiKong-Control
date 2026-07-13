@@ -40,6 +40,8 @@ def audit(root: Path) -> dict[str, object]:
         ("127.0.0.1:4173", "preview server must bind a fixed localhost port"),
         ("--strictPort", "preview server must fail instead of taking an unrelated port"),
         ("reuseExistingServer: false", "verifier must not silently reuse an unowned server"),
+        ("vite preview", "stable production preview server is required for reliable viewport loads"),
+        ("npm run build", "viewport verifier must build current worktree before preview"),
         ("workers: 1", "viewport runs must remain serialized"),
         ("playwright-workbench/report.json", "JSON report path is missing"),
     ]:
