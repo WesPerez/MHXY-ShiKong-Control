@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 421,
+  "revision": 424,
   "generation": 1,
-  "updatedAt": "2026-07-13T10:08:25Z",
+  "updatedAt": "2026-07-13T10:10:09Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -57,7 +57,8 @@
         "status": "passed",
         "evidenceIds": [
           "EVD-0138",
-          "EVD-0139"
+          "EVD-0139",
+          "EVD-0142"
         ],
         "requiredEvidenceCategories": [
           "build",
@@ -207,20 +208,18 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "84b25f649e471edb801f551971518bd1f30a94db",
+    "observedHead": "9f8474bc39029fa081521d46eb023b861bfcf291",
     "verifiedHead": "84b25f649e471edb801f551971518bd1f30a94db",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "84b25f649e471edb801f551971518bd1f30a94db",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0034-p3-s9-rebuild-relaunch.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0034-p3-s9-rebuild-relaunch.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
@@ -229,47 +228,35 @@
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "3320eb5c08e23c3e156376198dc35c289b893f643d78391c3829e9e5e19e79f9",
-        "size": 11741
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0034-p3-s9-rebuild-relaunch.json",
-        "exists": true,
-        "sha256": "c40cd05c8f12f2af298d47d2ba30e8b8b3a44a09c4b852364279191e3aec930f",
-        "size": 12953
+        "sha256": "b7bd11997f62161e844651228c47683c7d379fcc033327d265fa5fb0896c4b38",
+        "size": 11760
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "a763615174ba33f1d202da85004351ce2447134b604c220ee00a76f278a1d27a",
-        "size": 577812
+        "sha256": "8373102d14404e93ac38d75c12808365ecfb151408ca687dc5760a9bf5c171fd",
+        "size": 579225
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "28daa68cc988296eb1e72e5ee377fbb90ed6bb3f0ae55d700e37f11d2a1c016d",
-        "size": 298798
+        "sha256": "a9545c886d3695c09a9d2afae3c2342b9b4abe4b6deef4171abe804e638f6356",
+        "size": 300227
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "81cd4ab09ec506b5af837ec2e2374644abd209d3cd409f84431d733c0a542b5a",
-        "size": 53606
+        "sha256": "8c220cf056a14246dbf8edeabe866776228b2558c4de51e25fe56fa68773a35d",
+        "size": 52536
       }
     ],
-    "workingTreeFingerprint": "sha256:819a9aae67faed6216b2fb046aca7584d5d3f22b089406091d60b4f5e2520fbb",
+    "workingTreeFingerprint": "sha256:83d752f266c7a01262cf3dd5047212d316c2e60ad446e8d26dbf1701e8d629d7",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0034-p3-s9-rebuild-relaunch.json",
-        "displayPath": "docs/execution/checkpoints/CP-0034-p3-s9-rebuild-relaunch.json"
       },
       {
         "status": " M",
@@ -323,7 +310,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-13T10:08:04Z",
+    "observedAt": "2026-07-13T10:09:15Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -424,8 +411,8 @@
         "ownership": "created_by_current_run",
         "present": true,
         "creationTime": "2026-07-13T10:08:03Z",
-        "lastObservedAt": "2026-07-13T10:08:04Z",
-        "lastSeenAt": "2026-07-13T10:08:04Z",
+        "lastObservedAt": "2026-07-13T10:09:15Z",
+        "lastSeenAt": "2026-07-13T10:09:15Z",
         "cleanupAllowed": false
       }
     ],
@@ -485,14 +472,14 @@
     }
   },
   "eventTail": {
-    "seq": 377,
-    "id": "EVT-0377",
-    "hash": "sha256:41d4f9e97d6da900d4e67520a12f950a884f20ce90b668110b92c92aefdbc3bb"
+    "seq": 379,
+    "id": "EVT-0379",
+    "hash": "sha256:7e170fba9e070b399cdc060e6712f627e352a42ed50eb7548fa676f490f2f4ac"
   },
   "evidenceTail": {
-    "seq": 141,
-    "id": "EVD-0141",
-    "hash": "sha256:63730888ec0bcf1a3f6a91c03d02c5c1247c33733b1798e12416e338189d51eb"
+    "seq": 142,
+    "id": "EVD-0142",
+    "hash": "sha256:799af4800804643881eaeb65d8e1a5cf85402b662731a1f487ffce6d2ddda37a"
   },
   "checkpointCounter": 34,
   "lastCheckpoint": {
