@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:33caf8da0291b74ad7a6c543fb4c1ed507939f0ff3be80c3b3ea4b3dc2a99619 -->
+<!-- state-digest: sha256:7bd525cf918eeb2af9c5953c62e870f78757a1b210b627feca6141957b68893a -->
 <!-- checkpoint-id: CP-0025 -->
 # 长任务执行状态
 
@@ -9,8 +9,8 @@
 ## 恢复首屏
 
 - 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T08:56:42Z`
-- 更新时间（北京时间）：`2026-07-13T16:56:42+08:00`
+- 更新时间（UTC）：`2026-07-13T09:08:55Z`
+- 更新时间（北京时间）：`2026-07-13T17:08:55+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
 - 总体状态：`active`
@@ -20,14 +20,14 @@
 - 当前切片验收：已满足 `4`，待验证或阻塞 `0`，合计 `4`
 - 本轮是否发送真实游戏输入：`false`
 - 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：P3-S5 rebind after product commit: Vite build（EVD-0118，当前工作区绑定有效）
+- 最新当前有效证据：最近事件：副作用动作 ACT-P3S5-APP-STOP-001 -> succeeded（EVT-0314；不是当前验收通过证据）
 - 唯一下一动作：Commit P3-S5 verifier+wiring; leave app running owned or stop with process_stop after product commit as needed
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
 - 最新 checkpoint：`CP-0025`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-13T08:54:26Z`；年龄=`136s`；TTL=`300s`；expiresAt=`2026-07-13T08:59:26Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-13T09:08:55Z`；年龄=`0s`；TTL=`300s`；expiresAt=`2026-07-13T09:13:55Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -109,10 +109,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`e8a627f84f46895c2c15dd31d729d75434595460`
+- observed HEAD：`5b4f7f31afec15ea93dc81d63154e2d2d2cc4f5c`
 - verified HEAD：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:8c7d9221a1bb6cb685a215829a50d466ac20ac085295c7348ebe5ac32ea92a30`
+- working tree fingerprint：`sha256:2272b56b6c19870e85838e3991f2ccb7fe0ffe493a6f9edaaf543f8139fa8f4c`
 - 最新 checkpoint：`CP-0025` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -121,21 +121,22 @@
 
 - `docs/execution/STATUS.md`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
+- `scripts/execution_progress.py`
+- `scripts/verify_app_runtime_launch.py`
 
 ## 运行进程与产物
 
 ### 本轮管理的进程
 
-- PID `12744`：controller-app；cleanupAllowed=`true`
+- none
 
 ### 只观察到的外部进程
 
 - PID `42432`：`mhxy-shikong-control.exe`，旧控制器历史线索；present=`false`，归属=`preexisting`，cleanupAllowed=`false`
 - PID `26056`：`MyGame_x64r.exe`，历史游戏窗口线索 A；present=`false`，归属=`user_preexisting`，cleanupAllowed=`false`
 - PID `52448`：`MyGame_x64r.exe`，历史游戏窗口线索 B；present=`false`，归属=`user_preexisting`，cleanupAllowed=`false`
-- PID `12744`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`task-owned`，cleanupAllowed=`false`
+- PID `12744`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`task-owned`，cleanupAllowed=`false`
 
 ### 本轮管理的产物
 
@@ -160,15 +161,13 @@
 | `EVD-0114` | `app_runtime` | `passed` | `stale` | Current-commit controller app launched and observed as task-owned process<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0115` | `test` | `passed` | `stale` | P3-S5 app launch verifier wiring: full core regression green<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0116` | `build` | `passed` | `stale` | P3-S5 app launch verifier wiring: Vite build green<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0117` | `test` | `passed` | `valid` | P3-S5 rebind after product commit: core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0118` | `build` | `passed` | `valid` | P3-S5 rebind after product commit: Vite build<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0117` | `test` | `passed` | `stale` | P3-S5 rebind after product commit: core regression<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0118` | `build` | `passed` | `stale` | P3-S5 rebind after product commit: Vite build<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 303 | `2026-07-13T08:54:06Z` | `action_intent` | 登记副作用动作 ACT-P3S5-APP-LAUNCH-001 |
-| 304 | `2026-07-13T08:54:13Z` | `runtime_observation` | Current-commit controller app launched and observed as task-owned process |
 | 305 | `2026-07-13T08:54:14Z` | `action_result` | 副作用动作 ACT-P3S5-APP-LAUNCH-001 -> succeeded |
 | 306 | `2026-07-13T08:54:26Z` | `runtime_observation` | Owned controller app PID 12744 still present after specialized launch verifier |
 | 307 | `2026-07-13T08:55:25Z` | `test_run` | P3-S5 app launch verifier wiring: full core regression green |
@@ -177,6 +176,8 @@
 | 310 | `2026-07-13T08:55:41Z` | `checkpoint` | 创建 CP-0025：Current HEAD app launched with specialized verifier evidence before product commit |
 | 311 | `2026-07-13T08:56:40Z` | `test_run` | P3-S5 rebind after product commit: core regression |
 | 312 | `2026-07-13T08:56:42Z` | `test_run` | P3-S5 rebind after product commit: Vite build |
+| 313 | `2026-07-13T09:08:49Z` | `action_intent` | 登记副作用动作 ACT-P3S5-APP-STOP-001 |
+| 314 | `2026-07-13T09:08:55Z` | `action_result` | 副作用动作 ACT-P3S5-APP-STOP-001 -> succeeded |
 
 ## 异常恢复
 

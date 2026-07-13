@@ -1300,7 +1300,9 @@ def evidence_satisfies_gate(gate_name: str, record: Dict[str, Any], state: Dict[
         return False
     if not evidence_provenance_valid(record):
         return False
-    if record.get("git", {}).get("observedHead") != state.get("git", {}).get("verifiedHead"):
+    # Project gates prove the current commit/worktree. verifiedHead advances after
+    # build+app-launch gates pass, and remains required for live input.
+    if record.get("git", {}).get("observedHead") != state.get("git", {}).get("observedHead"):
         return False
     if record.get("git", {}).get("workingTreeFingerprint") != state.get("git", {}).get("workingTreeFingerprint"):
         return False
@@ -1604,6 +1606,25 @@ def command_action_finish(args: argparse.Namespace) -> None:
         result.update({"status": args.status, "endedAt": utc_now(), "result": args.result})
         if verified_evidence_id:
             result["verifiedEvidenceId"] = verified_evidence_id
+        if args.status == "succeeded" and action.get("kind") == "process_stop":
+            runtime = state.setdefault("runtime", {})
+            target_pid = str(action.get("targetIdentity") or "")
+            managed = [
+                item for item in runtime.get("managedProcesses", [])
+                if str(item.get("pid")) != target_pid
+            ]
+            runtime["managedProcesses"] = managed
+            observed = []
+            for item in runtime.get("observedExternalProcesses", []):
+                if str(item.get("pid")) == target_pid:
+                    item = dict(item)
+                    item["present"] = False
+                    item["observedAbsentAt"] = utc_now()
+                    item["lastObservedAt"] = utc_now()
+                    item["cleanupAllowed"] = False
+                observed.append(item)
+            runtime["observedExternalProcesses"] = observed
+            runtime["observedAt"] = utc_now()
         state["lastAction"] = result
         state["actionStatus"] = args.status
         state["inFlightAction"] = result if args.status == "unknown_after_interruption" else None
@@ -1776,6 +1797,28 @@ def command_gate(args: argparse.Namespace) -> None:
             if not any(evidence_satisfies_gate(args.name, evidence_by_id[evidence_id], state) for evidence_id in args.evidence):
                 raise RuntimeError("provided evidence does not satisfy the semantic requirements for this gate")
         gates[args.name] = {"status": args.status, "note": args.note, "evidenceIds": args.evidence or []}
+        if args.status == "passed" and args.name in {"currentCommitBuilt", "currentCommitAppLaunched"}:
+            built = gates.get("currentCommitBuilt", {})
+            launched = gates.get("currentCommitAppLaunched", {})
+            if built.get("status") == "passed" and launched.get("status") == "passed":
+                evidence_by_id = {record.get("id"): record for record in load_jsonl(EVIDENCE_PATH)}
+                built_ok = any(
+                    evidence_satisfies_gate("currentCommitBuilt", evidence_by_id.get(eid, {}), state)
+                    for eid in built.get("evidenceIds", [])
+                )
+                launch_ok = any(
+                    evidence_satisfies_gate("currentCommitAppLaunched", evidence_by_id.get(eid, {}), state)
+                    for eid in launched.get("evidenceIds", [])
+                )
+                snapshot = current_git_snapshot()
+                if (
+                    built_ok
+                    and launch_ok
+                    and not non_metadata_dirty_paths(snapshot)
+                    and snapshot.get("observedHead")
+                ):
+                    state.setdefault("git", {})["verifiedHead"] = snapshot["observedHead"]
+                    state.setdefault("git", {})["lastKnownStableCommit"] = snapshot["observedHead"]
         event = create_event(state, "slice_state_changed", "更新验收轴 {} -> {}".format(args.name, args.status), gates[args.name], args.evidence or [])
         persist_transaction(state, event=event)
     print(event["id"])

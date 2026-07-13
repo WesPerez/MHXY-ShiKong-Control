@@ -196,7 +196,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
             "cwd": str(cwd),
             "commandLine": cmdline,
             "creationTime": creation_time,
-            "ownership": "task-owned",
+            "ownership": "created_by_current_run",
             "ownershipEvidence": list(ownership)
             + [
                 "verifier={}".format(VERIFIER_NAME),
@@ -224,7 +224,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
                 "pid": pid,
                 "name": exe_path.name,
                 "role": "controller-app",
-                "ownership": "task-owned",
+                "ownership": "created_by_current_run",
                 "present": True,
                 "creationTime": creation_time,
                 "lastObservedAt": utc_now(),
@@ -265,7 +265,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
     evidence_args = argparse.Namespace(
         id=None,
         category="app_runtime",
-        claim="Current-commit controller app launched and observed as task-owned process",
+        claim="Current-commit controller app launched and observed as created_by_current_run process",
         status="passed",
         command=command_text,
         target_identity="controller-app:{}@{}".format(pid, exe_path.name),
