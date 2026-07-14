@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:dba75191bcb325bb3757afd1f6f2070ba7627155a253203d66645a04e9412a15 -->
+<!-- state-digest: sha256:35bde5499861f16c0e294c49424c2f86bd4400d4e81626300b13ba5ea6b28ca9 -->
 <!-- checkpoint-id: CP-0082 -->
 # 长任务执行状态
 
@@ -9,8 +9,8 @@
 ## 恢复首屏
 
 - 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-14T18:46:44Z`
-- 更新时间（北京时间）：`2026-07-15T02:46:44+08:00`
+- 更新时间（UTC）：`2026-07-14T18:47:08Z`
+- 更新时间（北京时间）：`2026-07-15T02:47:08+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `9`
 - 总体状态：`active`
@@ -19,23 +19,23 @@
 - 阶段状态：`verified`；切片状态：`verified`；动作状态：`running`
 - 当前切片验收：已满足 `2`，待验证或阻塞 `0`，合计 `2`
 - 本轮是否发送真实游戏输入：`true`
-- 当前工作：未决动作 `ACT-P9-COMMIT-LEDGER-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：P9-push-core（EVD-0509，当前工作区绑定有效）
-- 唯一下一动作：对账未决副作用动作 ACT-P9-COMMIT-LEDGER-001；结果明确前禁止重放
+- 当前工作：未决动作 `ACT-P9-COMMIT-LEDGER-002` 处于 `running`，等待只读对账
+- 最新当前有效证据：最近事件：登记副作用动作 ACT-P9-COMMIT-LEDGER-002（EVT-1233；不是当前验收通过证据）
+- 唯一下一动作：对账未决副作用动作 ACT-P9-COMMIT-LEDGER-002；结果明确前禁止重放
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P4-S6-C3 restart retention needs P5 persistence specialized verifier/app restart live proof
 - 最新 checkpoint：`CP-0082`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T18:46:35Z`；年龄=`9s`；TTL=`300s`；expiresAt=`2026-07-14T18:51:35Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T18:47:07Z`；年龄=`1s`；TTL=`300s`；expiresAt=`2026-07-14T18:52:07Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
 | 验收轴 | 状态 | 依据/限制 |
 |---|---|---|
 | 代码表面能力 | `部分` | 源码已有 15 类步骤、任务/目标/队列/readiness/失败报告等表面能力，但大型文件耦合且真实闭环不足。 |
-| 自动测试 | `已通过` | EVD-0509 |
-| 当前提交构建 | `已通过` | EVD-0506 |
+| 自动测试 | `已过期` | EVD-0509；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 当前提交构建 | `已过期` | EVD-0506；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
 | 当前提交应用已启动 | `已过期` | EVD-0463 app；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
 | 后台 HWND 输入已实际发送 | `已过期` | EVD-0487；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
 | 游戏后置状态已观察 | `已过期` | EVD-0488；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
@@ -83,7 +83,7 @@
 
 ## 当前动作
 
-- actionId：`ACT-P9-COMMIT-LEDGER-001`
+- actionId：`ACT-P9-COMMIT-LEDGER-002`
 - 类型：`git_commit`
 - 目标：`local-repo`
 - 副作用级别：`git_commit`
@@ -91,7 +91,7 @@
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-P9-COMMIT-LEDGER-001；结果明确前禁止重放
+- 唯一下一动作：对账未决副作用动作 ACT-P9-COMMIT-LEDGER-002；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -107,10 +107,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`845f39124c2f551b2b38ac00fbb6b8bb96155ad1`
+- observed HEAD：`f4879c25bdc8a605ddabdd94daae01d8db1a5bd5`
 - verified HEAD：`9a15ec0ed96772984af950178a44ae1ca861a90e`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:b41231eb7b06a38b17a300cef4611924cf54bb0f87f8e4b30000a173234ddd79`
+- working tree fingerprint：`sha256:08d139b8ac37a2fd071694e302172a8a341d0dd0006cb6375d64ff7e29d7f1d4`
 - 最新 checkpoint：`CP-0082` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -118,9 +118,7 @@
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0082-pre-push-p9.json`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -184,25 +182,25 @@
 | `EVD-0503` | `source_audit` | `passed` | `stale` | P9-release-source-audit<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0504` | `test` | `passed` | `stale` | P9-release-core<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0505` | `cleanup_audit` | `passed` | `stale` | P9-release-cleanup<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0506` | `build` | `passed` | `valid` | P9-push-vite<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0507` | `cleanup_audit` | `passed` | `valid` | P9-push-cleanup<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0508` | `source_audit` | `passed` | `valid` | P9-push-audit<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0509` | `test` | `passed` | `valid` | P9-push-core<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0506` | `build` | `passed` | `stale` | P9-push-vite<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0507` | `cleanup_audit` | `passed` | `stale` | P9-push-cleanup<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0508` | `source_audit` | `passed` | `stale` | P9-push-audit<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0509` | `test` | `passed` | `stale` | P9-push-core<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 1219 | `2026-07-14T18:43:41Z` | `evidence_recorded` | P9-push-audit |
-| 1220 | `2026-07-14T18:45:54Z` | `test_run` | P9-push-core |
-| 1221 | `2026-07-14T18:46:33Z` | `runtime_observation` | final |
-| 1222 | `2026-07-14T18:46:34Z` | `runtime_observation` | final B |
-| 1223 | `2026-07-14T18:46:35Z` | `runtime_observation` | final controller |
 | 1224 | `2026-07-14T18:46:37Z` | `slice_state_changed` | 更新验收轴 automated -> passed |
 | 1225 | `2026-07-14T18:46:38Z` | `slice_state_changed` | 更新验收轴 currentCommitBuilt -> passed |
 | 1226 | `2026-07-14T18:46:40Z` | `slice_state_changed` | P9 release rebind complete; ready to push |
 | 1227 | `2026-07-14T18:46:43Z` | `checkpoint` | 创建 CP-0082：before push |
 | 1228 | `2026-07-14T18:46:44Z` | `action_intent` | 登记副作用动作 ACT-P9-COMMIT-LEDGER-001 |
+| 1229 | `2026-07-14T18:46:46Z` | `action_result` | 副作用动作 ACT-P9-COMMIT-LEDGER-001 -> succeeded |
+| 1230 | `2026-07-14T18:47:05Z` | `runtime_observation` | pre-push final |
+| 1231 | `2026-07-14T18:47:06Z` | `runtime_observation` | pre-push final B |
+| 1232 | `2026-07-14T18:47:07Z` | `runtime_observation` | pre-push final controller |
+| 1233 | `2026-07-14T18:47:09Z` | `action_intent` | 登记副作用动作 ACT-P9-COMMIT-LEDGER-002 |
 
 ## 异常恢复
 

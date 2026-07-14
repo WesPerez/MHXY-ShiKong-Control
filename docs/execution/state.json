@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1278,
+  "revision": 1283,
   "generation": 1,
-  "updatedAt": "2026-07-14T18:46:44Z",
+  "updatedAt": "2026-07-14T18:47:08Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -209,69 +209,47 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "845f39124c2f551b2b38ac00fbb6b8bb96155ad1",
+    "observedHead": "f4879c25bdc8a605ddabdd94daae01d8db1a5bd5",
     "verifiedHead": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0082-pre-push-p9.json",
       " M docs/execution/events.jsonl",
-      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "983f711e921c852a5acffc83e4437f262eb7d52b76af798c28ce71250feed09d",
-        "size": 13181
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
-        "exists": true,
-        "sha256": "dccee7503b00899bbe99e43521a2b88c23fbbb0b3f49570defcedabd57488541",
-        "size": 27410
+        "sha256": "27924724b02f0087734c110f178af819096c8fafb1e1d4d4fddf5eb6bcd88102",
+        "size": 13351
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "c58c1fe699ddf01128128d136a4abb61464615c44209190a5d6e0c064d9bfc9a",
-        "size": 1736530
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "76e2ddcab7731782a11592ca9ea52024a495ccd3026c9e988810329ce16cb913",
-        "size": 1401022
+        "sha256": "1496de27b1e27793d7453fc3e3b2acdc5cc5cd7326fcdc00586122d35e8e860e",
+        "size": 1740908
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "989e2d3264c45d7eff7c71537407ea597e47f6b1ef6a6cde5a07a7b1ce5bc1f5",
-        "size": 97014
+        "sha256": "099843214ad6e7bca0382751ecfdef298888c015f25549559090ea1fb617c847",
+        "size": 95984
       }
     ],
-    "workingTreeFingerprint": "sha256:b41231eb7b06a38b17a300cef4611924cf54bb0f87f8e4b30000a173234ddd79",
+    "workingTreeFingerprint": "sha256:08d139b8ac37a2fd071694e302172a8a341d0dd0006cb6375d64ff7e29d7f1d4",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
-        "displayPath": "docs/execution/checkpoints/CP-0082-pre-push-p9.json"
       },
       {
         "status": " M",
@@ -282,18 +260,27 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
       }
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-P9-COMMIT-LEDGER-002",
+    "kind": "git_commit",
+    "targetIdentity": "local-repo",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "post rebind action-finish dirty ledger",
+    "expectedPostcondition": "tracked clean",
+    "idempotencyKey": "p9-ledger-final",
+    "startedAt": "2026-07-14T18:47:08Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "cwd=E:/Project/Common/mhxy-shikong-control"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-P9-COMMIT-LEDGER-001",
     "kind": "git_commit",
     "targetIdentity": "local-repo",
@@ -306,24 +293,9 @@
     "ownershipEvidence": [
       "cwd=E:/Project/Common/mhxy-shikong-control"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-P9-COMMIT-001",
-    "kind": "git_commit",
-    "targetIdentity": "local-repo",
-    "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P9 criteria offline passed",
-    "expectedPostcondition": "release commit on main",
-    "idempotencyKey": "p9-release-commit",
-    "startedAt": "2026-07-14T18:43:17Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "cwd=E:/Project/Common/mhxy-shikong-control"
-    ],
     "status": "succeeded",
-    "endedAt": "2026-07-14T18:43:19Z",
-    "result": "committed 845f39124c2f551b2b38ac00fbb6b8bb96155ad1"
+    "endedAt": "2026-07-14T18:46:46Z",
+    "result": "committed f4879c25bdc8a605ddabdd94daae01d8db1a5bd5"
   },
   "safety": {
     "realInputSent": true,
@@ -333,7 +305,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-14T18:46:35Z",
+    "observedAt": "2026-07-14T18:47:07Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -672,8 +644,8 @@
         "ownership": "user_preexisting",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T18:46:33Z",
-        "lastSeenAt": "2026-07-14T18:46:33Z",
+        "lastObservedAt": "2026-07-14T18:47:05Z",
+        "lastSeenAt": "2026-07-14T18:47:05Z",
         "creationTime": "2026-07-14T00:48:47Z"
       },
       {
@@ -799,8 +771,8 @@
         "ownership": "created_by_current_run",
         "present": true,
         "creationTime": "2026-07-14T18:00:00Z",
-        "lastObservedAt": "2026-07-14T18:46:35Z",
-        "lastSeenAt": "2026-07-14T18:46:35Z",
+        "lastObservedAt": "2026-07-14T18:47:07Z",
+        "lastSeenAt": "2026-07-14T18:47:07Z",
         "cleanupAllowed": false
       },
       {
@@ -810,8 +782,8 @@
         "ownership": "created_by_current_run",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T18:46:34Z",
-        "lastSeenAt": "2026-07-14T18:46:34Z",
+        "lastObservedAt": "2026-07-14T18:47:06Z",
+        "lastSeenAt": "2026-07-14T18:47:06Z",
         "creationTime": "2026-07-14T18:21:59Z"
       }
     ],
@@ -871,9 +843,9 @@
     }
   },
   "eventTail": {
-    "seq": 1228,
-    "id": "EVT-1228",
-    "hash": "sha256:7a3c4e9deda505f70e3eb24b242c96bcf0d8ca831856fb227b09477e3d83262f"
+    "seq": 1233,
+    "id": "EVT-1233",
+    "hash": "sha256:0ed0840947a5d27ce56dd017bfbc2accc1b6862f75bf330aaa404bdbf85473c4"
   },
   "evidenceTail": {
     "seq": 509,
