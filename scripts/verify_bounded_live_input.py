@@ -440,7 +440,8 @@ def run_bounded_live_step(command: List[str], report_path: Path, require_elevate
         report_path.unlink()
     report_path.parent.mkdir(parents=True, exist_ok=True)
     argfile = report_path.parent / "elevated-args.txt"
-    argfile.write_text(chr(10).join(str(a) for a in step_args) + chr(10), encoding="utf-8-sig")
+    # One argument per line. utf-8 without BOM avoids corrupting the first token.
+    argfile.write_text(chr(10).join(str(a) for a in step_args) + chr(10), encoding="utf-8")
     log = report_path.parent / "elevated-run.log"
     launcher = report_path.parent / "elevated-run.ps1"
     nl = chr(10)
@@ -450,10 +451,27 @@ def run_bounded_live_step(command: List[str], report_path: Path, require_elevate
         "$bin = '" + str(bin_path).replace("'", "''") + "'",
         "$argFile = '" + str(argfile).replace("'", "''") + "'",
         "$log = '" + str(log).replace("'", "''") + "'",
-        "$stepArgs = Get-Content -LiteralPath $argFile -Encoding utf8",
+        "$out = $log + '.out'",
+        "$err = $log + '.err'",
+        "$stepArgs = @(Get-Content -LiteralPath $argFile -Encoding utf8)",
         "try {",
-        "  $p = Start-Process -FilePath $bin -ArgumentList $stepArgs -WorkingDirectory (Get-Location) -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput ($log + '.out') -RedirectStandardError ($log + '.err')",
+        "  # Start-Process -ArgumentList re-tokenizes arrays; use ProcessStartInfo.ArgumentList instead.",
+        "  $psi = New-Object System.Diagnostics.ProcessStartInfo",
+        "  $psi.FileName = $bin",
+        "  $psi.WorkingDirectory = (Get-Location).Path",
+        "  $psi.UseShellExecute = $false",
+        "  $psi.RedirectStandardOutput = $true",
+        "  $psi.RedirectStandardError = $true",
+        "  $psi.CreateNoWindow = $true",
+        "  foreach ($arg in $stepArgs) { [void]$psi.ArgumentList.Add([string]$arg) }",
+        "  $p = [System.Diagnostics.Process]::Start($psi)",
+        "  $stdout = $p.StandardOutput.ReadToEnd()",
+        "  $stderr = $p.StandardError.ReadToEnd()",
+        "  $p.WaitForExit()",
+        "  Set-Content -LiteralPath $out -Value $stdout -Encoding utf8",
+        "  Set-Content -LiteralPath $err -Value $stderr -Encoding utf8",
         "  ('exit=' + $p.ExitCode) | Set-Content -LiteralPath $log -Encoding utf8",
+        "  if ($stderr) { Add-Content -LiteralPath $log -Value $stderr -Encoding utf8 }",
         "  exit $p.ExitCode",
         "} catch {",
         "  $_ | Out-String | Set-Content -LiteralPath $log -Encoding utf8",
