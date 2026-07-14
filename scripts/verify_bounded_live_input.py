@@ -444,10 +444,8 @@ def run_bounded_live_step(command: List[str], report_path: Path, require_elevate
     argfile.write_text(chr(10).join(str(a) for a in step_args) + chr(10), encoding="utf-8")
 
     def _win_escape(arg):
-        text_arg = str(arg)
-        if text_arg == "" or any(ch in text_arg for ch in [' ', '	', '"']):
-            return '"' + text_arg.replace('\', '\\').replace('"', '\"') + '"'
-        return text_arg
+        import json as _json
+        return _json.dumps(str(arg), ensure_ascii=False)
 
     cmdline_file = report_path.parent / "elevated-cmdline.txt"
     cmdline_file.write_text(" ".join(_win_escape(a) for a in step_args), encoding="utf-8")
