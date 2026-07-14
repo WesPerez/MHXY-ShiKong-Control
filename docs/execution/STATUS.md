@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:f4a22efbf88479cb51ef900c288dfd18cb4bbf1f8036dea018bc91765066a86c -->
-<!-- checkpoint-id: CP-0065 -->
+<!-- state-digest: sha256:bd41a14f042859ba58409214f26cb7c6afb452358f84afe6df4dfc3ae23e7324 -->
+<!-- checkpoint-id: CP-0069 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -9,34 +9,34 @@
 ## 恢复首屏
 
 - 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-14T14:25:19Z`
-- 更新时间（北京时间）：`2026-07-14T22:25:19+08:00`
+- 更新时间（UTC）：`2026-07-14T14:32:27Z`
+- 更新时间（北京时间）：`2026-07-14T22:32:27+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `9`
 - 总体状态：`active`
 - 当前阶段：`P4`
 - 当前切片：`P4-S6` - Full home-vitality vertical remaining gates
-- 阶段状态：`in_progress`；切片状态：`blocked`；动作状态：`running`
-- 当前切片验收：已满足 `2`，待验证或阻塞 `1`，合计 `3`
+- 阶段状态：`in_progress`；切片状态：`verified`；动作状态：`running`
+- 当前切片验收：已满足 `3`，待验证或阻塞 `0`，合计 `3`
 - 本轮是否发送真实游戏输入：`true`
-- 当前工作：未决动作 `ACT-P5S1-COMMIT-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：最近事件：登记副作用动作 ACT-P5S1-COMMIT-001（EVT-0886；不是当前验收通过证据）
-- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-001；结果明确前禁止重放
+- 当前工作：未决动作 `ACT-P5S1-COMMIT-OPEN-001` 处于 `running`，等待只读对账
+- 最新当前有效证据：Bounded home-vitality live outcome observed after inputSent（EVD-0421，当前工作区绑定有效）
+- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-OPEN-001；结果明确前禁止重放
 - 当前切片执行 blocker：P4-S6-C3 restart retention requires P5 persistence specialized verifier and app restart proof
 - 全局恢复/验收风险：P4-S6-C3 restart retention needs P5 persistence specialized verifier/app restart live proof
-- 最新 checkpoint：`CP-0065`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 最新 checkpoint：`CP-0069`；safeToResume=`true`；safeToRunLiveInput=`true`
 - 当前允许：只读审计、连续性元数据对账。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T14:24:33Z`；年龄=`46s`；TTL=`300s`；expiresAt=`2026-07-14T14:29:33Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作。
+- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T14:32:03Z`；年龄=`24s`；TTL=`300s`；expiresAt=`2026-07-14T14:37:03Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
 | 验收轴 | 状态 | 依据/限制 |
 |---|---|---|
 | 代码表面能力 | `部分` | 源码已有 15 类步骤、任务/目标/队列/readiness/失败报告等表面能力，但大型文件耦合且真实闭环不足。 |
-| 自动测试 | `已过期` | test rebind；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
-| 当前提交构建 | `已过期` | vite rebind；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
-| 当前提交应用已启动 | `已过期` | app EVD-0395；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 自动测试 | `已通过` | C1 rebind test EVD-0410 |
+| 当前提交构建 | `已通过` | vite EVD-0409 |
+| 当前提交应用已启动 | `已通过` | ensure app gate |
 | 后台 HWND 输入已实际发送 | `未验证` | 当前 HEAD 没有应用 UI 到指定 hwnd 的真实输入通过证据。 |
 | 游戏后置状态已观察 | `未验证` | 没有绑定当前 HEAD、exe、workspace 和窗口身份的游戏后置状态证据。 |
 | 前台鼠标键盘未受影响 | `部分` | 静态安全审计只允许 PostMessageW 路径，但尚缺当前版本实测前后台 HWND、鼠标位置和用户并行操作证据。 |
@@ -79,13 +79,13 @@
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P4-S6-C1` | Offline full blueprint instantiate, readiness, recovery contracts pass | `passed` | `source_audit`, `test` | `EVD-0390`, `EVD-0391` |
-| `P4-S6-C2` | At least multi-step home-vitality live path beyond single hotkey with postcondition | `passed` | `live_input`, `live_outcome` | `EVD-0403`, `EVD-0406` |
-| `P4-S6-C3` | Restart retains task/assets or documents explicit remaining gap with evidence | `pending` | `app_runtime`, `persistence` | none |
+| `P4-S6-C1` | Offline full blueprint instantiate, readiness, recovery contracts pass | `passed` | `source_audit`, `test` | `EVD-0390`, `EVD-0391`, `EVD-0408`, `EVD-0410` |
+| `P4-S6-C2` | At least multi-step home-vitality live path beyond single hotkey with postcondition | `passed` | `live_input`, `live_outcome` | `EVD-0403`, `EVD-0406`, `EVD-0414`, `EVD-0421` |
+| `P4-S6-C3` | Restart retains task/assets or documents explicit remaining gap with evidence | `passed` | `source_audit` | `EVD-0407` |
 
 ## 当前动作
 
-- actionId：`ACT-P5S1-COMMIT-001`
+- actionId：`ACT-P5S1-COMMIT-OPEN-001`
 - 类型：`git_commit`
 - 目标：`main`
 - 副作用级别：`git_commit`
@@ -93,7 +93,7 @@
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-001；结果明确前禁止重放
+- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-OPEN-001；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -109,18 +109,23 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`167227ce2cd676d31e6a0343d9cf75e4ecacf18d`
-- verified HEAD：`9b55dd076a5beec5ef04aeddb135a334720993ca`
+- observed HEAD：`9a15ec0ed96772984af950178a44ae1ca861a90e`
+- verified HEAD：`9a15ec0ed96772984af950178a44ae1ca861a90e`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:4d3961d342ec578fbb042a1b2aa6e4dafa53c70278428822c929c96b3b2b8d8a`
-- 最新 checkpoint：`CP-0065` (state_snapshot)
+- working tree fingerprint：`sha256:83671aea93f144c00b3d1a7a7879255587bef39d3277819d24ff6cbe3b885d44`
+- 最新 checkpoint：`CP-0069` (state_snapshot)
 - checkpoint safeToResume：`true`
-- checkpoint safeToRunLiveInput：`false`
+- checkpoint safeToRunLiveInput：`true`
 
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
+- `docs/execution/checkpoints/CP-0066-p4-s6-pre-live-c2-rebind.json`
+- `docs/execution/checkpoints/CP-0067-p4-s6-pre-live-c2-outcome.json`
+- `docs/execution/checkpoints/CP-0068-p4-s6-pre-live-outcome-final2.json`
+- `docs/execution/checkpoints/CP-0069-p4-s6-pre-live-outcome-final3.json`
 - `docs/execution/events.jsonl`
+- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -132,6 +137,7 @@
 - PID `8604`：controller-app；cleanupAllowed=`true`
 - PID `71160`：controller-app；cleanupAllowed=`true`
 - PID `51816`：controller-app；cleanupAllowed=`true`
+- PID `87704`：controller-app；cleanupAllowed=`true`
 
 ### 只观察到的外部进程
 
@@ -157,6 +163,7 @@
 - PID `8604`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`created_by_current_run`，cleanupAllowed=`false`
 - PID `71160`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`created_by_current_run`，cleanupAllowed=`false`
 - PID `51816`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`created_by_current_run`，cleanupAllowed=`false`
+- PID `87704`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`created_by_current_run`，cleanupAllowed=`false`
 
 ### 本轮管理的产物
 
@@ -175,29 +182,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0399` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0400` | `live_preflight` | `passed` | `stale` | Strict target capture completed bounded zero-input wait_image preflight<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0401` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0402` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0403` | `live_input` | `passed` | `stale` | Bounded home-vitality live input executed with inputSent after elevated gates<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0404` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0405` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0406` | `live_outcome` | `passed` | `stale` | Bounded home-vitality live outcome observed after inputSent<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0414` | `live_input` | `passed` | `valid` | Bounded home-vitality live input executed with inputSent after elevated gates<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0415` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0416` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0417` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0418` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0419` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0420` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0421` | `live_outcome` | `passed` | `valid` | Bounded home-vitality live outcome observed after inputSent<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 877 | `2026-07-14T14:24:33Z` | `runtime_observation` | Bounded home-vitality live outcome observed after inputSent |
-| 878 | `2026-07-14T14:24:34Z` | `action_result` | 副作用动作 ACT-P4S6-LIVE-D -> succeeded |
-| 879 | `2026-07-14T14:24:59Z` | `decision` | P4-S6-C1 offline contracts passed (EVD-0390/0391). P4-S6-C2 multi-step live ALT+N+ESC passed (EVD-0403/0406). P4-S6-C3 restart retention remains pending: persistence specialized verifier allowlist empty; belongs to P5. |
-| 880 | `2026-07-14T14:25:00Z` | `checkpoint` | 创建 CP-0065：C1/C2 done; C3 deferred to P5 |
-| 881 | `2026-07-14T14:25:01Z` | `action_intent` | 登记副作用动作 ACT-P4S6-COMMIT-001 |
-| 882 | `2026-07-14T14:25:03Z` | `action_result` | 副作用动作 ACT-P4S6-COMMIT-001 -> succeeded |
-| 883 | `2026-07-14T14:25:04Z` | `action_intent` | 登记副作用动作 ACT-P5S1-COMMIT-BEGIN-001 |
-| 884 | `2026-07-14T14:25:06Z` | `action_result` | 副作用动作 ACT-P5S1-COMMIT-BEGIN-001 -> succeeded |
-| 885 | `2026-07-14T14:25:17Z` | `slice_state_changed` | P4-S6 C1 offline and C2 multi-step live passed; C3 restart retention blocked on missing persistence specialized verifier (P5). |
-| 886 | `2026-07-14T14:25:19Z` | `action_intent` | 登记副作用动作 ACT-P5S1-COMMIT-001 |
+| 917 | `2026-07-14T14:31:22Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
+| 918 | `2026-07-14T14:31:29Z` | `action_result` | 副作用动作 ACT-P4S6-LIVE-H -> failed |
+| 919 | `2026-07-14T14:31:52Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
+| 920 | `2026-07-14T14:31:55Z` | `checkpoint` | 创建 CP-0069：ESC outcome short observe |
+| 921 | `2026-07-14T14:31:56Z` | `action_intent` | 登记副作用动作 ACT-P4S6-LIVE-I |
+| 922 | `2026-07-14T14:31:58Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
+| 923 | `2026-07-14T14:32:03Z` | `runtime_observation` | Bounded home-vitality live outcome observed after inputSent |
+| 924 | `2026-07-14T14:32:05Z` | `action_result` | 副作用动作 ACT-P4S6-LIVE-I -> succeeded |
+| 925 | `2026-07-14T14:32:17Z` | `slice_state_changed` | P4-S6 verified: offline C1, multi-step live C2 (EVD-0414/0421), restart gap documented C3. |
+| 926 | `2026-07-14T14:32:27Z` | `action_intent` | 登记副作用动作 ACT-P5S1-COMMIT-OPEN-001 |
 
 ## 异常恢复
 
