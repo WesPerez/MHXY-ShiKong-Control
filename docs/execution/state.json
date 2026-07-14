@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1293,
+  "revision": 1295,
   "generation": 1,
-  "updatedAt": "2026-07-14T18:47:56Z",
+  "updatedAt": "2026-07-14T18:47:59Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -209,7 +209,7 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "2a5986a598920c99875d49c330c95b522dac96a2",
+    "observedHead": "dfe62125a4055da69fe1b5bc2a65cd8a032c399f",
     "verifiedHead": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "upstreamHead": "2a5986a598920c99875d49c330c95b522dac96a2",
     "lastKnownStableCommit": "9a15ec0ed96772984af950178a44ae1ca861a90e",
@@ -227,23 +227,23 @@
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "bfe4a5d8f01442a20f4ae9a6dc06c86304b7b74e48ce13703a533280bcaaeebb",
+        "sha256": "1851e134895f60dcf1cb475f9e8887c29e829626e5af84c2c57ff3efc4f56805",
         "size": 13396
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "9ed6bdec2b98cbf789f2f44e35f54ad17088eb7f6005d7596a3ac7a4f43879da",
-        "size": 1750639
+        "sha256": "ee9ab5f65235ba85ea74def18732a6d3cc6d06361f418e686d3b60e5c3e38461",
+        "size": 1752821
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "2273aef536a7c9d63bed86101fff66ddd9b57f10b1333aabe393ca38e2507c81",
-        "size": 96119
+        "sha256": "38a019a9951e1abdf9b0cf09bd44f3d771e0c948a4c2f5f671dde4b1f52c6934",
+        "size": 95973
       }
     ],
-    "workingTreeFingerprint": "sha256:f6d9a50ad50bb42b233f63199a13e0209b2828c2534033213f0fdf50b63005d9",
+    "workingTreeFingerprint": "sha256:1c7b99854fb2660b01b14c3841db30cd70def5a7732159521169e5f15575515b",
     "dirtyEntries": [
       {
         "status": " M",
@@ -266,6 +266,21 @@
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-P9-COMMIT-LEDGER-005",
+    "kind": "git_commit",
+    "targetIdentity": "local-repo",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "trail",
+    "expectedPostcondition": "clean",
+    "idempotencyKey": "p9-trail2",
+    "startedAt": "2026-07-14T18:47:59Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "cwd=E:/Project/Common/mhxy-shikong-control"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-P9-COMMIT-LEDGER-004",
     "kind": "git_commit",
     "targetIdentity": "local-repo",
@@ -278,26 +293,9 @@
     "ownershipEvidence": [
       "cwd=E:/Project/Common/mhxy-shikong-control"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-P9-PUSH-001",
-    "kind": "git_push",
-    "targetIdentity": "origin/main",
-    "sideEffectClass": "git_push",
-    "expectedPrecondition": "local main ahead of origin/main no force",
-    "expectedPostcondition": "origin/main updated to local HEAD",
-    "idempotencyKey": "p9-push-f4879c2",
-    "startedAt": "2026-07-14T18:47:15Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "branch=main",
-      "no-force"
-    ],
     "status": "succeeded",
-    "leaseTokenHash": "84b49caee1b23b7f0979cf31da0573ade5a3af8d8bcfc428f6ef2ac633e74d9c",
-    "endedAt": "2026-07-14T18:47:30Z",
-    "result": "pushed 2a5986a598920c99875d49c330c95b522dac96a2 to origin/main"
+    "endedAt": "2026-07-14T18:47:58Z",
+    "result": "committed dfe62125a4055da69fe1b5bc2a65cd8a032c399f"
   },
   "safety": {
     "realInputSent": true,
@@ -845,9 +843,9 @@
     }
   },
   "eventTail": {
-    "seq": 1243,
-    "id": "EVT-1243",
-    "hash": "sha256:5a287c30954ac3b4b14a76fec5bf1257f1adeab5f5e463b5f4f3bf71e2f46367"
+    "seq": 1245,
+    "id": "EVT-1245",
+    "hash": "sha256:a5e3807db551369dc7a5b8dc06b72e1c61a5a7ec4d11b8aa4a6fdce6e1cb4290"
   },
   "evidenceTail": {
     "seq": 509,
