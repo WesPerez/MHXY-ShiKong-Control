@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1262,
+  "revision": 1278,
   "generation": 1,
-  "updatedAt": "2026-07-14T18:43:17Z",
+  "updatedAt": "2026-07-14T18:46:44Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -28,13 +28,13 @@
   },
   "overallStatus": "active",
   "currentPhaseId": "P9",
-  "phaseStatus": "in_progress",
+  "phaseStatus": "verified",
   "actionStatus": "running",
   "acceptanceLevel": "design",
   "activeSlice": {
     "id": "P9-S1",
     "title": "Cleanup package validate and release gate",
-    "status": "in_progress",
+    "status": "verified",
     "startedAt": "2026-07-14T18:35:15Z",
     "scope": [
       "docs/execution",
@@ -56,7 +56,9 @@
           "EVD-0499",
           "EVD-0500",
           "EVD-0502",
-          "EVD-0504"
+          "EVD-0504",
+          "EVD-0506",
+          "EVD-0509"
         ],
         "requiredEvidenceCategories": [
           "build",
@@ -70,7 +72,9 @@
         "evidenceIds": [
           "EVD-0501",
           "EVD-0503",
-          "EVD-0505"
+          "EVD-0505",
+          "EVD-0507",
+          "EVD-0508"
         ],
         "requiredEvidenceCategories": [
           "cleanup_audit",
@@ -78,7 +82,7 @@
         ]
       }
     ],
-    "nextAction": "rebind tests build package smoke then commit push"
+    "nextAction": "git push origin main"
   },
   "phases": [
     {
@@ -138,7 +142,7 @@
     {
       "id": "P9",
       "title": "源码清理、稳定提交和发布",
-      "status": "in_progress",
+      "status": "verified",
       "summary": "在调用链和完整验证后清理、提交、推送和发布稳定版本。"
     }
   ],
@@ -150,16 +154,16 @@
     },
     "automated": {
       "status": "passed",
-      "note": "EVD-0498",
+      "note": "EVD-0509",
       "evidenceIds": [
-        "EVD-0498"
+        "EVD-0509"
       ]
     },
     "currentCommitBuilt": {
       "status": "passed",
-      "note": "EVD-0494",
+      "note": "EVD-0506",
       "evidenceIds": [
-        "EVD-0494"
+        "EVD-0506"
       ]
     },
     "currentCommitAppLaunched": {
@@ -205,126 +209,58 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "9588282eb1eacfe9ff5599cf6b5082332af621ef",
+    "observedHead": "845f39124c2f551b2b38ac00fbb6b8bb96155ad1",
     "verifiedHead": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "dirtyPaths": [
-      "LICENSE",
-      "NOTICE",
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json",
+      "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
-      "docs/execution/state.json",
-      "scripts/audit_regression_suite_offline.py",
-      "scripts/audit_release_cleanup.py",
-      "scripts/execution_progress.py",
-      "src/asset-store-core.js",
-      "src/main.js"
+      "docs/execution/state.json"
     ],
     "dirtyStatus": [
-      "?? LICENSE",
-      "?? NOTICE",
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json",
+      "?? docs/execution/checkpoints/CP-0082-pre-push-p9.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
-      " M docs/execution/state.json",
-      " M scripts/audit_regression_suite_offline.py",
-      "?? scripts/audit_release_cleanup.py",
-      " M scripts/execution_progress.py",
-      " M src/asset-store-core.js",
-      "M  src/main.js"
+      " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
-        "path": "LICENSE",
-        "exists": true,
-        "sha256": "e03bd88e8a1dca08630bc22d9213b0c68799aee6093c21e4e382a53fe6a04958",
-        "size": 1091
-      },
-      {
-        "path": "NOTICE",
-        "exists": true,
-        "sha256": "31d8f00a88a209c1f1952e9bc85ffbeeff6d25f1b42c9c39724a53b8c157b759",
-        "size": 453
-      },
-      {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "3ba73f5a5a7b4b85df600e25978031fcbfb53c6b64045fa559ecc8d9f1dec063",
-        "size": 13365
+        "sha256": "983f711e921c852a5acffc83e4437f262eb7d52b76af798c28ce71250feed09d",
+        "size": 13181
       },
       {
-        "path": "docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json",
+        "path": "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
         "exists": true,
-        "sha256": "94fa9b0700cef924c950cb5ec2a4b1b848095e20c25936e2e88931cb7a8706c0",
-        "size": 31627
+        "sha256": "dccee7503b00899bbe99e43521a2b88c23fbbb0b3f49570defcedabd57488541",
+        "size": 27410
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "67747011ec3f66f97532112bf8d108be9b0e13fffe64f77168bf62afa7364e38",
-        "size": 1723974
+        "sha256": "c58c1fe699ddf01128128d136a4abb61464615c44209190a5d6e0c064d9bfc9a",
+        "size": 1736530
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "ff02ced48c5a44afaa47181f7ba11d35954677a8d58b5287bf7300af25a225be",
-        "size": 1394968
+        "sha256": "76e2ddcab7731782a11592ca9ea52024a495ccd3026c9e988810329ce16cb913",
+        "size": 1401022
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "40ac4cb336c8354d4fa3584cda87480f358ca28a20f2ac5e6d3964834ca11c7a",
-        "size": 99951
-      },
-      {
-        "path": "scripts/audit_regression_suite_offline.py",
-        "exists": true,
-        "sha256": "17ef0e5eb00cd2c7ffe0070d57960ee176ccc9f2522e1338fb91a5c1c4840ff7",
-        "size": 704
-      },
-      {
-        "path": "scripts/audit_release_cleanup.py",
-        "exists": true,
-        "sha256": "589f9cd55359a37f7193239d5a578159fae608d02b74d6df1cb5c079f955affa",
-        "size": 288
-      },
-      {
-        "path": "scripts/execution_progress.py",
-        "exists": true,
-        "sha256": "2d4ec88a29b81d30d4509aed896d8eb413e20ca2f3cddd30e4862efea05608e6",
-        "size": 131543
-      },
-      {
-        "path": "src/asset-store-core.js",
-        "exists": true,
-        "sha256": "e84411a74ac67fa8af2607a4180bb6baa9b1bb4031a41326419fa7e0fdf1d7f0",
-        "size": 9226
-      },
-      {
-        "path": "src/main.js",
-        "exists": true,
-        "sha256": "de54f864480dabda0191425194604fa652b001bd26b7689e401361396d1ade3a",
-        "size": 362552
+        "sha256": "989e2d3264c45d7eff7c71537407ea597e47f6b1ef6a6cde5a07a7b1ce5bc1f5",
+        "size": 97014
       }
     ],
-    "workingTreeFingerprint": "sha256:4b2fe990f2db1587aa72484852a9458275cb13b9c77606d2cdb4c4facbb55272",
+    "workingTreeFingerprint": "sha256:b41231eb7b06a38b17a300cef4611924cf54bb0f87f8e4b30000a173234ddd79",
     "dirtyEntries": [
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "LICENSE",
-        "displayPath": "LICENSE"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "NOTICE",
-        "displayPath": "NOTICE"
-      },
       {
         "status": " M",
         "sourcePath": null,
@@ -334,8 +270,8 @@
       {
         "status": "??",
         "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json",
-        "displayPath": "docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json"
+        "destinationPath": "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
+        "displayPath": "docs/execution/checkpoints/CP-0082-pre-push-p9.json"
       },
       {
         "status": " M",
@@ -354,40 +290,25 @@
         "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_regression_suite_offline.py",
-        "displayPath": "scripts/audit_regression_suite_offline.py"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "scripts/audit_release_cleanup.py",
-        "displayPath": "scripts/audit_release_cleanup.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "scripts/execution_progress.py",
-        "displayPath": "scripts/execution_progress.py"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
-        "destinationPath": "src/asset-store-core.js",
-        "displayPath": "src/asset-store-core.js"
-      },
-      {
-        "status": "M ",
-        "sourcePath": null,
-        "destinationPath": "src/main.js",
-        "displayPath": "src/main.js"
       }
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-P9-COMMIT-LEDGER-001",
+    "kind": "git_commit",
+    "targetIdentity": "local-repo",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "release rebind evidence current",
+    "expectedPostcondition": "ledger committed clean",
+    "idempotencyKey": "p9-ledger-845f391",
+    "startedAt": "2026-07-14T18:46:44Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "cwd=E:/Project/Common/mhxy-shikong-control"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-P9-COMMIT-001",
     "kind": "git_commit",
     "targetIdentity": "local-repo",
@@ -400,24 +321,9 @@
     "ownershipEvidence": [
       "cwd=E:/Project/Common/mhxy-shikong-control"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-P8-COMMIT-S1-001",
-    "kind": "git_commit",
-    "targetIdentity": "local-repo",
-    "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P8-S1 passed",
-    "expectedPostcondition": "committed",
-    "idempotencyKey": "p8s1-regression",
-    "startedAt": "2026-07-14T18:34:57Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "cwd=E:/Project/Common/mhxy-shikong-control"
-    ],
     "status": "succeeded",
-    "endedAt": "2026-07-14T18:35:00Z",
-    "result": "committed 9588282eb1eacfe9ff5599cf6b5082332af621ef"
+    "endedAt": "2026-07-14T18:43:19Z",
+    "result": "committed 845f39124c2f551b2b38ac00fbb6b8bb96155ad1"
   },
   "safety": {
     "realInputSent": true,
@@ -427,7 +333,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-14T18:43:09Z",
+    "observedAt": "2026-07-14T18:46:35Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -766,8 +672,8 @@
         "ownership": "user_preexisting",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T18:43:07Z",
-        "lastSeenAt": "2026-07-14T18:43:07Z",
+        "lastObservedAt": "2026-07-14T18:46:33Z",
+        "lastSeenAt": "2026-07-14T18:46:33Z",
         "creationTime": "2026-07-14T00:48:47Z"
       },
       {
@@ -893,8 +799,8 @@
         "ownership": "created_by_current_run",
         "present": true,
         "creationTime": "2026-07-14T18:00:00Z",
-        "lastObservedAt": "2026-07-14T18:43:09Z",
-        "lastSeenAt": "2026-07-14T18:43:09Z",
+        "lastObservedAt": "2026-07-14T18:46:35Z",
+        "lastSeenAt": "2026-07-14T18:46:35Z",
         "cleanupAllowed": false
       },
       {
@@ -904,8 +810,8 @@
         "ownership": "created_by_current_run",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T18:43:08Z",
-        "lastSeenAt": "2026-07-14T18:43:08Z",
+        "lastObservedAt": "2026-07-14T18:46:34Z",
+        "lastSeenAt": "2026-07-14T18:46:34Z",
         "creationTime": "2026-07-14T18:21:59Z"
       }
     ],
@@ -965,24 +871,24 @@
     }
   },
   "eventTail": {
-    "seq": 1212,
-    "id": "EVT-1212",
-    "hash": "sha256:65261ccdcd89ada0963fe25d9cc4a636a9e7ec2f0ccc866f991334781773a527"
+    "seq": 1228,
+    "id": "EVT-1228",
+    "hash": "sha256:7a3c4e9deda505f70e3eb24b242c96bcf0d8ca831856fb227b09477e3d83262f"
   },
   "evidenceTail": {
-    "seq": 505,
-    "id": "EVD-0505",
-    "hash": "sha256:3d84131c2ddfa78be16cbf6962ca9a638474ed1890c0a60c869c3909d35634db"
+    "seq": 509,
+    "id": "EVD-0509",
+    "hash": "sha256:071fc1da69bf300db76a35cc238678dfaa2c93970c624acabea4f78e81931c18"
   },
-  "checkpointCounter": 81,
+  "checkpointCounter": 82,
   "lastCheckpoint": {
-    "id": "CP-0081",
+    "id": "CP-0082",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0081-pre-commit-p9-release.json",
-    "createdAt": "2026-07-14T18:43:14Z",
+    "path": "docs/execution/checkpoints/CP-0082-pre-push-p9.json",
+    "createdAt": "2026-07-14T18:46:43Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:a9096661611cce2dac8d1d5ac075b49ae9730bd5daadc2fee7ee54810137bd9e"
+    "hash": "sha256:c39fcc61920bbbc1ab4130857d36289484963c982a1dde224591e1a8f335a9fa"
   },
   "resume": {
     "blockers": [
@@ -994,7 +900,7 @@
     "doNotDo": [
       "Do not stop MyGame_x64r without user request."
     ],
-    "lastSafeResumeSnapshotId": "CP-0081"
+    "lastSafeResumeSnapshotId": "CP-0082"
   },
   "completedSlices": [
     {
