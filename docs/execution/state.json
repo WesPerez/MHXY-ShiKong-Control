@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1349,
+  "revision": 1351,
   "generation": 1,
-  "updatedAt": "2026-07-14T19:01:43Z",
+  "updatedAt": "2026-07-14T19:01:46Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -210,69 +210,47 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "6c9be4d615ba60732a74bc068b897d514e0e45a3",
+    "observedHead": "2ef27a2d01bad1a30cc1948a9fb470d220a7b9bc",
     "verifiedHead": "6c9be4d615ba60732a74bc068b897d514e0e45a3",
     "upstreamHead": "6c9be4d615ba60732a74bc068b897d514e0e45a3",
     "lastKnownStableCommit": "6c9be4d615ba60732a74bc068b897d514e0e45a3",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json",
       " M docs/execution/events.jsonl",
-      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "d4574faa6a97bcaf020f3547b4e1a438a7979e336a3a3cf956df24b96e53b91e",
-        "size": 13744
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json",
-        "exists": true,
-        "sha256": "e252de7d887d9e8492c4ca5c2bf829343108a5187f9b0e5fb2250d9f4845bc3a",
-        "size": 27971
+        "sha256": "acb97d09043ecd32317e080ed99d330ec24c8de79a60d49f1738ef8fbe655756",
+        "size": 13993
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "fb1fcaf85fdf29e96a4d1f1e1feadb2ec9520d2f0b13418d00fefe416b65538d",
-        "size": 1797886
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "4591eb5d53c7c603f0accd6399f397b8fa6dc78d97d1e504853d55976842908f",
-        "size": 1472272
+        "sha256": "d4da00f96dfdd1eaad64acc1d77d22fe62c85d39839066175bcbfdb73b03c16c",
+        "size": 1800079
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "c23021ee8c0c570952a66451b39fb58a9e86689c46a1ebe9e2b5e7b771e2b2e9",
-        "size": 99766
+        "sha256": "767a961c0ff324b937dc0720759d768c175713697260e498a28b05ee7eb2382d",
+        "size": 98006
       }
     ],
-    "workingTreeFingerprint": "sha256:17cd041da720d1c4319e0633be77852bd0c7ef9ba41e0c2cc757f01f7625c9d1",
+    "workingTreeFingerprint": "sha256:75e96737ac44c1a72ce3065f1eee9211f023dc426e527700ba1b5c7939b6d776",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json",
-        "displayPath": "docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json"
       },
       {
         "status": " M",
@@ -283,18 +261,27 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
       }
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-FINAL-COMMIT-002",
+    "kind": "git_commit",
+    "targetIdentity": "local-repo",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "trail",
+    "expectedPostcondition": "pushed",
+    "idempotencyKey": "final-trail",
+    "startedAt": "2026-07-14T19:01:47Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [
+      "cwd=E:/Project/Common/mhxy-shikong-control"
+    ],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-FINAL-COMMIT-001",
     "kind": "git_commit",
     "targetIdentity": "local-repo",
@@ -307,31 +294,9 @@
     "ownershipEvidence": [
       "cwd=E:/Project/Common/mhxy-shikong-control"
     ],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-FINAL-APP-001",
-    "kind": "process_start",
-    "targetIdentity": "E:/Project/Common/mhxy-shikong-control/src-tauri/target/debug/mhxy-shikong-control.exe",
-    "sideEffectClass": "process_start",
-    "expectedPrecondition": "final HEAD debug build ready",
-    "expectedPostcondition": "app_runtime evidence",
-    "idempotencyKey": "final-app-6c9be4d",
-    "startedAt": "2026-07-14T18:50:28Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "exePath=E:/Project/Common/mhxy-shikong-control/src-tauri/target/debug/mhxy-shikong-control.exe",
-      "exeSha256=3ca6b66949e4427ca27845c1220186a2e01b045af3d48a97c4341ec72a4e33e6",
-      "expectedHead=6c9be4d615ba60732a74bc068b897d514e0e45a3",
-      "elevated=true",
-      "cwd=E:/Project/Common/mhxy-shikong-control",
-      "role=controller-app"
-    ],
     "status": "succeeded",
-    "leaseTokenHash": "153f6dd4907b7166f2ebd87de5b7336d357d84fe7789883199fc7cc7c4196c26",
-    "endedAt": "2026-07-14T18:50:38Z",
-    "result": "controller app launched pid=25488 exe=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target\\debug\\mhxy-shikong-control.exe evidence=EVD-0514",
-    "verifiedEvidenceId": "EVD-0514"
+    "endedAt": "2026-07-14T19:01:45Z",
+    "result": "committed 2ef27a2d01bad1a30cc1948a9fb470d220a7b9bc"
   },
   "safety": {
     "realInputSent": true,
@@ -891,9 +856,9 @@
     }
   },
   "eventTail": {
-    "seq": 1299,
-    "id": "EVT-1299",
-    "hash": "sha256:65ba4e66fbacd15a0fefca57df85e95d67a643783c29de007866775b181416fc"
+    "seq": 1301,
+    "id": "EVT-1301",
+    "hash": "sha256:30373476053addb0ad42431b414caf016f223c580277f2838eb6414695a6d3d6"
   },
   "evidenceTail": {
     "seq": 532,

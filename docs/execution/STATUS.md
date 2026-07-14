@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:5fef8086c2c18c04581e377f8cca61c2a0d7fa5a2dd71ee7e3d54c21267bf569 -->
+<!-- state-digest: sha256:38382e6aab9246f565241414d75a4023951c24ebc58c2d5e6ea5e51b143574ed -->
 <!-- checkpoint-id: CP-0083 -->
 # 长任务执行状态
 
@@ -9,8 +9,8 @@
 ## 恢复首屏
 
 - 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-14T19:01:43Z`
-- 更新时间（北京时间）：`2026-07-15T03:01:43+08:00`
+- 更新时间（UTC）：`2026-07-14T19:01:46Z`
+- 更新时间（北京时间）：`2026-07-15T03:01:46+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `9`
 - 总体状态：`active`
@@ -19,29 +19,29 @@
 - 阶段状态：`verified`；切片状态：`verified`；动作状态：`running`
 - 当前切片验收：已满足 `2`，待验证或阻塞 `0`，合计 `2`
 - 本轮是否发送真实游戏输入：`true`
-- 当前工作：未决动作 `ACT-FINAL-COMMIT-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：final AppData restart persistence rebind（EVD-0532，当前工作区绑定有效）
-- 唯一下一动作：对账未决副作用动作 ACT-FINAL-COMMIT-001；结果明确前禁止重放
+- 当前工作：未决动作 `ACT-FINAL-COMMIT-002` 处于 `running`，等待只读对账
+- 最新当前有效证据：最近事件：登记副作用动作 ACT-FINAL-COMMIT-002（EVT-1301；不是当前验收通过证据）
+- 唯一下一动作：对账未决副作用动作 ACT-FINAL-COMMIT-002；结果明确前禁止重放
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P4-S6-C3 restart retention needs P5 persistence specialized verifier/app restart live proof
 - 最新 checkpoint：`CP-0083`；safeToResume=`true`；safeToRunLiveInput=`false`
 - 当前允许：只读审计、连续性元数据对账。
 - 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T19:01:39Z`；年龄=`4s`；TTL=`300s`；expiresAt=`2026-07-14T19:06:39Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T19:01:39Z`；年龄=`7s`；TTL=`300s`；expiresAt=`2026-07-14T19:06:39Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
 | 验收轴 | 状态 | 依据/限制 |
 |---|---|---|
 | 代码表面能力 | `部分` | 源码已有 15 类步骤、任务/目标/队列/readiness/失败报告等表面能力，但大型文件耦合且真实闭环不足。 |
-| 自动测试 | `已通过` | EVD-0515 final core |
-| 当前提交构建 | `已通过` | EVD-0510 final vite |
-| 当前提交应用已启动 | `已通过` | EVD-0514 final app |
-| 后台 HWND 输入已实际发送 | `已通过` | EVD-0521 live |
-| 游戏后置状态已观察 | `已通过` | EVD-0522 outcome |
+| 自动测试 | `已过期` | EVD-0515 final core；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 当前提交构建 | `已过期` | EVD-0510 final vite；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 当前提交应用已启动 | `已过期` | EVD-0514 final app；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 后台 HWND 输入已实际发送 | `已过期` | EVD-0521 live；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 游戏后置状态已观察 | `已过期` | EVD-0522 outcome；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
 | 前台鼠标键盘未受影响 | `部分` | 静态安全审计只允许 PostMessageW 路径，但尚缺当前版本实测前后台 HWND、鼠标位置和用户并行操作证据。 |
-| 双窗口隔离 | `已通过` | EVD-0527 multi |
-| 重启持久化 | `已通过` | final persistence rebind |
+| 双窗口隔离 | `已过期` | EVD-0527 multi；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 重启持久化 | `已过期` | final persistence rebind；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
 
 ## 阶段表
 
@@ -82,7 +82,7 @@
 
 ## 当前动作
 
-- actionId：`ACT-FINAL-COMMIT-001`
+- actionId：`ACT-FINAL-COMMIT-002`
 - 类型：`git_commit`
 - 目标：`local-repo`
 - 副作用级别：`git_commit`
@@ -90,7 +90,7 @@
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-FINAL-COMMIT-001；结果明确前禁止重放
+- 唯一下一动作：对账未决副作用动作 ACT-FINAL-COMMIT-002；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -106,10 +106,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`6c9be4d615ba60732a74bc068b897d514e0e45a3`
+- observed HEAD：`2ef27a2d01bad1a30cc1948a9fb470d220a7b9bc`
 - verified HEAD：`6c9be4d615ba60732a74bc068b897d514e0e45a3`
 - origin/main：`6c9be4d615ba60732a74bc068b897d514e0e45a3`
-- working tree fingerprint：`sha256:17cd041da720d1c4319e0633be77852bd0c7ef9ba41e0c2cc757f01f7625c9d1`
+- working tree fingerprint：`sha256:75e96737ac44c1a72ce3065f1eee9211f023dc426e527700ba1b5c7939b6d776`
 - 最新 checkpoint：`CP-0083` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
@@ -117,9 +117,7 @@
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0083-pre-commit-final-closeout.json`
 - `docs/execution/events.jsonl`
-- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -180,21 +178,19 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0525` | `live_input` | `passed` | `valid` | Bounded home-vitality live input executed with inputSent after elevated gates<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0526` | `live_outcome` | `passed` | `valid` | Bounded home-vitality live outcome observed after inputSent<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0527` | `multi_window` | `passed` | `valid` | final dual HWND isolation after multi-task hotkeys<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0528` | `multi_window` | `passed` | `valid` | final dual HWND isolation after multi-task hotkeys<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0529` | `window_identity` | `passed` | `invalid` | Verified live window identity for game-client (read-only, no input)<br>证据产物 hash 已变化：assets/resource/ShiKong/reports/dev-progress/window-identity-P9-S2-C1/identity-report.json |
-| `EVD-0530` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0531` | `live_preflight` | `passed` | `valid` | Strict target capture completed bounded zero-input wait_image preflight<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0532` | `persistence` | `passed` | `valid` | final AppData restart persistence rebind<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0525` | `live_input` | `passed` | `stale` | Bounded home-vitality live input executed with inputSent after elevated gates<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0526` | `live_outcome` | `passed` | `stale` | Bounded home-vitality live outcome observed after inputSent<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0527` | `multi_window` | `passed` | `stale` | final dual HWND isolation after multi-task hotkeys<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0528` | `multi_window` | `passed` | `stale` | final dual HWND isolation after multi-task hotkeys<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0529` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0530` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0531` | `live_preflight` | `passed` | `stale` | Strict target capture completed bounded zero-input wait_image preflight<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0532` | `persistence` | `passed` | `stale` | final AppData restart persistence rebind<br>证据 HEAD 与当前 observed HEAD 不同 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 1290 | `2026-07-14T18:59:20Z` | `slice_state_changed` | 更新验收轴 secondWindowIsolationVerified -> passed |
-| 1291 | `2026-07-14T18:59:29Z` | `evidence_recorded` | final AppData restart persistence rebind |
 | 1292 | `2026-07-14T18:59:30Z` | `slice_state_changed` | 更新验收轴 restartPersistenceVerified -> passed |
 | 1293 | `2026-07-14T18:59:44Z` | `slice_state_changed` | P9-S2 final live closeout dual-window multi-task hotkeys verified on final-commit app |
 | 1294 | `2026-07-14T19:01:34Z` | `test_run` | UI viewports 10/10 passed across 5 sizes; tauri release NSIS bundle built |
@@ -203,6 +199,8 @@
 | 1297 | `2026-07-14T19:01:39Z` | `runtime_observation` | pre-final-commit B |
 | 1298 | `2026-07-14T19:01:41Z` | `checkpoint` | 创建 CP-0083：final live closeout and package smoke |
 | 1299 | `2026-07-14T19:01:43Z` | `action_intent` | 登记副作用动作 ACT-FINAL-COMMIT-001 |
+| 1300 | `2026-07-14T19:01:45Z` | `action_result` | 副作用动作 ACT-FINAL-COMMIT-001 -> succeeded |
+| 1301 | `2026-07-14T19:01:47Z` | `action_intent` | 登记副作用动作 ACT-FINAL-COMMIT-002 |
 
 ## 异常恢复
 
