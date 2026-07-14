@@ -183,7 +183,7 @@ fn capture_with_policy(
         })
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HwndPoint {
     pub x: u32,
