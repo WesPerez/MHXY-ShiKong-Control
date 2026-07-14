@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 992,
+  "revision": 1004,
   "generation": 1,
-  "updatedAt": "2026-07-14T14:38:45Z",
+  "updatedAt": "2026-07-14T14:41:02Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -54,7 +54,9 @@
         "status": "passed",
         "evidenceIds": [
           "EVD-0426",
-          "EVD-0427"
+          "EVD-0427",
+          "EVD-0428",
+          "EVD-0430"
         ],
         "requiredEvidenceCategories": [
           "source_audit",
@@ -67,14 +69,15 @@
         "status": "passed",
         "evidenceIds": [
           "EVD-0425",
-          "EVD-0427"
+          "EVD-0427",
+          "EVD-0430"
         ],
         "requiredEvidenceCategories": [
           "test"
         ]
       }
     ],
-    "nextAction": "Begin P5-S2 asset fileization/hash dedupe or backup-restore UI after rebind on 287e3d7."
+    "nextAction": "P5-S2 asset fileization/hash dedupe"
   },
   "phases": [
     {
@@ -146,24 +149,22 @@
     },
     "automated": {
       "status": "passed",
-      "note": "C1 rebind test EVD-0410",
+      "note": "rebind EVD-0430",
       "evidenceIds": [
-        "EVD-0410"
+        "EVD-0430"
       ]
     },
     "currentCommitBuilt": {
       "status": "passed",
-      "note": "vite EVD-0409",
+      "note": "rebind EVD-0429",
       "evidenceIds": [
-        "EVD-0409"
+        "EVD-0429"
       ]
     },
     "currentCommitAppLaunched": {
-      "status": "passed",
-      "note": "ensure app gate",
-      "evidenceIds": [
-        "EVD-0411"
-      ]
+      "status": "outdated",
+      "note": "app evidence stale after HEAD advance; next slice will relaunch",
+      "evidenceIds": []
     },
     "hwndInputActuallySent": {
       "status": "not_verified",
@@ -193,41 +194,49 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "287e3d766e3d3b445b5065165335dcba77551dc2",
+    "observedHead": "743f6fbc3b0507dd924389ab907c8c47afafc6bb",
     "verifiedHead": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
       "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
       " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "2616070f5483eb437e48dbfe04e1a34ca4d996255633a7446c9f2587654449b7",
-        "size": 13434
+        "sha256": "0bc00774f78d53243d9718de2ea5562c0d3eeaf91876b6b5a80339ea14212af0",
+        "size": 12936
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "6defc9418cdc172fb7a006ce8bca4403f2b79f547aadc84c1efe16af2fc6b9d2",
-        "size": 1461826
+        "sha256": "6ffa9626b3a32a9f74bde9b6665b607a287c35c2c14e8f888e29f6b036679a13",
+        "size": 1471321
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "a3d2570a2383d7363a505f00fc21629381f13ce2fdd42fe11f7007840118a602",
+        "size": 1220729
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "00a8a510016cbd5bedb385863e935ada48ba940bec6dd675a55099401c8648ed",
-        "size": 81055
+        "sha256": "df2f0ee862967c725200e98481aacfad984e458a2cb53fdfcc9e267d7c0b8343",
+        "size": 81501
       }
     ],
-    "workingTreeFingerprint": "sha256:2b35e6abf0b5a7715e4d40c98aae8184b480d79b7a43cf591aaeadaa6e47fe36",
+    "workingTreeFingerprint": "sha256:e9a29b064ad172e7b48cd1b71a28d7d80b6094f79b2c7c4841706633cea53685",
     "dirtyEntries": [
       {
         "status": " M",
@@ -244,12 +253,31 @@
       {
         "status": " M",
         "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
       }
     ]
   },
   "inFlightAction": {
+    "actionId": "ACT-P5-COMMIT-REBIND-001",
+    "kind": "git_commit",
+    "targetIdentity": "main",
+    "sideEffectClass": "git_commit",
+    "expectedPrecondition": "rebind ledger",
+    "expectedPostcondition": "commit",
+    "idempotencyKey": "p5-rebind-001",
+    "startedAt": "2026-07-14T14:41:02Z",
+    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
+    "ownershipEvidence": [],
+    "status": "running"
+  },
+  "lastAction": {
     "actionId": "ACT-P5S1-COMMIT-LEDGER-001",
     "kind": "git_commit",
     "targetIdentity": "main",
@@ -260,22 +288,9 @@
     "startedAt": "2026-07-14T14:38:45Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
     "ownershipEvidence": [],
-    "status": "running"
-  },
-  "lastAction": {
-    "actionId": "ACT-P5S1-COMMIT-002",
-    "kind": "git_commit",
-    "targetIdentity": "main",
-    "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P5-S1 code and evidence",
-    "expectedPostcondition": "commit",
-    "idempotencyKey": "p5-s1-commit-002",
-    "startedAt": "2026-07-14T14:38:30Z",
-    "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [],
     "status": "succeeded",
-    "endedAt": "2026-07-14T14:38:33Z",
-    "result": "committed 287e3d766e3d3b445b5065165335dcba77551dc2"
+    "endedAt": "2026-07-14T14:38:46Z",
+    "result": "ledger"
   },
   "safety": {
     "realInputSent": true,
@@ -285,7 +300,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-14T14:32:03Z",
+    "observedAt": "2026-07-14T14:39:02Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -624,8 +639,8 @@
         "ownership": "user_preexisting",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T14:29:29Z",
-        "lastSeenAt": "2026-07-14T14:29:29Z",
+        "lastObservedAt": "2026-07-14T14:39:02Z",
+        "lastSeenAt": "2026-07-14T14:39:02Z",
         "creationTime": "2026-07-14T08:48:47+08:00"
       },
       {
@@ -727,8 +742,8 @@
         "ownership": "created_by_current_run",
         "present": true,
         "creationTime": "2026-07-14T14:29:10Z",
-        "lastObservedAt": "2026-07-14T14:29:28Z",
-        "lastSeenAt": "2026-07-14T14:29:28Z",
+        "lastObservedAt": "2026-07-14T14:39:01Z",
+        "lastSeenAt": "2026-07-14T14:39:01Z",
         "cleanupAllowed": false
       }
     ],
@@ -788,14 +803,14 @@
     }
   },
   "eventTail": {
-    "seq": 942,
-    "id": "EVT-0942",
-    "hash": "sha256:f0c23a1c90000606e1e100926b565922ba7a6a458bbd4c89d9bf47b7d86a2bed"
+    "seq": 954,
+    "id": "EVT-0954",
+    "hash": "sha256:efb209a2feafa39c1407835f125842247a747e2cd285916d7921abcd2afef7cb"
   },
   "evidenceTail": {
-    "seq": 427,
-    "id": "EVD-0427",
-    "hash": "sha256:cd77f546d096c9cfd9ba2c383f3fe93ba1e3f79084cd9853786c2ea1aa21a7e1"
+    "seq": 430,
+    "id": "EVD-0430",
+    "hash": "sha256:720b4bc6ccc152de9a4fa631effbc7418c2194d1914fc7ca8741a33619b76c2c"
   },
   "checkpointCounter": 69,
   "lastCheckpoint": {

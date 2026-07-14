@@ -1,5 +1,5 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:9c8e7cf5a1cab597cd998d75cf3a53955f32ca373e1e1c75d918dff858fe01da -->
+<!-- state-digest: sha256:6cf25b8e7670bf0233703cdf2f27e5e2cdd9db83894c1fdbd6d19205205fefc7 -->
 <!-- checkpoint-id: CP-0069 -->
 # 长任务执行状态
 
@@ -9,8 +9,8 @@
 ## 恢复首屏
 
 - 恢复结论：**STOP：存在未决副作用，只允许只读对账**
-- 更新时间（UTC）：`2026-07-14T14:38:45Z`
-- 更新时间（北京时间）：`2026-07-14T22:38:45+08:00`
+- 更新时间（UTC）：`2026-07-14T14:41:02Z`
+- 更新时间（北京时间）：`2026-07-14T22:41:02+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
 - 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `9`
 - 总体状态：`active`
@@ -19,24 +19,24 @@
 - 阶段状态：`in_progress`；切片状态：`verified`；动作状态：`running`
 - 当前切片验收：已满足 `2`，待验证或阻塞 `0`，合计 `2`
 - 本轮是否发送真实游戏输入：`true`
-- 当前工作：未决动作 `ACT-P5S1-COMMIT-LEDGER-001` 处于 `running`，等待只读对账
-- 最新当前有效证据：最近事件：登记副作用动作 ACT-P5S1-COMMIT-LEDGER-001（EVT-0942；不是当前验收通过证据）
-- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-LEDGER-001；结果明确前禁止重放
+- 当前工作：未决动作 `ACT-P5-COMMIT-REBIND-001` 处于 `running`，等待只读对账
+- 最新当前有效证据：P5-S1-rebind-core（EVD-0430，当前工作区绑定有效）
+- 唯一下一动作：对账未决副作用动作 ACT-P5-COMMIT-REBIND-001；结果明确前禁止重放
 - 当前切片执行 blocker：none
 - 全局恢复/验收风险：P4-S6-C3 restart retention needs P5 persistence specialized verifier/app restart live proof
 - 最新 checkpoint：`CP-0069`；safeToResume=`true`；safeToRunLiveInput=`true`
 - 当前允许：只读审计、连续性元数据对账。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-14T14:32:03Z`；年龄=`402s`；TTL=`300s`；expiresAt=`2026-07-14T14:37:03Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作。
+- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-14T14:39:02Z`；年龄=`120s`；TTL=`300s`；expiresAt=`2026-07-14T14:44:02Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
 | 验收轴 | 状态 | 依据/限制 |
 |---|---|---|
 | 代码表面能力 | `部分` | 源码已有 15 类步骤、任务/目标/队列/readiness/失败报告等表面能力，但大型文件耦合且真实闭环不足。 |
-| 自动测试 | `已过期` | C1 rebind test EVD-0410；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
-| 当前提交构建 | `已过期` | vite EVD-0409；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
-| 当前提交应用已启动 | `已过期` | ensure app gate；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
+| 自动测试 | `已通过` | rebind EVD-0430 |
+| 当前提交构建 | `已通过` | rebind EVD-0429 |
+| 当前提交应用已启动 | `版本过旧` | app evidence stale after HEAD advance; next slice will relaunch |
 | 后台 HWND 输入已实际发送 | `未验证` | 当前 HEAD 没有应用 UI 到指定 hwnd 的真实输入通过证据。 |
 | 游戏后置状态已观察 | `未验证` | 没有绑定当前 HEAD、exe、workspace 和窗口身份的游戏后置状态证据。 |
 | 前台鼠标键盘未受影响 | `部分` | 静态安全审计只允许 PostMessageW 路径，但尚缺当前版本实测前后台 HWND、鼠标位置和用户并行操作证据。 |
@@ -78,12 +78,12 @@
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P5-S1-C1` | SaveCoordinator/atomic save and future-schema protection covered by tests and audit | `passed` | `source_audit`, `test` | `EVD-0426`, `EVD-0427` |
-| `P5-S1-C2` | Workspace migration import/export consistency tests pass | `passed` | `test` | `EVD-0425`, `EVD-0427` |
+| `P5-S1-C1` | SaveCoordinator/atomic save and future-schema protection covered by tests and audit | `passed` | `source_audit`, `test` | `EVD-0426`, `EVD-0427`, `EVD-0428`, `EVD-0430` |
+| `P5-S1-C2` | Workspace migration import/export consistency tests pass | `passed` | `test` | `EVD-0425`, `EVD-0427`, `EVD-0430` |
 
 ## 当前动作
 
-- actionId：`ACT-P5S1-COMMIT-LEDGER-001`
+- actionId：`ACT-P5-COMMIT-REBIND-001`
 - 类型：`git_commit`
 - 目标：`main`
 - 副作用级别：`git_commit`
@@ -91,7 +91,7 @@
 
 ## 下一步
 
-- 唯一下一动作：对账未决副作用动作 ACT-P5S1-COMMIT-LEDGER-001；结果明确前禁止重放
+- 唯一下一动作：对账未决副作用动作 ACT-P5-COMMIT-REBIND-001；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
@@ -107,10 +107,10 @@
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`287e3d766e3d3b445b5065165335dcba77551dc2`
+- observed HEAD：`743f6fbc3b0507dd924389ab907c8c47afafc6bb`
 - verified HEAD：`9a15ec0ed96772984af950178a44ae1ca861a90e`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:2b35e6abf0b5a7715e4d40c98aae8184b480d79b7a43cf591aaeadaa6e47fe36`
+- working tree fingerprint：`sha256:e9a29b064ad172e7b48cd1b71a28d7d80b6094f79b2c7c4841706633cea53685`
 - 最新 checkpoint：`CP-0069` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`true`
@@ -119,6 +119,7 @@
 
 - `docs/execution/STATUS.md`
 - `docs/execution/events.jsonl`
+- `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
 
 ## 运行进程与产物
@@ -175,29 +176,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0420` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0421` | `live_outcome` | `passed` | `stale` | Bounded home-vitality live outcome observed after inputSent<br>证据 HEAD 与当前 observed HEAD 不同 |
-| `EVD-0422` | `source_audit` | `passed` | `stale` | P4-S7-C1-offline-blueprint-recovery<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0423` | `test` | `passed` | `stale` | P4-S7-offline-core<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0424` | `build` | `passed` | `stale` | P5-S1-vite<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0425` | `test` | `passed` | `stale` | P5-S1-C2-workspace-migration-core<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0426` | `source_audit` | `passed` | `stale` | P5-S1-C1-save-coordinator-audit<br>证据 HEAD 与当前 observed HEAD 不同 |
 | `EVD-0427` | `test` | `passed` | `stale` | P5-S1-core-tests<br>证据 HEAD 与当前 observed HEAD 不同 |
+| `EVD-0428` | `source_audit` | `passed` | `valid` | P5-S1-rebind-audit<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0429` | `build` | `passed` | `valid` | P5-S1-rebind-vite<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0430` | `test` | `passed` | `valid` | P5-S1-rebind-core<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 933 | `2026-07-14T14:36:29Z` | `test_run` | P5-S1-vite |
-| 934 | `2026-07-14T14:36:35Z` | `test_run` | P5-S1-C2-workspace-migration-core |
-| 935 | `2026-07-14T14:36:56Z` | `evidence_recorded` | P5-S1-C1-save-coordinator-audit |
-| 936 | `2026-07-14T14:38:12Z` | `test_run` | P5-S1-core-tests |
-| 937 | `2026-07-14T14:38:29Z` | `decision` | P5-S1 SaveCoordinator core + audit + migration tests evidence recorded; continue remaining P5-P9 after slice close. |
-| 938 | `2026-07-14T14:38:29Z` | `slice_state_changed` | P5-S1 baseline: SaveCoordinator + future schema audit/tests |
-| 939 | `2026-07-14T14:38:31Z` | `action_intent` | 登记副作用动作 ACT-P5S1-COMMIT-002 |
-| 940 | `2026-07-14T14:38:33Z` | `action_result` | 副作用动作 ACT-P5S1-COMMIT-002 -> succeeded |
-| 941 | `2026-07-14T14:38:44Z` | `decision` | Progress snapshot: P4 live baseline proven; P5-S1 SaveCoordinator landed at 287e3d7. Remaining: P5 asset fileization/backup UI, P6 multi-task live, P7 dual-window, P8 matrix, P9 package/push. |
-| 942 | `2026-07-14T14:38:45Z` | `action_intent` | 登记副作用动作 ACT-P5S1-COMMIT-LEDGER-001 |
+| 945 | `2026-07-14T14:39:01Z` | `runtime_observation` | refresh controller 87704 |
+| 946 | `2026-07-14T14:39:02Z` | `runtime_observation` | refresh game |
+| 947 | `2026-07-14T14:39:03Z` | `evidence_recorded` | P5-S1-rebind-audit |
+| 948 | `2026-07-14T14:39:06Z` | `test_run` | P5-S1-rebind-vite |
+| 949 | `2026-07-14T14:40:38Z` | `test_run` | P5-S1-rebind-core |
+| 950 | `2026-07-14T14:40:57Z` | `slice_state_changed` | 更新验收轴 automated -> passed |
+| 951 | `2026-07-14T14:40:58Z` | `slice_state_changed` | 更新验收轴 currentCommitBuilt -> passed |
+| 952 | `2026-07-14T14:41:00Z` | `slice_state_changed` | 更新验收轴 currentCommitAppLaunched -> outdated |
+| 953 | `2026-07-14T14:41:01Z` | `slice_state_changed` | P5-S1 SaveCoordinator baseline verified offline after rebind |
+| 954 | `2026-07-14T14:41:02Z` | `action_intent` | 登记副作用动作 ACT-P5-COMMIT-REBIND-001 |
 
 ## 异常恢复
 
