@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1557,
+  "revision": 1561,
   "generation": 1,
-  "updatedAt": "2026-07-14T19:45:27Z",
+  "updatedAt": "2026-07-14T19:45:36Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -236,83 +236,47 @@
   },
   "git": {
     "branch": "main",
-    "observedHead": "e7632d7611346cce9aa2dd42f0b24bbb36f1389d",
+    "observedHead": "e3d9b4414d3de372565e247793b0519cdfb214fa",
     "verifiedHead": "e7632d7611346cce9aa2dd42f0b24bbb36f1389d",
-    "upstreamHead": "e7632d7611346cce9aa2dd42f0b24bbb36f1389d",
+    "upstreamHead": "e3d9b4414d3de372565e247793b0519cdfb214fa",
     "lastKnownStableCommit": "e7632d7611346cce9aa2dd42f0b24bbb36f1389d",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0089-p9-s4-pre-live-comprehensive-matrix.json",
-      "docs/execution/checkpoints/CP-0090-p9-s4-comprehensive-verified.json",
       "docs/execution/events.jsonl",
-      "docs/execution/evidence.jsonl",
       "docs/execution/state.json"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0089-p9-s4-pre-live-comprehensive-matrix.json",
-      "?? docs/execution/checkpoints/CP-0090-p9-s4-comprehensive-verified.json",
       " M docs/execution/events.jsonl",
-      " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "77bd0f8afe35b2f0e505e6965c9e70b1a17d30454e5d36f5e3fbbcfcd680cb58",
-        "size": 14835
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0089-p9-s4-pre-live-comprehensive-matrix.json",
-        "exists": true,
-        "sha256": "2db7db3a8cc2e9f70a1f939e73c429f1aca4f50549cb2fc7b6177f2bf9ec8916",
-        "size": 30294
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0090-p9-s4-comprehensive-verified.json",
-        "exists": true,
-        "sha256": "9d51f8609b0f602fdc9d8fe915eea6c467afd65357b3ececa3c1793bb4d28f08",
-        "size": 31361
+        "sha256": "4a0d868d97e66c5f15604580db04c88187f39abc96f1c6e0faa7d2aff0ec06ba",
+        "size": 15034
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "19be9a361f82263462b53a7342dbf9748d1cc26401a569f2081df732852912aa",
-        "size": 1987610
-      },
-      {
-        "path": "docs/execution/evidence.jsonl",
-        "exists": true,
-        "sha256": "48238269719eb59a3c449cfd671239038f2479b48a34b891656e57260168ca6c",
-        "size": 1678496
+        "sha256": "739cb22a01d5956a17884c689ff9746983ba31ac93a4b3f104d2c4df665061b0",
+        "size": 1991895
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "a9d745ea9363e7ea053c37af6060b7a9feb2916cf50a272d8c59f3a7a5c0c73b",
-        "size": 105527
+        "sha256": "24d0071a5244f4c5e60535254a4a52203a1da2695659d64d9d5de38e4e9810ed",
+        "size": 103265
       }
     ],
-    "workingTreeFingerprint": "sha256:afb24607e1a24c9c55ed982103f90a20fbce8f741f4a3995d176176fdaab5cb1",
+    "workingTreeFingerprint": "sha256:122efa5a61c6738efa53d8488bcd7b8f3ab24702e499391889289a67e14af918",
     "dirtyEntries": [
       {
         "status": " M",
         "sourcePath": null,
         "destinationPath": "docs/execution/STATUS.md",
         "displayPath": "docs/execution/STATUS.md"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0089-p9-s4-pre-live-comprehensive-matrix.json",
-        "displayPath": "docs/execution/checkpoints/CP-0089-p9-s4-pre-live-comprehensive-matrix.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0090-p9-s4-comprehensive-verified.json",
-        "displayPath": "docs/execution/checkpoints/CP-0090-p9-s4-comprehensive-verified.json"
       },
       {
         "status": " M",
@@ -323,51 +287,39 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "docs/execution/evidence.jsonl",
-        "displayPath": "docs/execution/evidence.jsonl"
-      },
-      {
-        "status": " M",
-        "sourcePath": null,
         "destinationPath": "docs/execution/state.json",
         "displayPath": "docs/execution/state.json"
       }
     ]
   },
   "inFlightAction": {
-    "actionId": "ACT-P9S4-COMMIT-001",
+    "actionId": "ACT-P9S4-TRAIL-001",
     "kind": "git_commit",
     "targetIdentity": "repo:main",
     "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P9-S4 comprehensive verified",
-    "expectedPostcondition": "committed",
-    "idempotencyKey": "p9s4-commit-001",
-    "startedAt": "2026-07-14T19:45:27Z",
+    "expectedPrecondition": "post push dirty",
+    "expectedPostcondition": "trail",
+    "idempotencyKey": "p9s4-trail-001",
+    "startedAt": "2026-07-14T19:45:36Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
     "ownershipEvidence": [],
     "status": "running"
   },
   "lastAction": {
-    "actionId": "ACT-P9S4-APP-001",
-    "kind": "process_start",
-    "targetIdentity": "controller-app",
-    "sideEffectClass": "process_start",
-    "expectedPrecondition": "exe ready",
-    "expectedPostcondition": "elevated controller current HEAD",
-    "idempotencyKey": "p9s4-app-001",
-    "startedAt": "2026-07-14T19:40:07Z",
+    "actionId": "ACT-P9S4-PUSH-001",
+    "kind": "git_push",
+    "targetIdentity": "origin/main",
+    "sideEffectClass": "git_push",
+    "expectedPrecondition": "commit ready",
+    "expectedPostcondition": "pushed",
+    "idempotencyKey": "p9s4-push-001",
+    "startedAt": "2026-07-14T19:45:29Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
-    "ownershipEvidence": [
-      "exePath=E:/Project/Common/mhxy-shikong-control/src-tauri/target/debug/mhxy-shikong-control.exe",
-      "cwd=E:/Project/Common/mhxy-shikong-control",
-      "role=controller-app",
-      "elevated=true"
-    ],
+    "ownershipEvidence": [],
     "status": "succeeded",
-    "leaseTokenHash": "0895388ef20ea66cf8ffb6ceeb62cb341e912c66bf525a33f0e81f79d8dee2ea",
-    "endedAt": "2026-07-14T19:40:14Z",
-    "result": "controller app launched pid=52516 exe=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target\\debug\\mhxy-shikong-control.exe evidence=EVD-0575",
-    "verifiedEvidenceId": "EVD-0575"
+    "leaseTokenHash": "5bef19cc6cc9abd0057222457832da848800aa542b3a3e83619b30eb8c75a173",
+    "endedAt": "2026-07-14T19:45:34Z",
+    "result": "pushed"
   },
   "safety": {
     "realInputSent": true,
@@ -985,9 +937,9 @@
     }
   },
   "eventTail": {
-    "seq": 1507,
-    "id": "EVT-1507",
-    "hash": "sha256:eb94b7fac42306c735899f9a3d950ede0d27ad244ba41953c6c92335ad159145"
+    "seq": 1511,
+    "id": "EVT-1511",
+    "hash": "sha256:e5978a7bbdaa3f77a05c109e14bfdb96277ebb283786e6c94d29ec29a95e84d7"
   },
   "evidenceTail": {
     "seq": 596,
