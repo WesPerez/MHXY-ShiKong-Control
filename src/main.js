@@ -58,6 +58,12 @@ import {
   prepareWorkspaceForPersistence,
 } from "./asset-store-core.js";
 import {
+  WELFARE_SIGNIN_BLUEPRINT,
+  WELFARE_SIGNIN_BLUEPRINT_ID,
+  WELFARE_SIGNIN_TEMPLATE_BINDINGS,
+  assessWelfareSignInReadiness,
+} from "./welfare-sign-in-core.js";
+import {
   isLiveValidationEvidence,
   liveValidationRunHistoryEntry,
   mergeLiveValidationRunHistory,

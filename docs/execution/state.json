@@ -1,9 +1,9 @@
 {
   "kind": "mhxy-shikong.execution-state",
   "schemaVersion": 1,
-  "revision": 1109,
+  "revision": 1149,
   "generation": 1,
-  "updatedAt": "2026-07-14T17:54:07Z",
+  "updatedAt": "2026-07-14T18:03:02Z",
   "taskId": "MHXY-AUTOMATION-WORKBENCH",
   "objective": "交付一个用户操作量低、可自定义编排、可持久化、多窗口并行且不影响前台鼠标键盘的梦幻西游后台自动化工作台。",
   "sourcePriority": [
@@ -27,58 +27,58 @@
     "owner": "primary-agent"
   },
   "overallStatus": "active",
-  "currentPhaseId": "P5",
-  "phaseStatus": "verified",
+  "currentPhaseId": "P6",
+  "phaseStatus": "in_progress",
   "actionStatus": "running",
   "acceptanceLevel": "design",
   "activeSlice": {
-    "id": "P5-S4",
-    "title": "Real AppData observe/restart persistence proof",
+    "id": "P6-S1",
+    "title": "Welfare sign-in offline blueprint and live-ready gates",
     "status": "verified",
-    "startedAt": "2026-07-14T17:36:14Z",
+    "startedAt": "2026-07-14T17:54:57Z",
     "scope": [
-      "scripts/verify_workspace_persistence.py",
-      "docs/execution",
-      "scripts/execution_progress.py"
+      "src/main.js",
+      "src",
+      "scripts",
+      "docs/execution"
     ],
     "nonGoals": [
-      "Do not overwrite EVD-0029/0030 backups",
-      "No game input"
+      "No purchase or irreversible ops",
+      "No force push"
     ],
     "safetyBoundaries": [
-      "No real AppData overwrite without backup verifier",
-      "Only stop task-owned controller processes"
+      "No game input without elevated gates and manual confirmation",
+      "Only verified HWND background input"
     ],
     "acceptanceCriteria": [
       {
-        "id": "P5-S4-C1",
-        "text": "Real AppData workspace double-read and protected backup integrity proven by specialized verifier",
+        "id": "P6-S1-C1",
+        "text": "Welfare sign-in blueprint has >=10 steps with readiness and recovery offline",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0453",
-          "EVD-0455",
-          "EVD-0456"
+          "EVD-0459",
+          "EVD-0461"
         ],
         "requiredEvidenceCategories": [
-          "persistence",
-          "source_audit"
+          "source_audit",
+          "test"
         ]
       },
       {
-        "id": "P5-S4-C2",
-        "text": "Offline persistence contracts and vite still pass on current tree",
+        "id": "P6-S1-C2",
+        "text": "Bounded welfare live step path proves inputSent and postcondition without claiming full multi-task suite",
         "status": "passed",
         "evidenceIds": [
-          "EVD-0457",
-          "EVD-0458"
+          "EVD-0466",
+          "EVD-0467"
         ],
         "requiredEvidenceCategories": [
-          "build",
-          "test"
+          "live_input",
+          "live_outcome"
         ]
       }
     ],
-    "nextAction": "Begin P6-S1 welfare sign-in offline blueprint then live vertical"
+    "nextAction": "P6-S2 bag organize offline then live vertical"
   },
   "phases": [
     {
@@ -120,7 +120,7 @@
     {
       "id": "P6",
       "title": "第二至第五个真实任务",
-      "status": "pending",
+      "status": "in_progress",
       "summary": "逐个纵向闭环更多真实任务，不用草稿数量代替可用性。"
     },
     {
@@ -150,34 +150,38 @@
     },
     "automated": {
       "status": "passed",
-      "note": "P5-S4 core EVD-0458",
+      "note": "EVD-0461",
       "evidenceIds": [
-        "EVD-0458"
+        "EVD-0461"
       ]
     },
     "currentCommitBuilt": {
       "status": "passed",
-      "note": "P5-S4 vite EVD-0457",
+      "note": "EVD-0460",
       "evidenceIds": [
-        "EVD-0457"
+        "EVD-0460"
       ]
     },
     "currentCommitAppLaunched": {
       "status": "passed",
-      "note": "P5-S4 app EVD-0454",
+      "note": "EVD-0463 app",
       "evidenceIds": [
-        "EVD-0454"
+        "EVD-0463"
       ]
     },
     "hwndInputActuallySent": {
-      "status": "not_verified",
-      "note": "当前 HEAD 没有应用 UI 到指定 hwnd 的真实输入通过证据。",
-      "evidenceIds": []
+      "status": "passed",
+      "note": "EVD-0466 live_input",
+      "evidenceIds": [
+        "EVD-0466"
+      ]
     },
     "gamePostconditionObserved": {
-      "status": "not_verified",
-      "note": "没有绑定当前 HEAD、exe、workspace 和窗口身份的游戏后置状态证据。",
-      "evidenceIds": []
+      "status": "passed",
+      "note": "EVD-0467 live_outcome",
+      "evidenceIds": [
+        "EVD-0467"
+      ]
     },
     "foregroundUnaffected": {
       "status": "partial",
@@ -191,97 +195,113 @@
     },
     "restartPersistenceVerified": {
       "status": "passed",
-      "note": "post-restart AppData EVD-0455",
+      "note": "EVD-0462 real AppData",
       "evidenceIds": [
-        "EVD-0455"
+        "EVD-0462"
       ]
     }
   },
   "git": {
     "branch": "main",
-    "observedHead": "a69d4d68222dd544a3e72125590067f585168a2f",
+    "observedHead": "02f564f8219bfceaf725ee21ff08f48c2104e4b0",
     "verifiedHead": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
     "lastKnownStableCommit": "9a15ec0ed96772984af950178a44ae1ca861a90e",
     "dirtyPaths": [
       "docs/execution/STATUS.md",
-      "docs/execution/checkpoints/CP-0074-pre-p5s4-appdata-observe.json",
-      "docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json",
+      "docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json",
       "docs/execution/events.jsonl",
       "docs/execution/evidence.jsonl",
       "docs/execution/state.json",
-      "scripts/audit_workspace_persistence.py",
-      "scripts/test_verify_workspace_persistence.py",
-      "scripts/verify_workspace_persistence.py"
+      "package.json",
+      "scripts/audit_welfare_sign_in_offline.py",
+      "scripts/execution_progress.py",
+      "scripts/test_welfare_sign_in_core.mjs",
+      "src/main.js",
+      "src/welfare-sign-in-core.js"
     ],
     "dirtyStatus": [
       " M docs/execution/STATUS.md",
-      "?? docs/execution/checkpoints/CP-0074-pre-p5s4-appdata-observe.json",
-      "?? docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json",
+      "?? docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json",
       " M docs/execution/events.jsonl",
       " M docs/execution/evidence.jsonl",
       " M docs/execution/state.json",
-      " M scripts/audit_workspace_persistence.py",
-      " M scripts/test_verify_workspace_persistence.py",
-      " M scripts/verify_workspace_persistence.py"
+      " M package.json",
+      "?? scripts/audit_welfare_sign_in_offline.py",
+      " M scripts/execution_progress.py",
+      "?? scripts/test_welfare_sign_in_core.mjs",
+      " M src/main.js",
+      "?? src/welfare-sign-in-core.js"
     ],
     "dirtyFiles": [
       {
         "path": "docs/execution/STATUS.md",
         "exists": true,
-        "sha256": "26c5192bf29dee222e9a395dc56c44b734ddaa61114506aae452b43c3cb4c3b5",
-        "size": 13463
+        "sha256": "d0558c5455fa54be567d6aef31f8fac28911071ecb425594f7839c20d79fa213",
+        "size": 13625
       },
       {
-        "path": "docs/execution/checkpoints/CP-0074-pre-p5s4-appdata-observe.json",
+        "path": "docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json",
         "exists": true,
-        "sha256": "3c9da4679ee21c9cea0c55d91ec505d466eea3f61e070f029a254a0c495e8806",
-        "size": 28514
-      },
-      {
-        "path": "docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json",
-        "exists": true,
-        "sha256": "1715c0eadc106767a24828b3c26612598498069692bdd32c3699011fcaf4f09e",
-        "size": 29817
+        "sha256": "b9e6b03b63d32cefdefe6742df87c58a2b289b0a165ec8166c296b6117c16644",
+        "size": 30939
       },
       {
         "path": "docs/execution/events.jsonl",
         "exists": true,
-        "sha256": "c6d0538c5a7db0a73b2d551b24386f47aaf7cc45e617bcd88935ff5f8bc26370",
-        "size": 1568076
+        "sha256": "d00c772c4dac710c107c3789e43c9dd68a2d429060273cc6bf0de78dfb26062d",
+        "size": 1608112
       },
       {
         "path": "docs/execution/evidence.jsonl",
         "exists": true,
-        "sha256": "b00cc1729fdeaf679d774db678f8dddd13e4c8f9c9972244c5713418a7a45b11",
-        "size": 1269328
+        "sha256": "1285b896824a8a4d6abce43889a454da36a42244db1dabd0e72f15808536c319",
+        "size": 1297071
       },
       {
         "path": "docs/execution/state.json",
         "exists": true,
-        "sha256": "570eb5ed4fee906438598404968be196116eab1c3fb83bb552d81ab1fdcbc983",
-        "size": 90263
+        "sha256": "50deea849f71cfe100fbdfc81fbfa2f47fb2fbac57087965dcab9184c776ef15",
+        "size": 92427
       },
       {
-        "path": "scripts/audit_workspace_persistence.py",
+        "path": "package.json",
         "exists": true,
-        "sha256": "916da3bbd955f76903212213edf53f2fe03c5dac31a7452d0f426899230605e3",
-        "size": 1425
+        "sha256": "a14daab7d7f5d4a41fbf549584a600ef8d7f153eabbe1c2d194fdb5afd4ade09",
+        "size": 7036
       },
       {
-        "path": "scripts/test_verify_workspace_persistence.py",
+        "path": "scripts/audit_welfare_sign_in_offline.py",
         "exists": true,
-        "sha256": "f379aa62436421a73dd9e09a9a87d51fd4556f36406d4920e54f4559bf01d972",
-        "size": 1508
+        "sha256": "ad6b50519b16b8603e0bbc0df57958a4abf829b3a30c44cf3c7e2c278cbc648c",
+        "size": 1178
       },
       {
-        "path": "scripts/verify_workspace_persistence.py",
+        "path": "scripts/execution_progress.py",
         "exists": true,
-        "sha256": "59975561aeb246cc726bb4383e0786ebcb76c575ee25ec7f5959e6f81eedbc16",
-        "size": 10040
+        "sha256": "b496792324ad72fe3b8c7baee1b6b96b9898e9e9b5722243c961e770f117b92a",
+        "size": 129567
+      },
+      {
+        "path": "scripts/test_welfare_sign_in_core.mjs",
+        "exists": true,
+        "sha256": "4d8d04af00cfb96fe1e4f0e71df2f4a63ed02f2cea46fcc29d254770ba68f12a",
+        "size": 1706
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "2cd509eb66d51d29c635e522dc1b79379c08b2072f3282294e4fbeb741ee2788",
+        "size": 362102
+      },
+      {
+        "path": "src/welfare-sign-in-core.js",
+        "exists": true,
+        "sha256": "affecb2517cbb9aac16a7e30c2027416db4604bb18688f4e78dd5b4a5c507042",
+        "size": 7428
       }
     ],
-    "workingTreeFingerprint": "sha256:c7a81f206ea322a31b1723b86e621512311c3ede1eb87cba5de9e4e748e5af4c",
+    "workingTreeFingerprint": "sha256:77b13349a34d87b6775365f6b04b46cdb9c34ea84b41b487cb93563b2cabcbf1",
     "dirtyEntries": [
       {
         "status": " M",
@@ -292,14 +312,8 @@
       {
         "status": "??",
         "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0074-pre-p5s4-appdata-observe.json",
-        "displayPath": "docs/execution/checkpoints/CP-0074-pre-p5s4-appdata-observe.json"
-      },
-      {
-        "status": "??",
-        "sourcePath": null,
-        "destinationPath": "docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json",
-        "displayPath": "docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json"
+        "destinationPath": "docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json",
+        "displayPath": "docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json"
       },
       {
         "status": " M",
@@ -322,32 +336,50 @@
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "scripts/audit_workspace_persistence.py",
-        "displayPath": "scripts/audit_workspace_persistence.py"
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_welfare_sign_in_offline.py",
+        "displayPath": "scripts/audit_welfare_sign_in_offline.py"
       },
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "scripts/test_verify_workspace_persistence.py",
-        "displayPath": "scripts/test_verify_workspace_persistence.py"
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_welfare_sign_in_core.mjs",
+        "displayPath": "scripts/test_welfare_sign_in_core.mjs"
       },
       {
         "status": " M",
         "sourcePath": null,
-        "destinationPath": "scripts/verify_workspace_persistence.py",
-        "displayPath": "scripts/verify_workspace_persistence.py"
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/welfare-sign-in-core.js",
+        "displayPath": "src/welfare-sign-in-core.js"
       }
     ]
   },
   "inFlightAction": {
-    "actionId": "ACT-P5-COMMIT-S4-001",
+    "actionId": "ACT-P6-COMMIT-S1-001",
     "kind": "git_commit",
     "targetIdentity": "local-repo",
     "sideEffectClass": "git_commit",
-    "expectedPrecondition": "P5-S4 criteria and restart gate passed",
-    "expectedPostcondition": "P5-S4 committed",
-    "idempotencyKey": "p5s4-appdata-restart",
-    "startedAt": "2026-07-14T17:54:07Z",
+    "expectedPrecondition": "P6-S1 C1/C2 passed",
+    "expectedPostcondition": "committed",
+    "idempotencyKey": "p6s1-welfare",
+    "startedAt": "2026-07-14T18:03:02Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
     "ownershipEvidence": [
       "cwd=E:/Project/Common/mhxy-shikong-control"
@@ -355,28 +387,28 @@
     "status": "running"
   },
   "lastAction": {
-    "actionId": "ACT-P5S4-APP-001",
+    "actionId": "ACT-P6S1-APP-001",
     "kind": "process_start",
-    "targetIdentity": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe",
+    "targetIdentity": "E:/Project/Common/mhxy-shikong-control/src-tauri/target-p5-s4/debug/mhxy-shikong-control.exe",
     "sideEffectClass": "process_start",
-    "expectedPrecondition": "current HEAD built exe ready elevated launch",
-    "expectedPostcondition": "controller running and app_runtime evidence recorded",
-    "idempotencyKey": "p5s4-app-a69d4d6",
-    "startedAt": "2026-07-14T17:41:13Z",
+    "expectedPrecondition": "launch controller for live gates",
+    "expectedPostcondition": "app_runtime evidence",
+    "idempotencyKey": "p6s1-app-01",
+    "startedAt": "2026-07-14T17:59:55Z",
     "ownerRunId": "RUN-20260710-CONTINUITY-BASELINE",
     "ownershipEvidence": [
-      "exePath=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe",
+      "exePath=E:/Project/Common/mhxy-shikong-control/src-tauri/target-p5-s4/debug/mhxy-shikong-control.exe",
       "exeSha256=d7c4004ed81955a92461e365803a36d3e7bd361a139f75557cebdc0184b057e8",
-      "expectedHead=a69d4d68222dd544a3e72125590067f585168a2f",
+      "expectedHead=02f564f8219bfceaf725ee21ff08f48c2104e4b0",
       "elevated=true",
-      "cwd=E:\\Project\\Common\\mhxy-shikong-control",
+      "cwd=E:/Project/Common/mhxy-shikong-control",
       "role=controller-app"
     ],
     "status": "succeeded",
-    "leaseTokenHash": "b6d062ea572ec4c6b14dec4b6abdabb13ebc84b60087990a1101ba3a27805c86",
-    "endedAt": "2026-07-14T17:41:21Z",
-    "result": "controller app launched pid=46520 exe=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe evidence=EVD-0454",
-    "verifiedEvidenceId": "EVD-0454"
+    "leaseTokenHash": "c350de0be5e8b8d1bd8d28ccfd0180baff88fd84d79ecfa3eb2f1b6a7b01d1f1",
+    "endedAt": "2026-07-14T18:00:03Z",
+    "result": "controller app launched pid=52124 exe=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe evidence=EVD-0463",
+    "verifiedEvidenceId": "EVD-0463"
   },
   "safety": {
     "realInputSent": true,
@@ -386,7 +418,7 @@
     "cleanupPerformed": false
   },
   "runtime": {
-    "observedAt": "2026-07-14T17:53:54Z",
+    "observedAt": "2026-07-14T18:02:50Z",
     "staleAfterSeconds": 300,
     "managedProcesses": [
       {
@@ -529,32 +561,32 @@
         "lastObservedAt": "2026-07-14T14:20:40Z"
       },
       {
-        "pid": 46520,
+        "pid": 52124,
         "name": "mhxy-shikong-control.exe",
         "role": "controller-app",
         "exePath": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe",
         "cwd": "E:\\Project\\Common\\mhxy-shikong-control",
         "commandLine": "",
-        "creationTime": "2026-07-14T17:41:15Z",
+        "creationTime": "2026-07-14T17:59:57Z",
         "ownership": "created_by_current_run",
         "ownershipEvidence": [
-          "exePath=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p5-s4\\debug\\mhxy-shikong-control.exe",
+          "exePath=E:/Project/Common/mhxy-shikong-control/src-tauri/target-p5-s4/debug/mhxy-shikong-control.exe",
           "exeSha256=d7c4004ed81955a92461e365803a36d3e7bd361a139f75557cebdc0184b057e8",
-          "expectedHead=a69d4d68222dd544a3e72125590067f585168a2f",
+          "expectedHead=02f564f8219bfceaf725ee21ff08f48c2104e4b0",
           "elevated=true",
-          "cwd=E:\\Project\\Common\\mhxy-shikong-control",
+          "cwd=E:/Project/Common/mhxy-shikong-control",
           "role=controller-app",
           "verifier=current-app-launch-v1",
           "exeSha256=d7c4004ed81955a92461e365803a36d3e7bd361a139f75557cebdc0184b057e8",
-          "observedHead=a69d4d68222dd544a3e72125590067f585168a2f",
-          "actionId=ACT-P5S4-APP-001"
+          "observedHead=02f564f8219bfceaf725ee21ff08f48c2104e4b0",
+          "actionId=ACT-P6S1-APP-001"
         ],
         "cleanupAllowed": true,
         "createdByRunId": "RUN-20260710-CONTINUITY-BASELINE",
-        "createdByActionId": "ACT-P5S4-APP-001",
-        "createdAt": "2026-07-14T17:41:19Z",
+        "createdByActionId": "ACT-P6S1-APP-001",
+        "createdAt": "2026-07-14T18:00:00Z",
         "present": true,
-        "lastObservedAt": "2026-07-14T17:41:19Z"
+        "lastObservedAt": "2026-07-14T18:00:00Z"
       }
     ],
     "observedExternalProcesses": [
@@ -725,8 +757,8 @@
         "ownership": "user_preexisting",
         "cleanupAllowed": false,
         "present": true,
-        "lastObservedAt": "2026-07-14T17:53:54Z",
-        "lastSeenAt": "2026-07-14T17:53:54Z",
+        "lastObservedAt": "2026-07-14T18:02:50Z",
+        "lastSeenAt": "2026-07-14T18:02:50Z",
         "creationTime": "2026-07-14T00:48:47Z"
       },
       {
@@ -838,10 +870,22 @@
         "name": "mhxy-shikong-control.exe",
         "role": "controller-app",
         "ownership": "created_by_current_run",
-        "present": true,
+        "present": false,
         "creationTime": "2026-07-14T17:40:00Z",
-        "lastObservedAt": "2026-07-14T17:53:52Z",
-        "lastSeenAt": "2026-07-14T17:53:52Z",
+        "lastObservedAt": "2026-07-14T17:59:53Z",
+        "lastSeenAt": "2026-07-14T17:59:27Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-14T17:59:53Z"
+      },
+      {
+        "pid": 52124,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": true,
+        "creationTime": "2026-07-14T18:00:00Z",
+        "lastObservedAt": "2026-07-14T18:02:49Z",
+        "lastSeenAt": "2026-07-14T18:02:49Z",
         "cleanupAllowed": false
       }
     ],
@@ -887,8 +931,8 @@
     "lastWindowIdentity": {
       "targetIdentity": "game-client:86812@MyGame_x64r.exe:26157554",
       "verified": true,
-      "observedAt": "2026-07-14T14:31:58Z",
-      "evidenceId": "EVD-0420",
+      "observedAt": "2026-07-14T18:00:21Z",
+      "evidenceId": "EVD-0464",
       "identity": {
         "hwnd": 26157554,
         "pid": 86812,
@@ -901,24 +945,24 @@
     }
   },
   "eventTail": {
-    "seq": 1059,
-    "id": "EVT-1059",
-    "hash": "sha256:10011267b129fd71929d484d4d1538fbc9c6076238a6b56e20285b93f612a67b"
+    "seq": 1099,
+    "id": "EVT-1099",
+    "hash": "sha256:2e531890c27e2243590b2d5e61003a4936c87fbe78d3c246e856f32c6a76a743"
   },
   "evidenceTail": {
-    "seq": 458,
-    "id": "EVD-0458",
-    "hash": "sha256:5c1d484eb8159492fa42f7bcca6e5d1a0d912d1fcde7229b4a0d7a7ef51e44da"
+    "seq": 467,
+    "id": "EVD-0467",
+    "hash": "sha256:8208ce5e51d0d624baef80f11e6baa953013fe8e5b98753e00076c51232a4e66"
   },
-  "checkpointCounter": 75,
+  "checkpointCounter": 76,
   "lastCheckpoint": {
-    "id": "CP-0075",
+    "id": "CP-0076",
     "type": "state_snapshot",
-    "path": "docs/execution/checkpoints/CP-0075-pre-commit-p5s4.json",
-    "createdAt": "2026-07-14T17:54:05Z",
+    "path": "docs/execution/checkpoints/CP-0076-pre-commit-p6s1.json",
+    "createdAt": "2026-07-14T18:03:00Z",
     "safeToResume": true,
     "safeToRunLiveInput": false,
-    "hash": "sha256:650cf6ab53889d4bf737a805ba19f6bd689a4e9f32f9b91bae20f888ca69d7cf"
+    "hash": "sha256:b93ad11a74170867babe9e470d4e7a50c891aba733f4790a537ba37eb720b053"
   },
   "resume": {
     "blockers": [
@@ -930,7 +974,7 @@
     "doNotDo": [
       "Do not stop MyGame_x64r without user request."
     ],
-    "lastSafeResumeSnapshotId": "CP-0075"
+    "lastSafeResumeSnapshotId": "CP-0076"
   },
   "completedSlices": [
     {
@@ -2755,6 +2799,57 @@
       "nextAction": "P5-S4 real AppData restart persistence live proof or begin P6 if blocked",
       "phaseId": "P5",
       "verifiedAt": "2026-07-14T17:36:14Z"
+    },
+    {
+      "id": "P5-S4",
+      "title": "Real AppData observe/restart persistence proof",
+      "status": "verified",
+      "startedAt": "2026-07-14T17:36:14Z",
+      "scope": [
+        "scripts/verify_workspace_persistence.py",
+        "docs/execution",
+        "scripts/execution_progress.py"
+      ],
+      "nonGoals": [
+        "Do not overwrite EVD-0029/0030 backups",
+        "No game input"
+      ],
+      "safetyBoundaries": [
+        "No real AppData overwrite without backup verifier",
+        "Only stop task-owned controller processes"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "P5-S4-C1",
+          "text": "Real AppData workspace double-read and protected backup integrity proven by specialized verifier",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0453",
+            "EVD-0455",
+            "EVD-0456"
+          ],
+          "requiredEvidenceCategories": [
+            "persistence",
+            "source_audit"
+          ]
+        },
+        {
+          "id": "P5-S4-C2",
+          "text": "Offline persistence contracts and vite still pass on current tree",
+          "status": "passed",
+          "evidenceIds": [
+            "EVD-0457",
+            "EVD-0458"
+          ],
+          "requiredEvidenceCategories": [
+            "build",
+            "test"
+          ]
+        }
+      ],
+      "nextAction": "Begin P6-S1 welfare sign-in offline blueprint then live vertical",
+      "phaseId": "P5",
+      "verifiedAt": "2026-07-14T17:54:57Z"
     }
   ]
 }
