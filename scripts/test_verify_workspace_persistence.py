@@ -22,8 +22,21 @@ def main() -> int:
         if "workspace-persistence-v1" not in completed.stdout:
             print("missing verifier name", file=sys.stderr)
             return 1
-        print("test_verify_workspace_persistence: ok")
-        return 0
+    real = subprocess.run(
+        [sys.executable, "-B", str(ROOT / "scripts" / "verify_workspace_persistence.py"), "--real-appdata", "--json", "--dry-run"],
+        cwd=str(ROOT / "scripts"),
+        capture_output=True,
+        text=True,
+    )
+    if real.returncode != 0:
+        print(real.stdout)
+        print(real.stderr, file=sys.stderr)
+        return real.returncode
+    if "real-appdata-observe" not in real.stdout or "protectedBackupsIntact" not in real.stdout:
+        print("real appdata observe contract missing", file=sys.stderr)
+        return 1
+    print("test_verify_workspace_persistence: ok")
+    return 0
 
 
 if __name__ == "__main__":

@@ -10,14 +10,16 @@ def main() -> int:
     verifier = (ROOT / "scripts" / "verify_workspace_persistence.py").read_text(encoding="utf-8")
     main_js = (ROOT / "src" / "main.js").read_text(encoding="utf-8")
     failures = []
-    if 'workspace-persistence-v1' not in ep:
+    if "workspace-persistence-v1" not in ep:
         failures.append("execution_progress missing workspace-persistence-v1 allowlist")
     if 'VERIFIER_NAME = "workspace-persistence-v1"' not in verifier:
         failures.append("verifier name missing")
     if "double_read_equal" not in verifier or "atomic_write" not in verifier:
         failures.append("verifier missing atomic/double-read contracts")
-    if "backup" not in main_js.lower() and "workspaceBackupPath" not in main_js:
-        failures.append("main.js missing backup path surface")
+    if "run_real_appdata_observe" not in verifier or "--real-appdata" not in verifier:
+        failures.append("verifier missing real AppData observe mode")
+    if "PROTECTED_BACKUPS" not in verifier or "EVD-0029" not in verifier:
+        failures.append("verifier missing protected backup integrity checks")
     if "workspaceBackupPath" not in main_js:
         failures.append("main.js missing workspaceBackupPath")
     if failures:
