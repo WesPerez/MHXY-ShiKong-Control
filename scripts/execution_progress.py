@@ -96,7 +96,7 @@ EVIDENCE_CATEGORIES = {
     "cleanup_audit",
 }
 PROFILE_EVIDENCE_CATEGORIES = {"source_audit", "test", "build", "cleanup_audit"}
-SPECIALIZED_EVIDENCE_CATEGORIES = {"app_runtime", "window_identity", "live_input", "live_outcome", "multi_window", "persistence", "appdata_backup"}
+SPECIALIZED_EVIDENCE_CATEGORIES = {"app_runtime", "window_identity", "live_preflight", "live_input", "live_outcome", "multi_window", "persistence", "appdata_backup"}
 PROFILE_CATEGORY_BY_NAME = {
     "node-all": "test",
     "python-audits": "test",
@@ -110,6 +110,7 @@ PROFILE_CATEGORY_BY_NAME = {
 SPECIALIZED_VERIFIER_ALLOWLIST: Dict[str, set] = {
     "app_runtime": {"current-app-launch-v1"},
     "window_identity": {"window-identity-v1"},
+    "live_preflight": {"strict-capture-preflight-v1"},
     "live_input": set(),
     "live_outcome": set(),
     "multi_window": set(),
@@ -1637,12 +1638,70 @@ def command_action_finish(args: argparse.Namespace) -> None:
     print(event["id"])
 
 
+def validate_expected_criterion_binding(
+    state: Dict[str, Any],
+    expected_binding: Any,
+    category: str,
+    criterion_ids: List[str],
+) -> None:
+    if expected_binding is None:
+        return
+    if not isinstance(expected_binding, dict):
+        raise RuntimeError("expected_criterion_binding must be an object")
+    expected_slice_id = expected_binding.get("sliceId")
+    expected_criterion_id = expected_binding.get("criterionId")
+    expected_categories = expected_binding.get("requiredEvidenceCategories")
+    if (
+        not isinstance(expected_slice_id, str)
+        or not expected_slice_id
+        or not isinstance(expected_criterion_id, str)
+        or not expected_criterion_id
+        or not isinstance(expected_categories, list)
+        or not all(isinstance(item, str) for item in expected_categories)
+    ):
+        raise RuntimeError("expected_criterion_binding is incomplete")
+    active_slice = state.get("activeSlice") or {}
+    if active_slice.get("id") != expected_slice_id:
+        raise RuntimeError("active slice changed after the verifier observation")
+    active_criteria = {
+        item.get("id"): item for item in active_slice.get("acceptanceCriteria", [])
+    }
+    criterion = active_criteria.get(expected_criterion_id)
+    actual_categories = criterion.get("requiredEvidenceCategories", []) if criterion else []
+    if not isinstance(actual_categories, list) or sorted(actual_categories) != sorted(expected_categories):
+        raise RuntimeError("active criterion policy changed after the verifier observation")
+    if category not in actual_categories:
+        raise RuntimeError("evidence category is no longer allowed by the active criterion")
+    if list(criterion_ids) != [expected_criterion_id]:
+        raise RuntimeError("verifier evidence criterion no longer matches its active binding")
+
+
 def record_evidence(args: argparse.Namespace, allow_passed: bool = False) -> None:
     with ProgressLock(progress_lock_path()):
         state = load_json(STATE_PATH)
         refresh_state_runtime_fields(state)
+        expected_git_binding = getattr(args, "expected_git_binding", None)
+        if expected_git_binding is not None:
+            if not isinstance(expected_git_binding, dict):
+                raise RuntimeError("expected_git_binding must be an object")
+            current_git = state.get("git") or {}
+            expected_head = expected_git_binding.get("observedHead")
+            expected_fingerprint = expected_git_binding.get("workingTreeFingerprint")
+            if not expected_head or not expected_fingerprint:
+                raise RuntimeError("expected_git_binding lacks observedHead or workingTreeFingerprint")
+            if (
+                current_git.get("observedHead") != expected_head
+                or current_git.get("workingTreeFingerprint") != expected_fingerprint
+            ):
+                raise RuntimeError("source workspace changed after the verifier observation")
         if args.category not in EVIDENCE_CATEGORIES:
             raise RuntimeError("unknown evidence category")
+        validate_expected_criterion_binding(
+            state,
+            getattr(args, "expected_criterion_binding", None),
+            args.category,
+            args.criterion or [],
+        )
         capture_method = getattr(args, "capture_method", "manual")
         runner_profile = getattr(args, "runner_profile", None)
         verifier = getattr(args, "verifier", None)
@@ -1653,19 +1712,31 @@ def record_evidence(args: argparse.Namespace, allow_passed: bool = False) -> Non
                 raise RuntimeError("passed static/test/build evidence must come from run-evidence profile execution")
             if args.category in SPECIALIZED_EVIDENCE_CATEGORIES and capture_method != "specialized_verifier":
                 raise RuntimeError("passed runtime/live/persistence/backup evidence requires a specialized verifier")
-        command_required_categories = {"source_audit", "test", "build", "app_runtime", "multi_window", "persistence", "appdata_backup", "cleanup_audit"}
-        artifact_required_categories = {"build", "app_runtime", "live_outcome", "multi_window", "persistence", "appdata_backup"}
+        command_required_categories = {"source_audit", "test", "build", "app_runtime", "live_preflight", "multi_window", "persistence", "appdata_backup", "cleanup_audit"}
+        artifact_required_categories = {"build", "app_runtime", "live_preflight", "live_outcome", "multi_window", "persistence", "appdata_backup"}
         if args.status == "passed" and args.category in command_required_categories:
             if not args.command or args.exit_code != 0:
                 raise RuntimeError("passed {} evidence requires a command and exitCode 0".format(args.category))
         if args.status == "passed" and args.category in artifact_required_categories and not args.artifact:
             raise RuntimeError("passed {} evidence requires at least one artifact".format(args.category))
-        if args.category in {"live_input", "live_outcome"} and args.status == "passed":
-            if not args.input_sent or not args.window_evidence_id or not args.target_identity:
-                raise RuntimeError("passed live evidence requires inputSent, windowEvidenceId, and targetIdentity")
+        if args.category in {"live_preflight", "live_input", "live_outcome"} and args.status == "passed":
+            if not args.window_evidence_id or not args.target_identity:
+                raise RuntimeError("passed live evidence requires windowEvidenceId and targetIdentity")
+            if args.category == "live_preflight" and args.input_sent is not False:
+                raise RuntimeError("passed live_preflight evidence must explicitly report inputSent=false")
+            if args.category in {"live_input", "live_outcome"} and not args.input_sent:
+                raise RuntimeError("passed live input/outcome evidence requires inputSent")
             existing_evidence = {record.get("id"): record for record in load_jsonl(EVIDENCE_PATH)}
             window_record = existing_evidence.get(args.window_evidence_id)
-            if not window_record or window_record.get("category") != "window_identity" or window_record.get("targetIdentity") != args.target_identity or not window_record.get("safety", {}).get("windowIdentityVerified"):
+            window_privilege = (window_record or {}).get("windowIdentity", {}).get("privilege")
+            if (
+                not window_record
+                or window_record.get("category") != "window_identity"
+                or window_record.get("targetIdentity") != args.target_identity
+                or not window_record.get("safety", {}).get("windowIdentityVerified")
+                or not evidence_provenance_valid(window_record)
+                or window_privilege not in {"same", "elevated"}
+            ):
                 raise RuntimeError("windowEvidenceId does not prove the requested target identity")
         if args.category == "live_outcome" and args.status == "passed" and not args.postcondition_observed:
             raise RuntimeError("passed live_outcome evidence requires an observed postcondition")

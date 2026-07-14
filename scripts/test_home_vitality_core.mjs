@@ -11,13 +11,45 @@ import {
 
 function testBlueprintHasEnoughStepsAndVisualTargets() {
   assert.equal(HOME_VITALITY_BLUEPRINT.id, "home-vitality");
-  assert.ok(HOME_VITALITY_BLUEPRINT.steps.length >= 10);
+  assert.equal(HOME_VITALITY_BLUEPRINT.steps.length, 15);
+  assert.deepEqual(
+    HOME_VITALITY_BLUEPRINT.steps.map((step) => step.type),
+    [
+      "detect_page",
+      "snapshot",
+      "hotkey",
+      "wait_image",
+      "ocr_assert",
+      "image_click",
+      "detect_page",
+      "ocr_assert",
+      "wait_image",
+      "image_click",
+      "delay",
+      "ocr_assert",
+      "snapshot",
+      "hotkey",
+      "detect_page",
+    ],
+  );
+  assert.equal(HOME_VITALITY_BLUEPRINT.autoRecovery, true);
+  assert.equal(HOME_VITALITY_BLUEPRINT.steps[1].expect, "snapshot.observed");
+  assert.match(HOME_VITALITY_BLUEPRINT.steps[9].command, /confirmation=manual-required/);
+  assert.match(HOME_VITALITY_BLUEPRINT.steps[9].command, /offsetX=0/);
+  assert.equal(HOME_VITALITY_BLUEPRINT.steps[11].expect, "vitality.changed");
+  assert.equal(HOME_VITALITY_BLUEPRINT.steps[13].target, "ESC");
+  assert.equal(HOME_VITALITY_BLUEPRINT.steps[14].target, "page.home.ready");
   const targets = requiredVisualTargets();
   assert.ok(targets.includes("page.home.ready"));
   assert.ok(targets.includes("entry.home"));
   assert.ok(targets.includes("button.home_clean"));
   assert.ok(targets.includes("page.home_yard.ready"));
   assert.ok(HOME_VITALITY_TEMPLATE_BINDINGS.some((item) => item.target === "button.home_clean"));
+  assert.equal(
+    HOME_VITALITY_TEMPLATE_BINDINGS.some((item) => item.target === "button.home_clean" && item.requiresManualConfirmation === true),
+    true,
+    "home-clean target must remain explicitly manually confirmed before live use",
+  );
   assert.equal(
     HOME_VITALITY_TEMPLATE_BINDINGS.some((item) => item.target === "entry.home" && item.key === "jiayuan/jiayuan.png"),
     true,
@@ -51,6 +83,7 @@ function testEntryHomeReadyWithBuiltinTemplateKeyButNeverLive() {
   assert.equal(assessment.liveInputAuthorized, false);
   assert.equal(assessment.offlineScaffoldReady, true);
   assert.deepEqual(assessment.missingVisualTargets, []);
+  assert.deepEqual(assessment.missingManualConfirmationTargets, ["entry.home", "button.home_clean"]);
   const entrySteps = assessment.steps.filter((item) => item.target === "entry.home");
   assert.ok(entrySteps.length >= 1);
   for (const step of entrySteps) {
@@ -82,9 +115,7 @@ function testBoundAssetsMakeVisualStepsReadyButNotLive() {
     assert.equal(step.ready, false);
     assert.equal(step.liveInput, false);
   }
-  const restore = assessment.steps.find((item) => item.type === "restore");
-  assert.equal(restore.status, "planned_restore");
-  assert.equal(restore.ready, false);
+  assert.equal(assessment.steps.some((item) => item.type === "restore"), false);
   const hotkey = assessment.steps.find((item) => item.type === "hotkey");
   assert.equal(hotkey.status, "planned_hotkey");
   assert.equal(hotkey.ready, true);
@@ -100,7 +131,22 @@ function testGapSummaryListsOcrWhenTemplatesPresent() {
   assert.equal(summary.liveReady, false);
   assert.equal(summary.offlineScaffoldReady, true);
   assert.ok(summary.gaps.some((item) => item.kind === "ocr"));
-  assert.equal(summary.gaps.some((item) => item.target === "entry.home"), false);
+  assert.ok(summary.gaps.some((item) => item.kind === "manual_confirmation" && item.target === "button.home_clean"));
+  assert.ok(summary.gaps.some((item) => item.kind === "manual_confirmation" && item.target === "entry.home"));
+}
+
+function testManualConfirmationCanOnlyBeRecordedExplicitly() {
+  const options = {
+    availableTemplateKeys: ["zonghe/jiahao.png", "jiayuan/dali.png", "jiayuan/jiayuan.png"],
+  };
+  const missing = assessHomeVitalityReadiness(options);
+  assert.deepEqual(missing.missingManualConfirmationTargets, ["entry.home", "button.home_clean"]);
+  const confirmed = assessHomeVitalityReadiness({
+    ...options,
+    manualConfirmedTargets: ["entry.home", "button.home_clean"],
+  });
+  assert.deepEqual(confirmed.missingManualConfirmationTargets, []);
+  assert.equal(confirmed.liveInputAuthorized, false);
 }
 
 function testLiveGateChecklistIsFailClosedEvenWhenAllObserved() {
@@ -122,6 +168,7 @@ const tests = [
   testEntryHomeReadyWithBuiltinTemplateKeyButNeverLive,
   testBoundAssetsMakeVisualStepsReadyButNotLive,
   testGapSummaryListsOcrWhenTemplatesPresent,
+  testManualConfirmationCanOnlyBeRecordedExplicitly,
   testLiveGateChecklistIsFailClosedEvenWhenAllObserved,
 ];
 

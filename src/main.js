@@ -22,6 +22,13 @@ import {
   targetLibraryTargetsFromPayload as targetLibraryTargetsFromPayloadCore,
 } from "./target-library-core.js";
 import {
+  createManualConfirmation,
+  manualConfirmationStatus,
+  manualConfirmationStatusForStep,
+  manualConfirmationStatusText,
+  requiresManualConfirmationForStep,
+} from "./manual-confirmation-core.js";
+import {
   normalizeStepParams,
   syncStepParamsFromLegacy,
   syncStepParamsToLegacy,
@@ -112,6 +119,7 @@ const backgroundFailureStatuses = new Set([
   "capture_unreliable",
   "timeout",
   "ocr_queue_full",
+  "manual_confirmation_required",
 ]);
 const plannedOnlyStepTypes = new Set(["restore"]);
 const recoveryFragmentStepTypes = new Set([
@@ -133,7 +141,7 @@ const controlFlowStepReferenceFields = ["targetStepId", "elseTargetStepId", "rec
 const controlFlowWorkflowReferenceFields = ["jumpWorkflowId"];
 const builtinTargetTemplateBindings = [
   { target: "page.home.ready", key: "zonghe/jiahao.png", kind: "page", name: "主界面判定", threshold: 0.86 },
-  { target: "entry.home", key: "jiayuan/jiayuan.png", kind: "image", name: "家园入口", threshold: 0.82 },
+  { target: "entry.home", key: "jiayuan/jiayuan.png", kind: "image", name: "家园入口", threshold: 0.82, requiresManualConfirmation: true },
   { target: "target.activity.icon", key: "zonghe/huodong1.png", kind: "image", name: "活动入口" },
   { target: "page.activity.ready", key: "zonghe/huodong_jiemian_panduan.png", kind: "page", name: "活动界面判定" },
   { target: "button.welfare", key: "qiandao/fuli.png", kind: "image", name: "福利入口" },
@@ -147,7 +155,7 @@ const builtinTargetTemplateBindings = [
   { target: "page.team.ready", key: "duiwu/duiwu-duiwu.png", kind: "page", name: "队伍界面判定" },
   { target: "page.bag.ready", key: "beibao/beibao_jiemian_panduan.png", kind: "page", name: "背包界面判定" },
   { target: "button.sort_material", key: "beibao/beibao_diduan.png", kind: "image", name: "背包整理区", threshold: 0.84 },
-  { target: "button.home_clean", key: "jiayuan/dali.png", kind: "image", name: "家园打理按钮" },
+  { target: "button.home_clean", key: "jiayuan/dali.png", kind: "image", name: "家园打理按钮", requiresManualConfirmation: true },
   { target: "page.home_yard.ready", key: "jiayuan/dali.png", kind: "page", name: "家园打理页判定" },
   { target: "item.target", key: "beibao/zhenfajuan.png", kind: "image", name: "示例背包物品", threshold: 0.82 },
   { target: "item.treasure_map", key: "baotu/cangbaotu.png", kind: "image", name: "藏宝图物品" },
@@ -481,11 +489,22 @@ function assessActiveHomeVitalityReadiness(options = {}) {
   const availableTemplateKeys = options.availableTemplateKeys || homeVitalityBuiltinTemplateKeys();
   const targetAssets = {};
   for (const target of state.workspace?.targets || []) {
-    targetAssets[target.id] = {
+    const asset = {
       dataUrl: target.dataUrl || "",
       roi: target.roi || null,
       loaded: Boolean(target.dataUrl || target.roi),
     };
+    targetAssets[target.id] = asset;
+    for (const binding of HOME_VITALITY_TEMPLATE_BINDINGS) {
+      if (!targetMatchesBuiltinBinding(target.id, binding.target)) continue;
+      const confirmation = manualConfirmationStatus(target, {
+        required: binding.requiresManualConfirmation === true,
+      });
+      targetAssets[binding.target] = {
+        ...asset,
+        manualConfirmationValid: confirmation.valid,
+      };
+    }
   }
   return assessHomeVitalityReadiness({
     availableTemplateKeys,
@@ -515,6 +534,7 @@ const workflowBlueprints = [
     label: HOME_VITALITY_BLUEPRINT.label,
     category: HOME_VITALITY_BLUEPRINT.category,
     defaultPrefix: HOME_VITALITY_BLUEPRINT.defaultPrefix || HOME_VITALITY_BLUEPRINT.label,
+    autoRecovery: HOME_VITALITY_BLUEPRINT.autoRecovery === true,
     description: HOME_VITALITY_BLUEPRINT.description,
     steps: HOME_VITALITY_BLUEPRINT.steps.map((step) => ({ ...step })),
   },
@@ -1164,6 +1184,7 @@ function normalizeStep(value) {
     onFail: normalizeStepFailAction(value?.onFail, defaults.onFail),
     recoveryAction: normalizeRecoveryAction(value?.recoveryAction),
     enabled: value?.enabled !== false,
+    requiresManualConfirmation: value?.requiresManualConfirmation === true,
     targetId: value?.targetId ? String(value.targetId) : value?.assetId ? String(value.assetId) : "",
     notes: String(value?.notes || ""),
     params: normalizeStepParams({
@@ -1265,6 +1286,7 @@ function createTargetCatalogFromWorkflows(workflows) {
             point: commandValue(item.command, "point") || "center",
           },
           texts: item.type === "ocr_assert" ? [item.target] : [],
+          safety: { requiresManualConfirmation: item.requiresManualConfirmation === true },
           note: "由任务步骤生成的逻辑目标，可直接粘贴图片或绑定 ROI",
         }),
       );
@@ -2290,7 +2312,11 @@ function createWorkflowFromBlueprint(blueprintInput, index = 1, namePrefix = "")
   const namespace = `task.${blueprint.id}.${workflowId}`;
   const prefix = String(namePrefix || blueprint.defaultPrefix || blueprint.label || "任务").trim();
   const blueprintSteps = blueprint.steps.map((item) => createBlueprintStep(item, namespace));
-  const steps = withDefaultRecoveryReferences(withDefaultRecoveryFragment(blueprintSteps, `${workflowId}-recovery`));
+  const steps = withDefaultRecoveryReferences(
+    withDefaultRecoveryFragment(blueprintSteps, `${workflowId}-recovery`, {
+      force: blueprint.autoRecovery === true,
+    }),
+  );
   const workflow = normalizeWorkflow({
     id: workflowId,
     name: index > 1 ? `${prefix} ${index}` : prefix,
@@ -3399,6 +3425,7 @@ function ensureTargetsForSteps(steps) {
           point: commandValue(item.command, "point") || "center",
         },
         texts: item.type === "ocr_assert" ? [item.target] : [],
+        safety: { requiresManualConfirmation: item.requiresManualConfirmation === true },
         note: "由步骤片段自动创建，可直接 Ctrl+V 粘贴图片或绑定 ROI",
       }),
     );
@@ -3550,11 +3577,12 @@ function isDefaultRecoveryFragmentStep(item) {
   return String(item?.notes || "").trim() === recoveryFragmentMarker;
 }
 
-function withDefaultRecoveryFragment(steps, idPrefix = randomId("recovery")) {
+function withDefaultRecoveryFragment(steps, idPrefix = randomId("recovery"), options = {}) {
   if (!Array.isArray(steps) || hasDefaultRecoveryFragment(steps)) return steps;
   const restoreIndex = steps.findIndex((item) => item.type === "restore" && item.enabled !== false);
-  if (restoreIndex < 0) return steps;
+  if (restoreIndex < 0 && options.force !== true) return steps;
   const fragment = defaultRecoveryFragmentSteps(idPrefix);
+  if (restoreIndex < 0) return [...steps, ...fragment];
   return [...steps.slice(0, restoreIndex), ...fragment, ...steps.slice(restoreIndex)];
 }
 
@@ -4197,6 +4225,7 @@ function bindTargetEditor() {
   $("#bind-selected-target").addEventListener("click", bindSelectedTargetToStep);
   $("#unbind-step-target").addEventListener("click", unbindCurrentStepTarget);
   $("#verify-selected-target").addEventListener("click", verifySelectedTarget);
+  $("#confirm-manual-target").addEventListener("click", confirmSelectedTargetManual);
   $("#delete-target").addEventListener("click", deleteSelectedTarget);
   $("#apply-builtin-templates").addEventListener("click", applyBuiltinTemplatesToTargets);
   $("#export-target-library").addEventListener("click", exportTargetLibrary);
@@ -4447,6 +4476,17 @@ function targetForStep(item) {
   return id ? state.workspace.targets.find((target) => target.id === id) || null : null;
 }
 
+function manualConfirmationRequiredForTarget(target) {
+  if (!target?.id) return false;
+  if (target.safety?.requiresManualConfirmation) return true;
+  return state.workspace.workflows.some((workflow) =>
+    workflow.steps.some(
+      (stepItem) =>
+        stepTargetId(stepItem) === target.id && requiresManualConfirmationForStep(stepItem, target),
+    ),
+  );
+}
+
 function unbindStepTarget(item, options = {}) {
   if (!item) return "";
   const previousId = stepTargetId(item);
@@ -4564,7 +4604,19 @@ function renderTargetEditor(filteredTargets = null) {
   $("#unbind-step-target").disabled = !stepTargetId(selectedStep());
   $("#verify-selected-target").disabled = !activeWindow() || !targetCanPreviewVerify(target);
   $("#delete-target").disabled = usages.length > 0;
-  $("#delete-target").title = usages.length > 0 ? "目标仍被步骤使用，先解除绑定后再删除" : "删除当前未使用目标";
+  $("#delete-target").title = usages.length > 0 ? "目标仍被步骤使用，先解绑后再删除" : "删除当前未使用目标";
+  const confirmationRequired = manualConfirmationRequiredForTarget(target);
+  const confirmation = manualConfirmationStatus(target, { required: confirmationRequired });
+  const confirmButton = $("#confirm-manual-target");
+  const confirmationState = $("#target-manual-confirmation");
+  confirmButton.hidden = !confirmationRequired;
+  confirmButton.disabled = !confirmationRequired || !target.dataUrl;
+  confirmButton.textContent = confirmation.valid ? "重新确认当前素材可后台点击" : "确认当前素材可后台点击";
+  confirmationState.hidden = !confirmationRequired;
+  confirmationState.className = `target-verify-state ${confirmation.valid ? "ok" : "warn"}`;
+  confirmationState.textContent = confirmationRequired
+    ? `人工确认：${manualConfirmationStatusText(confirmation)}${confirmation.valid && confirmation.confirmation?.approvedAt ? ` · ${confirmation.confirmation.approvedAt}` : ""}`
+    : "";
   const verification = state.targetVerification?.targetId === target.id ? state.targetVerification : null;
   const verifyState = $("#target-verify-state");
   verifyState.className = `target-verify-state ${verification?.level || "idle"}`;
@@ -4629,6 +4681,36 @@ function bindSelectedTargetToStep() {
   renderSteps();
   renderStepEditor();
   setStatus(`已绑定目标：${target.name}`);
+}
+
+function confirmSelectedTargetManual() {
+  const target = selectedManagedTarget();
+  if (!target) {
+    setStatus("需要先选择目标");
+    return;
+  }
+  if (!manualConfirmationRequiredForTarget(target)) {
+    setStatus("当前目标不需要人工确认");
+    return;
+  }
+  if (!target.dataUrl) {
+    setStatus("需要先粘贴或绑定目标素材后再确认");
+    return;
+  }
+  try {
+    target.manualConfirmation = createManualConfirmation(target);
+    target.updatedAt = new Date().toISOString();
+    markDirty("target");
+    renderTargets({ preserveEditor: true });
+    renderStepEditor();
+    renderWorkflowCompletion();
+    const status = manualConfirmationStatus(target, { required: true });
+    setStatus(`已确认目标可后台点击：${target.name || target.id}`);
+    appendLog("info", `人工确认通过：${target.id} · ${status.fingerprint}`);
+  } catch (error) {
+    setStatus(`人工确认失败：${error}`);
+    appendLog("error", `人工确认失败：${error}`);
+  }
 }
 
 function targetCanPreviewVerify(target) {
@@ -4888,6 +4970,12 @@ function applyBuiltinTemplateToTarget(target, binding, template) {
     button: binding.button || target.click?.button || "left",
     point: binding.point || target.click?.point || "center",
   };
+  if (binding.requiresManualConfirmation) {
+    target.safety = {
+      ...(target.safety || {}),
+      requiresManualConfirmation: true,
+    };
+  }
   target.source = {
     type: "builtin-template",
     display: `内置素材 · ${template.key}`,
@@ -6356,10 +6444,15 @@ function validateStepRuntimeFields(item, prefix, addIssue, addWarning, mode) {
   const point = parsePointText(legacy.target) || parsePointText(legacy.command);
   const targetId = stepTargetId(legacy);
   const targetItem = targetForStep(legacy);
+  const manualConfirmation = manualConfirmationStatusForStep(legacy, targetItem);
   const hasRoi = Boolean(targetItem?.roi);
   const hasImage = Boolean(targetItem?.dataUrl);
   if (targetId && !targetItem) {
     addIssue(`${prefix} 绑定的识别目标已不存在`, item);
+  }
+  if (manualConfirmation.required && !manualConfirmation.valid) {
+    const message = `${prefix} 受保护输入${manualConfirmationStatusText(manualConfirmation)}`;
+    mode === "background" ? addIssue(message, item) : addWarning(message, item);
   }
   if (["click", "double_click"].includes(item.type) && !point && !hasRoi && !(item.type === "double_click" && hasImage)) {
     const message = `${prefix} ${item.type === "double_click" ? "后台双击" : "后台点击"}需要 x/y 坐标、绑定 ROI 或图片目标`;
@@ -6840,6 +6933,7 @@ function recordRunEvent(session, type, payload = {}) {
     "frameHash",
     "captureWidth",
     "captureHeight",
+    "savedPath",
     "reason",
     "resultStatus",
     "resultAction",
@@ -7310,6 +7404,7 @@ function recordSessionStepResult(session, workflow, item, result, startedAt, end
     frameHash: result?.frameHash || "",
     captureWidth: result?.captureWidth ?? null,
     captureHeight: result?.captureHeight ?? null,
+    savedPath: result?.savedPath || "",
     startedAt: startedAt.toISOString(),
     endedAt: endedAt.toISOString(),
     durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()),
@@ -7609,6 +7704,8 @@ function backendInvokeFailureResult(error) {
       ? "timeout"
       : normalized.includes("search_budget_exceeded")
         ? "search_budget_exceeded"
+        : normalized.includes("manual_confirmation_")
+          ? "manual_confirmation_required"
         : normalized.includes("missing_template")
           ? "missing_template"
           : "error";
@@ -7746,6 +7843,7 @@ function backendStepPayload(item) {
   const legacy = projectedLegacyStep(item);
   const targetItem = targetForStep(legacy);
   const targetId = stepTargetId(legacy);
+  const manualConfirmation = manualConfirmationStatusForStep(legacy, targetItem);
   const command = effectiveCommandForStep(legacy, targetItem);
   const payload = {
     type: legacy.type,
@@ -7759,6 +7857,9 @@ function backendStepPayload(item) {
     assetKind: targetItem?.kind || "",
     assetDataUrl: targetItem?.dataUrl || "",
     roi: targetItem?.roi || null,
+    requiresManualConfirmation: manualConfirmation.required,
+    targetBindingFingerprint: manualConfirmation.required ? manualConfirmation.fingerprint : "",
+    manualConfirmation: manualConfirmation.valid ? manualConfirmation.confirmation : null,
   };
   if (legacy.type === "ocr_assert") {
     payload.targetTexts = ocrExpectedTextsForStep(legacy, targetItem);

@@ -10,7 +10,7 @@ use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
 use platform::{
     capture_client_rgb, capture_client_rgb_strict, current_process_elevated, list_windows,
     post_hotkey, post_mouse_click, post_mouse_double_click, post_text, window_for_hwnd,
-    CaptureMetadata, CaptureProvider, CaptureReliability, HwndPoint, RgbFrame,
+    CaptureMetadata, CaptureProvider, CaptureReliability, CapturedFrame, HwndPoint, RgbFrame,
 };
 use runtime::{
     match_only_without_template_status, match_template_budgeted, ExecutionContextInput,
@@ -140,7 +140,7 @@ struct WorkflowWorkspaceSave {
     bytes: usize,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct WorkflowStepInput {
     #[serde(rename = "type")]
@@ -171,6 +171,25 @@ struct WorkflowStepInput {
     ocr_language: Option<String>,
     #[serde(default)]
     ocr_region: Option<String>,
+    #[serde(default)]
+    requires_manual_confirmation: bool,
+    #[serde(default)]
+    target_binding_fingerprint: Option<String>,
+    #[serde(default)]
+    manual_confirmation: Option<ManualConfirmationInput>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ManualConfirmationInput {
+    #[serde(default)]
+    version: u32,
+    #[serde(default)]
+    target_id: String,
+    #[serde(default)]
+    binding_fingerprint: String,
+    #[serde(default)]
+    approved_at: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -224,6 +243,7 @@ struct StepDispatchResult {
     frame_hash: Option<String>,
     capture_width: Option<u32>,
     capture_height: Option<u32>,
+    saved_path: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -392,6 +412,123 @@ fn replace_file_with_temp(tmp_path: &Path, path: &Path) -> Result<(), String> {
         .map_err(|err| format!("{} -> {}: {err}", tmp_path.display(), path.display()))
 }
 
+fn command_requests_manual_confirmation(command: &str) -> bool {
+    command_value(command, "confirmation")
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "manual-required" | "manual_required"
+            )
+        })
+        .unwrap_or(false)
+}
+
+fn step_requires_manual_confirmation(step: &WorkflowStepInput) -> bool {
+    step.requires_manual_confirmation || command_requests_manual_confirmation(&step.command)
+}
+
+fn validate_manual_confirmation_gate(step: &WorkflowStepInput) -> Result<(), String> {
+    if !step_requires_manual_confirmation(step) {
+        return Ok(());
+    }
+    let expected_target = step
+        .target_id
+        .as_deref()
+        .or(step.asset_id.as_deref())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            "manual confirmation required but targetId is missing; refusing input".to_string()
+        })?;
+    let expected_fingerprint = step
+        .target_binding_fingerprint
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            "manual confirmation required but targetBindingFingerprint is missing; refusing input"
+                .to_string()
+        })?;
+    let confirmation = step.manual_confirmation.as_ref().ok_or_else(|| {
+        "manual confirmation required but confirmation record is missing; refusing input"
+            .to_string()
+    })?;
+    if confirmation.target_id.trim() != expected_target {
+        return Err(format!(
+            "manual confirmation target mismatch: record={} step={}; refusing input",
+            confirmation.target_id.trim(),
+            expected_target
+        ));
+    }
+    if confirmation.binding_fingerprint.trim() != expected_fingerprint {
+        return Err("manual confirmation binding fingerprint mismatch; refusing input".to_string());
+    }
+    if confirmation.approved_at.trim().is_empty() {
+        return Err("manual confirmation approvedAt is missing; refusing input".to_string());
+    }
+    if confirmation.version != 0 && confirmation.version != 1 {
+        return Err(format!(
+            "unsupported manual confirmation version: {}; refusing input",
+            confirmation.version
+        ));
+    }
+    Ok(())
+}
+
+fn step_can_send_input(step_type: &str) -> bool {
+    matches!(
+        step_type,
+        "hotkey" | "text_input" | "click" | "double_click" | "image_click"
+    )
+}
+
+fn persist_workflow_snapshot(
+    captured: &CapturedFrame,
+    step: &WorkflowStepInput,
+) -> Result<String, String> {
+    let root = project_root()?;
+    let dir = root
+        .join("assets")
+        .join("resource")
+        .join("ShiKong")
+        .join("captures")
+        .join("workflow-snapshots");
+    fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
+    let purpose = command_value(&step.command, "purpose")
+        .unwrap_or("workflow_snapshot")
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>();
+    let step_token = step
+        .target_id
+        .as_deref()
+        .or(step.asset_id.as_deref())
+        .unwrap_or(step.step_type.as_str())
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '.' {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>();
+    let path = dir.join(format!(
+        "snapshot-{}-{}-{}.png",
+        purpose,
+        step_token,
+        timestamp()
+    ));
+    save_png(&captured.rgb, &path)?;
+    Ok(path.display().to_string())
+}
+
 #[tauri::command]
 async fn execute_workflow_step(
     runtime: State<'_, WindowLaneRegistry>,
@@ -425,6 +562,9 @@ fn execute_workflow_step_unlocked(
     let expected_window = expected_window.as_ref();
     validate_expected_window(hwnd, expected_window)?;
     let step_type = step.step_type.trim().to_ascii_lowercase();
+    if step_can_send_input(&step_type) {
+        validate_manual_confirmation_gate(&step)?;
+    }
     let mut result = match step_type.as_str() {
         "hotkey" => dispatch_hotkey_step(hwnd, &step, control),
         "text_input" => dispatch_text_input_step(hwnd, &step, control),
@@ -456,20 +596,23 @@ fn execute_workflow_step_unlocked(
             control.checkpoint()?;
             let captured = capture_client_rgb_strict(hwnd)?;
             control.checkpoint()?;
+            let saved_path = persist_workflow_snapshot(&captured, &step)?;
             let mut output = step_result(
                 hwnd,
                 &step.step_type,
                 "observed",
                 "snapshot",
                 format!(
-                    "captured {}x{} for step verification via {:?}/{:?}",
+                    "captured {}x{} for step verification via {:?}/{:?}; saved={}",
                     captured.rgb.width,
                     captured.rgb.height,
                     captured.metadata.provider,
                     captured.metadata.reliability,
+                    saved_path,
                 ),
             );
             attach_capture_metadata(&mut output, &captured.metadata);
+            output.saved_path = Some(saved_path);
             Ok(output)
         }
         "delay" | "condition" | "loop" | "retry_until" | "task_jump" | "restore" => {
@@ -1574,6 +1717,7 @@ fn step_result_with_input(
         frame_hash: None,
         capture_width: None,
         capture_height: None,
+        saved_path: None,
     }
 }
 
@@ -2331,6 +2475,9 @@ mod tests {
             target_texts: Vec::new(),
             ocr_language: None,
             ocr_region: None,
+            requires_manual_confirmation: false,
+            target_binding_fingerprint: None,
+            manual_confirmation: None,
         }
     }
 
@@ -2394,6 +2541,9 @@ mod tests {
                 target_texts: Vec::new(),
                 ocr_language: None,
                 ocr_region: None,
+                requires_manual_confirmation: false,
+                target_binding_fingerprint: None,
+                manual_confirmation: None,
             };
             let result = execute_workflow_step_unlocked(
                 window.hwnd,
@@ -2466,6 +2616,9 @@ mod tests {
                         target_texts: Vec::new(),
                         ocr_language: None,
                         ocr_region: None,
+                        requires_manual_confirmation: false,
+                        target_binding_fingerprint: None,
+                        manual_confirmation: None,
                     };
                     barrier.wait();
                     let result = execute_workflow_step_unlocked(
@@ -2521,6 +2674,9 @@ mod tests {
             target_texts: Vec::new(),
             ocr_language: None,
             ocr_region: None,
+            requires_manual_confirmation: false,
+            target_binding_fingerprint: None,
+            manual_confirmation: None,
         }
     }
 
@@ -2648,6 +2804,9 @@ mod tests {
             target_texts: Vec::new(),
             ocr_language: None,
             ocr_region: None,
+            requires_manual_confirmation: false,
+            target_binding_fingerprint: None,
+            manual_confirmation: None,
         };
         let error = dispatch_click_step(
             42,
@@ -2916,6 +3075,68 @@ mod tests {
 
         assert!(error.contains("capture_unreliable"));
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn manual_confirmation_gate_blocks_missing_record() {
+        let step = WorkflowStepInput {
+            step_type: "image_click".to_string(),
+            target_id: Some("button.home_clean".to_string()),
+            requires_manual_confirmation: true,
+            target_binding_fingerprint: Some("manual-binding-v1:deadbeef".to_string()),
+            manual_confirmation: None,
+            ..WorkflowStepInput::default()
+        };
+        let error = validate_manual_confirmation_gate(&step).unwrap_err();
+        assert!(error.contains("missing"));
+        assert!(error.contains("refusing input"));
+    }
+
+    #[test]
+    fn manual_confirmation_gate_accepts_matching_record() {
+        let step = WorkflowStepInput {
+            step_type: "image_click".to_string(),
+            target_id: Some("entry.home".to_string()),
+            requires_manual_confirmation: true,
+            target_binding_fingerprint: Some("manual-binding-v1:abc".to_string()),
+            manual_confirmation: Some(ManualConfirmationInput {
+                version: 1,
+                target_id: "entry.home".to_string(),
+                binding_fingerprint: "manual-binding-v1:abc".to_string(),
+                approved_at: "2026-07-14T02:00:00Z".to_string(),
+            }),
+            ..WorkflowStepInput::default()
+        };
+        validate_manual_confirmation_gate(&step).unwrap();
+    }
+
+    #[test]
+    fn command_flag_can_require_manual_confirmation() {
+        let step = WorkflowStepInput {
+            command: "button=left; confirmation=manual-required".to_string(),
+            target_id: Some("entry.home".to_string()),
+            target_binding_fingerprint: Some("manual-binding-v1:abc".to_string()),
+            manual_confirmation: Some(ManualConfirmationInput {
+                version: 1,
+                target_id: "entry.home".to_string(),
+                binding_fingerprint: "manual-binding-v1:abc".to_string(),
+                approved_at: "2026-07-14T02:00:00Z".to_string(),
+            }),
+            ..WorkflowStepInput::default()
+        };
+        assert!(step_requires_manual_confirmation(&step));
+        validate_manual_confirmation_gate(&step).unwrap();
+    }
+
+    #[test]
+    fn step_result_includes_saved_path_field() {
+        let mut result = step_result(1, "snapshot", "observed", "snapshot", "ok");
+        assert!(result.saved_path.is_none());
+        result.saved_path = Some("captures/workflow-snapshots/demo.png".to_string());
+        assert_eq!(
+            result.saved_path.as_deref(),
+            Some("captures/workflow-snapshots/demo.png")
+        );
     }
 
     #[test]

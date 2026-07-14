@@ -118,6 +118,7 @@ export function normalizeStepCore(value, rawOptions = {}) {
     onFail: normalizeStepFailAction(value?.onFail, defaults.onFail),
     recoveryAction: normalizeRecoveryAction(value?.recoveryAction),
     enabled: value?.enabled !== false,
+    requiresManualConfirmation: value?.requiresManualConfirmation === true,
     targetId: value?.targetId ? String(value.targetId) : value?.assetId ? String(value.assetId) : "",
     notes: String(value?.notes || ""),
     params: normalizeStepParams({
@@ -169,6 +170,7 @@ export function createTargetCatalogFromWorkflowsCore(workflows, rawOptions = {})
         },
         click: { button: normalizedButton(item.command), point: commandValue(item.command, "point") || "center" },
         texts: item.type === "ocr_assert" ? [item.target] : [],
+        safety: { requiresManualConfirmation: item.requiresManualConfirmation === true },
         note: "由任务步骤生成的逻辑目标，可直接粘贴图片或绑定 ROI",
       }, options));
     }

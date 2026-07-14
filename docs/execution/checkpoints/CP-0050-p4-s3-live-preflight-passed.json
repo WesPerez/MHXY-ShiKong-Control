@@ -1,0 +1,1379 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0050",
+  "createdAt": "2026-07-14T10:10:04Z",
+  "type": "state_snapshot",
+  "reason": "P4-S3 零输入 strict capture live_preflight 已通过 EVD-0309；控制器与游戏均为 elevated；未发送真实输入。",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 7,
+    "primaryThreadId": "019f5fdd-b0a3-7e40-a8aa-4a3484ae3131",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P4",
+  "slice": {
+    "id": "P4-S3",
+    "title": "Zero-input strict capture live_preflight for home-vitality",
+    "status": "verified",
+    "startedAt": "2026-07-14T09:34:11Z",
+    "scope": [
+      "scripts/verify_strict_capture_preflight.py",
+      "src-tauri/src/bin/strict_capture_probe.rs",
+      "docs/execution"
+    ],
+    "nonGoals": [
+      "Do not send live game input",
+      "Do not claim home-vitality e2e complete",
+      "Do not stop user game process"
+    ],
+    "safetyBoundaries": [
+      "Zero-input only: strict capture and match_only; no PostMessage/SendInput",
+      "Game process is user_preexisting; cleanupAllowed=false"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P4-S3-C1",
+        "text": "strict HWND capture + bounded match_only succeeds with inputSent=false against current elevated game window evidence",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0306",
+          "EVD-0309"
+        ],
+        "requiredEvidenceCategories": [
+          "live_preflight"
+        ]
+      },
+      {
+        "id": "P4-S3-C2",
+        "text": "core regression and audits remain green after live_preflight wiring",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0310",
+          "EVD-0311",
+          "EVD-0312",
+          "EVD-0313"
+        ],
+        "requiredEvidenceCategories": [
+          "build",
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "进入家园活力素材确认与只读 readiness 复核；真实点击仍需显式人工确认记录。"
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "_tmp_elev_preflight_once.py",
+      "_tmp_elev_preflight_run.py",
+      "_tmp_fix_budget.py",
+      "_tmp_patch_arg.py",
+      "_tmp_patch_dep.py",
+      "_tmp_tile_preflight.py",
+      "_tmp_token_spawn.py",
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      "docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json",
+      "docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json",
+      "docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json",
+      "docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json",
+      "docs/execution/checkpoints/CP-0049-p4-controller-elevated.json",
+      "docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "index.html",
+      "package.json",
+      "scripts/audit_execution_state.py",
+      "scripts/audit_runtime_lane.py",
+      "scripts/audit_strict_capture_preflight.py",
+      "scripts/audit_workflow_readiness.py",
+      "scripts/execution_progress.py",
+      "scripts/test_execution_progress.py",
+      "scripts/test_home_vitality_core.mjs",
+      "scripts/test_manual_confirmation_core.mjs",
+      "scripts/test_runtime_lane_audit.py",
+      "scripts/test_strict_capture_preflight_audit.py",
+      "scripts/test_strict_capture_probe_binary.py",
+      "scripts/test_verify_strict_capture_preflight.py",
+      "scripts/test_workflow_readiness_audit.py",
+      "scripts/verify_app_runtime_launch.py",
+      "scripts/verify_strict_capture_preflight.py",
+      "scripts/verify_window_identity.py",
+      "src-tauri/src/bin/strict_capture_probe.rs",
+      "src-tauri/src/main.rs",
+      "src-tauri/src/runtime/vision_match.rs",
+      "src/home-vitality-core.js",
+      "src/main.js",
+      "src/manual-confirmation-core.js",
+      "src/target-library-core.js",
+      "src/workspace-normalization-core.js"
+    ],
+    "dirtyStatus": [
+      "?? _tmp_elev_preflight_once.py",
+      "?? _tmp_elev_preflight_run.py",
+      "?? _tmp_fix_budget.py",
+      "?? _tmp_patch_arg.py",
+      "?? _tmp_patch_dep.py",
+      "?? _tmp_tile_preflight.py",
+      "?? _tmp_token_spawn.py",
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "?? docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "?? docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "?? docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "?? docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "?? docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "?? docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      "?? docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json",
+      "?? docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json",
+      "?? docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json",
+      "?? docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json",
+      "?? docs/execution/checkpoints/CP-0049-p4-controller-elevated.json",
+      "?? docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json",
+      " M index.html",
+      " M package.json",
+      " M scripts/audit_execution_state.py",
+      " M scripts/audit_runtime_lane.py",
+      "?? scripts/audit_strict_capture_preflight.py",
+      " M scripts/audit_workflow_readiness.py",
+      " M scripts/execution_progress.py",
+      " M scripts/test_execution_progress.py",
+      " M scripts/test_home_vitality_core.mjs",
+      "?? scripts/test_manual_confirmation_core.mjs",
+      "?? scripts/test_runtime_lane_audit.py",
+      "?? scripts/test_strict_capture_preflight_audit.py",
+      "?? scripts/test_strict_capture_probe_binary.py",
+      "?? scripts/test_verify_strict_capture_preflight.py",
+      "?? scripts/test_workflow_readiness_audit.py",
+      " M scripts/verify_app_runtime_launch.py",
+      "?? scripts/verify_strict_capture_preflight.py",
+      " M scripts/verify_window_identity.py",
+      "?? src-tauri/src/bin/strict_capture_probe.rs",
+      " M src-tauri/src/main.rs",
+      " M src-tauri/src/runtime/vision_match.rs",
+      " M src/home-vitality-core.js",
+      " M src/main.js",
+      "?? src/manual-confirmation-core.js",
+      " M src/target-library-core.js",
+      " M src/workspace-normalization-core.js"
+    ],
+    "dirtyEntries": [
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_elev_preflight_once.py",
+        "displayPath": "_tmp_elev_preflight_once.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_elev_preflight_run.py",
+        "displayPath": "_tmp_elev_preflight_run.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_fix_budget.py",
+        "displayPath": "_tmp_fix_budget.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_patch_arg.py",
+        "displayPath": "_tmp_patch_arg.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_patch_dep.py",
+        "displayPath": "_tmp_patch_dep.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_tile_preflight.py",
+        "displayPath": "_tmp_tile_preflight.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "_tmp_token_spawn.py",
+        "displayPath": "_tmp_token_spawn.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+        "displayPath": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+        "displayPath": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+        "displayPath": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+        "displayPath": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+        "displayPath": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+        "displayPath": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json",
+        "displayPath": "docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json",
+        "displayPath": "docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json",
+        "displayPath": "docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json",
+        "displayPath": "docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0049-p4-controller-elevated.json",
+        "displayPath": "docs/execution/checkpoints/CP-0049-p4-controller-elevated.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json",
+        "displayPath": "docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "index.html",
+        "displayPath": "index.html"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_execution_state.py",
+        "displayPath": "scripts/audit_execution_state.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_runtime_lane.py",
+        "displayPath": "scripts/audit_runtime_lane.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_strict_capture_preflight.py",
+        "displayPath": "scripts/audit_strict_capture_preflight.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workflow_readiness.py",
+        "displayPath": "scripts/audit_workflow_readiness.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_execution_progress.py",
+        "displayPath": "scripts/test_execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_home_vitality_core.mjs",
+        "displayPath": "scripts/test_home_vitality_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_manual_confirmation_core.mjs",
+        "displayPath": "scripts/test_manual_confirmation_core.mjs"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_runtime_lane_audit.py",
+        "displayPath": "scripts/test_runtime_lane_audit.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_strict_capture_preflight_audit.py",
+        "displayPath": "scripts/test_strict_capture_preflight_audit.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_strict_capture_probe_binary.py",
+        "displayPath": "scripts/test_strict_capture_probe_binary.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_verify_strict_capture_preflight.py",
+        "displayPath": "scripts/test_verify_strict_capture_preflight.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_workflow_readiness_audit.py",
+        "displayPath": "scripts/test_workflow_readiness_audit.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_app_runtime_launch.py",
+        "displayPath": "scripts/verify_app_runtime_launch.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_strict_capture_preflight.py",
+        "displayPath": "scripts/verify_strict_capture_preflight.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_window_identity.py",
+        "displayPath": "scripts/verify_window_identity.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/bin/strict_capture_probe.rs",
+        "displayPath": "src-tauri/src/bin/strict_capture_probe.rs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/main.rs",
+        "displayPath": "src-tauri/src/main.rs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/runtime/vision_match.rs",
+        "displayPath": "src-tauri/src/runtime/vision_match.rs"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/home-vitality-core.js",
+        "displayPath": "src/home-vitality-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/main.js",
+        "displayPath": "src/main.js"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src/manual-confirmation-core.js",
+        "displayPath": "src/manual-confirmation-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/target-library-core.js",
+        "displayPath": "src/target-library-core.js"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "src/workspace-normalization-core.js",
+        "displayPath": "src/workspace-normalization-core.js"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "_tmp_elev_preflight_once.py",
+        "exists": true,
+        "sha256": "795118514a07692fae2642ad6562ff8bbcb194d1fcbca43efb1652c700695eac",
+        "size": 4305
+      },
+      {
+        "path": "_tmp_elev_preflight_run.py",
+        "exists": true,
+        "sha256": "8765547bf27b765c364a838b6d1e1f83ae45705bc8f6a8b7537ad17f237c103b",
+        "size": 4507
+      },
+      {
+        "path": "_tmp_fix_budget.py",
+        "exists": true,
+        "sha256": "cae4416b4e94ba0403f224e297c8450b41871f8887d5f9f9e0684351bd356ac3",
+        "size": 2305
+      },
+      {
+        "path": "_tmp_patch_arg.py",
+        "exists": true,
+        "sha256": "dc7deb4a12fa8d8222e971b12cdee39a54ab2a0c94208371e47d531545b075a2",
+        "size": 815
+      },
+      {
+        "path": "_tmp_patch_dep.py",
+        "exists": true,
+        "sha256": "589757010b50ca6dfe6ffa7809916e04f3c2669e842468ea173a10579c7ca92c",
+        "size": 4463
+      },
+      {
+        "path": "_tmp_tile_preflight.py",
+        "exists": true,
+        "sha256": "8b1c12beb4fe6be667ade2b69ceddff3c0a67ba360e51215eebba32748c0f640",
+        "size": 4089
+      },
+      {
+        "path": "_tmp_token_spawn.py",
+        "exists": true,
+        "sha256": "ca947f98f442b430e71573ea9658e01897e12363db19af2afb33f61d001516a6",
+        "size": 3215
+      },
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "fdde29634ea09e14a6ddea5b314e5d4dc7630ded1e08116a495e4d1c493e2878",
+        "size": 14800
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+        "exists": true,
+        "sha256": "075dcf21c474c97f064ad38b9150917ca5f44cb90e06b3ce8998d831dc338c04",
+        "size": 17316
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+        "exists": true,
+        "sha256": "c10e3a3d90fc1613fe47fbc9c945aa867ac8b74999dcd1263e0b3042a7b4c042",
+        "size": 18623
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+        "exists": true,
+        "sha256": "9c0ecfe5f5c8b154c33fb5b75e2c1d7af9e1e08865521fb30b035eb75e8f0d74",
+        "size": 19857
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+        "exists": true,
+        "sha256": "01901aaaa79ca283055e0968a96fe0222154192691cc892808d879011ecce676",
+        "size": 24451
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+        "exists": true,
+        "sha256": "476e9923104309586fefb3a955aefee47880aa0ec6aef7ef0b0880bb387a05f9",
+        "size": 30400
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+        "exists": true,
+        "sha256": "07e7867057dbbfea65376b2ff1ca3528532d3823436f007d4a37da1f50075921",
+        "size": 32225
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+        "exists": true,
+        "sha256": "5e4dbfa4f23cf8132ec3e5ab178ce49f51ff5df7334b1bc4c179a556b8fb00fe",
+        "size": 33070
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json",
+        "exists": true,
+        "sha256": "c5b375482953ba0c355054eadd95322f396ea5818f3664d27e35e79fd5718ced",
+        "size": 34114
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json",
+        "exists": true,
+        "sha256": "8d4058b1c4cbd552216aba0c02eb5a8ac6caf032727340b85552a7dbe589e694",
+        "size": 36981
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json",
+        "exists": true,
+        "sha256": "1e3702fc76e6db76caedc7317a6c1630a512b83549535a08fb20151b46b1fd3e",
+        "size": 48065
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json",
+        "exists": true,
+        "sha256": "4a86822420ee6e14e8d588ea55adcbf122ffce0c472b6a917f1de65ae58d33d3",
+        "size": 43274
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0049-p4-controller-elevated.json",
+        "exists": true,
+        "sha256": "879321a2440ef7dbfd4b6d546aafd5aa5590c671386824d29dee44c43ff7dcb0",
+        "size": 44376
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json",
+        "exists": true,
+        "sha256": "6ee6d887a258ff5861f17f08eb8871f8793353968cc82a1e47a82b569d418120",
+        "size": 47920
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "f0166f0ac78121ed017bd7635166e8375264443621d789ff3e2e63e9a6cddc2f",
+        "size": 1098891
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "d679335453f0956933fea0377a58b4063be75e64c3407d35e40a164ea991d947",
+        "size": 902562
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "92db1aec77830d8e8bc2685215c4a003fdddb83619882b4a03a53cab38302eba",
+        "size": 87508
+      },
+      {
+        "path": "index.html",
+        "exists": true,
+        "sha256": "c78518bb5f5728b92961e887b77aecc9638e51678a90ce7e669ca17a70f860a3",
+        "size": 34753
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "025fa95cc2082495b3f5171e2ba26293e7ecd549b496ad592be0913407246bc0",
+        "size": 6032
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "exists": true,
+        "sha256": "fed72c1c3d6ef498a125edacdedbc3689add78ca1c36165a1f30766670c81046",
+        "size": 32031
+      },
+      {
+        "path": "scripts/audit_runtime_lane.py",
+        "exists": true,
+        "sha256": "2c52e035d5864338831d4bf14cff7f66347b918ab87aa32206b8e4414334f624",
+        "size": 8320
+      },
+      {
+        "path": "scripts/audit_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "c2e7653160dedaf038dfdea9edaafb01b81d2fe85b7c5e1fc995fd9a6a3b09c2",
+        "size": 8201
+      },
+      {
+        "path": "scripts/audit_workflow_readiness.py",
+        "exists": true,
+        "sha256": "dab955bc71399e0dd28caab18adf2c75d7e171ce2726b06c9b42e974b188740b",
+        "size": 30183
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "exists": true,
+        "sha256": "2b48075a99c090aa64aa4fd94f3ad64197940ec2c068bfa77236fba760fae2dc",
+        "size": 128116
+      },
+      {
+        "path": "scripts/test_execution_progress.py",
+        "exists": true,
+        "sha256": "a96c11d20ce10738ee12f244fc09ae3cdcf71912d90db1a9e55feba5cf1849f1",
+        "size": 46460
+      },
+      {
+        "path": "scripts/test_home_vitality_core.mjs",
+        "exists": true,
+        "sha256": "3384acf0dbae5039c3697611626bedf3d17032a16063d70b316ac4c72915f006",
+        "size": 7635
+      },
+      {
+        "path": "scripts/test_manual_confirmation_core.mjs",
+        "exists": true,
+        "sha256": "6926e4a9a3f477ab306ae351a2cd06930871421205fc252c9f47128a1788a28a",
+        "size": 2988
+      },
+      {
+        "path": "scripts/test_runtime_lane_audit.py",
+        "exists": true,
+        "sha256": "b92b72124e1bd52c5402985a89adcc91790609b86ee449e5bf0913c892baaa66",
+        "size": 555
+      },
+      {
+        "path": "scripts/test_strict_capture_preflight_audit.py",
+        "exists": true,
+        "sha256": "6587f73e6a8b3af3d8118702eb1e844746526105a99e8b0911eb3b8798fe31ee",
+        "size": 652
+      },
+      {
+        "path": "scripts/test_strict_capture_probe_binary.py",
+        "exists": true,
+        "sha256": "fecf252958cff4991532dd46cbdfb6a34a4ca8cd7450c59f72782e84b7c96171",
+        "size": 5406
+      },
+      {
+        "path": "scripts/test_verify_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "728b664d9dd8776fd5aebb99854af85aefe255ac29d6fd940e8454eebdb6e7ee",
+        "size": 6966
+      },
+      {
+        "path": "scripts/test_workflow_readiness_audit.py",
+        "exists": true,
+        "sha256": "2e7e31d1702a3fc2a946f3d6745abc3475878f4a8e81846a2be85ec2c2f99af2",
+        "size": 1060
+      },
+      {
+        "path": "scripts/verify_app_runtime_launch.py",
+        "exists": true,
+        "sha256": "1f2c9544567550b705c0959970980beea40ad87e0850a9a3a3749abf40d0108e",
+        "size": 13671
+      },
+      {
+        "path": "scripts/verify_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "1a8b92ab11ec4d564c4f53b3cb1be669502cbb5a180e5df9cef123c9f63d459c",
+        "size": 21206
+      },
+      {
+        "path": "scripts/verify_window_identity.py",
+        "exists": true,
+        "sha256": "71f2cb0184e24b2ccd0389189251c7414d8186e772f0cb8382bf5eeb76de74e0",
+        "size": 16110
+      },
+      {
+        "path": "src-tauri/src/bin/strict_capture_probe.rs",
+        "exists": true,
+        "sha256": "382799cc3d568bffa5ec2d0e3cd1273578485d3e546fec6b6e1e356028c80332",
+        "size": 14455
+      },
+      {
+        "path": "src-tauri/src/main.rs",
+        "exists": true,
+        "sha256": "b8df01570380e440e7adfe4d86f885d7718f2f35b0b96931308243f374c17515",
+        "size": 114826
+      },
+      {
+        "path": "src-tauri/src/runtime/vision_match.rs",
+        "exists": true,
+        "sha256": "a1d16bf9dfaee371f7e9a21bdd9dfa54151b84ca7105e44a42ed7d491d0c9561",
+        "size": 10686
+      },
+      {
+        "path": "src/home-vitality-core.js",
+        "exists": true,
+        "sha256": "5ccb98e0904fa344ad8699a73b5d1a02f323bc148bb1b3a4ecd6d9eb14b0c1e0",
+        "size": 12714
+      },
+      {
+        "path": "src/main.js",
+        "exists": true,
+        "sha256": "30669f5fe6d1690df8c658d9d667cf379c7ffe4f1c80c77d6cf6c376202630e2",
+        "size": 360994
+      },
+      {
+        "path": "src/manual-confirmation-core.js",
+        "exists": true,
+        "sha256": "c617db5a295e50fe0fa2991bec78042685a4bc8d65c40be77ed01734fb93085e",
+        "size": 6098
+      },
+      {
+        "path": "src/target-library-core.js",
+        "exists": true,
+        "sha256": "ccbefca934a0c8425fbdfb305ec88bc0e24a098f12e851bbb250476bde4c1dd6",
+        "size": 6163
+      },
+      {
+        "path": "src/workspace-normalization-core.js",
+        "exists": true,
+        "sha256": "f68670968edc00135d6d0898a07f20dca471f420ed5c84ca4b61689c8649222c",
+        "size": 16723
+      }
+    ],
+    "workingTreeFingerprint": "sha256:eb8aafad6931b157a3b1e5abc955e6de3531b21e8f3527e94391bfd11a7dcfab"
+  },
+  "gitDiffSha256": "19f96a04662e73859a716a989e85c457d8173ddf94e17fd0e6da2296c1c388e5",
+  "dirtyFileHashes": [
+    {
+      "path": "_tmp_elev_preflight_once.py",
+      "exists": true,
+      "sha256": "795118514a07692fae2642ad6562ff8bbcb194d1fcbca43efb1652c700695eac",
+      "size": 4305
+    },
+    {
+      "path": "_tmp_elev_preflight_run.py",
+      "exists": true,
+      "sha256": "8765547bf27b765c364a838b6d1e1f83ae45705bc8f6a8b7537ad17f237c103b",
+      "size": 4507
+    },
+    {
+      "path": "_tmp_fix_budget.py",
+      "exists": true,
+      "sha256": "cae4416b4e94ba0403f224e297c8450b41871f8887d5f9f9e0684351bd356ac3",
+      "size": 2305
+    },
+    {
+      "path": "_tmp_patch_arg.py",
+      "exists": true,
+      "sha256": "dc7deb4a12fa8d8222e971b12cdee39a54ab2a0c94208371e47d531545b075a2",
+      "size": 815
+    },
+    {
+      "path": "_tmp_patch_dep.py",
+      "exists": true,
+      "sha256": "589757010b50ca6dfe6ffa7809916e04f3c2669e842468ea173a10579c7ca92c",
+      "size": 4463
+    },
+    {
+      "path": "_tmp_tile_preflight.py",
+      "exists": true,
+      "sha256": "8b1c12beb4fe6be667ade2b69ceddff3c0a67ba360e51215eebba32748c0f640",
+      "size": 4089
+    },
+    {
+      "path": "_tmp_token_spawn.py",
+      "exists": true,
+      "sha256": "ca947f98f442b430e71573ea9658e01897e12363db19af2afb33f61d001516a6",
+      "size": 3215
+    },
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "fdde29634ea09e14a6ddea5b314e5d4dc7630ded1e08116a495e4d1c493e2878",
+      "size": 14800
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "exists": true,
+      "sha256": "075dcf21c474c97f064ad38b9150917ca5f44cb90e06b3ce8998d831dc338c04",
+      "size": 17316
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "exists": true,
+      "sha256": "c10e3a3d90fc1613fe47fbc9c945aa867ac8b74999dcd1263e0b3042a7b4c042",
+      "size": 18623
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "exists": true,
+      "sha256": "9c0ecfe5f5c8b154c33fb5b75e2c1d7af9e1e08865521fb30b035eb75e8f0d74",
+      "size": 19857
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "exists": true,
+      "sha256": "01901aaaa79ca283055e0968a96fe0222154192691cc892808d879011ecce676",
+      "size": 24451
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "exists": true,
+      "sha256": "476e9923104309586fefb3a955aefee47880aa0ec6aef7ef0b0880bb387a05f9",
+      "size": 30400
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "exists": true,
+      "sha256": "07e7867057dbbfea65376b2ff1ca3528532d3823436f007d4a37da1f50075921",
+      "size": 32225
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      "exists": true,
+      "sha256": "5e4dbfa4f23cf8132ec3e5ab178ce49f51ff5df7334b1bc4c179a556b8fb00fe",
+      "size": 33070
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json",
+      "exists": true,
+      "sha256": "c5b375482953ba0c355054eadd95322f396ea5818f3664d27e35e79fd5718ced",
+      "size": 34114
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json",
+      "exists": true,
+      "sha256": "8d4058b1c4cbd552216aba0c02eb5a8ac6caf032727340b85552a7dbe589e694",
+      "size": 36981
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json",
+      "exists": true,
+      "sha256": "1e3702fc76e6db76caedc7317a6c1630a512b83549535a08fb20151b46b1fd3e",
+      "size": 48065
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json",
+      "exists": true,
+      "sha256": "4a86822420ee6e14e8d588ea55adcbf122ffce0c472b6a917f1de65ae58d33d3",
+      "size": 43274
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0049-p4-controller-elevated.json",
+      "exists": true,
+      "sha256": "879321a2440ef7dbfd4b6d546aafd5aa5590c671386824d29dee44c43ff7dcb0",
+      "size": 44376
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json",
+      "exists": true,
+      "sha256": "6ee6d887a258ff5861f17f08eb8871f8793353968cc82a1e47a82b569d418120",
+      "size": 47920
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "f0166f0ac78121ed017bd7635166e8375264443621d789ff3e2e63e9a6cddc2f",
+      "size": 1098891
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "d679335453f0956933fea0377a58b4063be75e64c3407d35e40a164ea991d947",
+      "size": 902562
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "92db1aec77830d8e8bc2685215c4a003fdddb83619882b4a03a53cab38302eba",
+      "size": 87508
+    },
+    {
+      "path": "index.html",
+      "exists": true,
+      "sha256": "c78518bb5f5728b92961e887b77aecc9638e51678a90ce7e669ca17a70f860a3",
+      "size": 34753
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "025fa95cc2082495b3f5171e2ba26293e7ecd549b496ad592be0913407246bc0",
+      "size": 6032
+    },
+    {
+      "path": "scripts/audit_execution_state.py",
+      "exists": true,
+      "sha256": "fed72c1c3d6ef498a125edacdedbc3689add78ca1c36165a1f30766670c81046",
+      "size": 32031
+    },
+    {
+      "path": "scripts/audit_runtime_lane.py",
+      "exists": true,
+      "sha256": "2c52e035d5864338831d4bf14cff7f66347b918ab87aa32206b8e4414334f624",
+      "size": 8320
+    },
+    {
+      "path": "scripts/audit_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "c2e7653160dedaf038dfdea9edaafb01b81d2fe85b7c5e1fc995fd9a6a3b09c2",
+      "size": 8201
+    },
+    {
+      "path": "scripts/audit_workflow_readiness.py",
+      "exists": true,
+      "sha256": "dab955bc71399e0dd28caab18adf2c75d7e171ce2726b06c9b42e974b188740b",
+      "size": 30183
+    },
+    {
+      "path": "scripts/execution_progress.py",
+      "exists": true,
+      "sha256": "2b48075a99c090aa64aa4fd94f3ad64197940ec2c068bfa77236fba760fae2dc",
+      "size": 128116
+    },
+    {
+      "path": "scripts/test_execution_progress.py",
+      "exists": true,
+      "sha256": "a96c11d20ce10738ee12f244fc09ae3cdcf71912d90db1a9e55feba5cf1849f1",
+      "size": 46460
+    },
+    {
+      "path": "scripts/test_home_vitality_core.mjs",
+      "exists": true,
+      "sha256": "3384acf0dbae5039c3697611626bedf3d17032a16063d70b316ac4c72915f006",
+      "size": 7635
+    },
+    {
+      "path": "scripts/test_manual_confirmation_core.mjs",
+      "exists": true,
+      "sha256": "6926e4a9a3f477ab306ae351a2cd06930871421205fc252c9f47128a1788a28a",
+      "size": 2988
+    },
+    {
+      "path": "scripts/test_runtime_lane_audit.py",
+      "exists": true,
+      "sha256": "b92b72124e1bd52c5402985a89adcc91790609b86ee449e5bf0913c892baaa66",
+      "size": 555
+    },
+    {
+      "path": "scripts/test_strict_capture_preflight_audit.py",
+      "exists": true,
+      "sha256": "6587f73e6a8b3af3d8118702eb1e844746526105a99e8b0911eb3b8798fe31ee",
+      "size": 652
+    },
+    {
+      "path": "scripts/test_strict_capture_probe_binary.py",
+      "exists": true,
+      "sha256": "fecf252958cff4991532dd46cbdfb6a34a4ca8cd7450c59f72782e84b7c96171",
+      "size": 5406
+    },
+    {
+      "path": "scripts/test_verify_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "728b664d9dd8776fd5aebb99854af85aefe255ac29d6fd940e8454eebdb6e7ee",
+      "size": 6966
+    },
+    {
+      "path": "scripts/test_workflow_readiness_audit.py",
+      "exists": true,
+      "sha256": "2e7e31d1702a3fc2a946f3d6745abc3475878f4a8e81846a2be85ec2c2f99af2",
+      "size": 1060
+    },
+    {
+      "path": "scripts/verify_app_runtime_launch.py",
+      "exists": true,
+      "sha256": "1f2c9544567550b705c0959970980beea40ad87e0850a9a3a3749abf40d0108e",
+      "size": 13671
+    },
+    {
+      "path": "scripts/verify_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "1a8b92ab11ec4d564c4f53b3cb1be669502cbb5a180e5df9cef123c9f63d459c",
+      "size": 21206
+    },
+    {
+      "path": "scripts/verify_window_identity.py",
+      "exists": true,
+      "sha256": "71f2cb0184e24b2ccd0389189251c7414d8186e772f0cb8382bf5eeb76de74e0",
+      "size": 16110
+    },
+    {
+      "path": "src-tauri/src/bin/strict_capture_probe.rs",
+      "exists": true,
+      "sha256": "382799cc3d568bffa5ec2d0e3cd1273578485d3e546fec6b6e1e356028c80332",
+      "size": 14455
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "exists": true,
+      "sha256": "b8df01570380e440e7adfe4d86f885d7718f2f35b0b96931308243f374c17515",
+      "size": 114826
+    },
+    {
+      "path": "src-tauri/src/runtime/vision_match.rs",
+      "exists": true,
+      "sha256": "a1d16bf9dfaee371f7e9a21bdd9dfa54151b84ca7105e44a42ed7d491d0c9561",
+      "size": 10686
+    },
+    {
+      "path": "src/home-vitality-core.js",
+      "exists": true,
+      "sha256": "5ccb98e0904fa344ad8699a73b5d1a02f323bc148bb1b3a4ecd6d9eb14b0c1e0",
+      "size": 12714
+    },
+    {
+      "path": "src/main.js",
+      "exists": true,
+      "sha256": "30669f5fe6d1690df8c658d9d667cf379c7ffe4f1c80c77d6cf6c376202630e2",
+      "size": 360994
+    },
+    {
+      "path": "src/manual-confirmation-core.js",
+      "exists": true,
+      "sha256": "c617db5a295e50fe0fa2991bec78042685a4bc8d65c40be77ed01734fb93085e",
+      "size": 6098
+    },
+    {
+      "path": "src/target-library-core.js",
+      "exists": true,
+      "sha256": "ccbefca934a0c8425fbdfb305ec88bc0e24a098f12e851bbb250476bde4c1dd6",
+      "size": 6163
+    },
+    {
+      "path": "src/workspace-normalization-core.js",
+      "exists": true,
+      "sha256": "f68670968edc00135d6d0898a07f20dca471f420ed5c84ca4b61689c8649222c",
+      "size": 16723
+    }
+  ],
+  "eventTail": {
+    "seq": 645,
+    "id": "EVT-0645",
+    "hash": "sha256:4e3118d4fb4144c848cf51c320be0338ebbea2bcad452704bce4f8fb797502ab"
+  },
+  "evidenceTail": {
+    "seq": 313,
+    "id": "EVD-0313",
+    "hash": "sha256:5469e728a6730642d3d40c77c470958e120a1e7aa553286825f516159f7c79f9"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-14T10:07:54Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [
+      {
+        "pid": 61780,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "exePath": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+        "cwd": "E:\\Project\\Common\\mhxy-shikong-control",
+        "commandLine": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+        "creationTime": "2026-07-13T21:32:16Z",
+        "ownership": "created_by_current_run",
+        "ownershipEvidence": [
+          "goal-externalAuthorization-local_app_run_owned_process_only",
+          "cwd=E:\\Project\\Common\\mhxy-shikong-control",
+          "exePath=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+          "exeSha256=d15717f597d274086c492dfde576126165da667c453de306780a8eb4993b7093",
+          "expectedHead=3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+          "verifier=current-app-launch-v1",
+          "exeSha256=d15717f597d274086c492dfde576126165da667c453de306780a8eb4993b7093",
+          "observedHead=3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+          "actionId=ACT-P4S2-APP-LAUNCH-005"
+        ],
+        "cleanupAllowed": true,
+        "createdByRunId": "RUN-20260710-CONTINUITY-BASELINE",
+        "createdByActionId": "ACT-P4S2-APP-LAUNCH-005",
+        "createdAt": "2026-07-13T21:32:19Z",
+        "present": true,
+        "lastObservedAt": "2026-07-13T21:32:19Z"
+      }
+    ],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      },
+      {
+        "pid": 12744,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "task-owned",
+        "present": false,
+        "creationTime": "2026-07-13T08:54:11Z",
+        "lastObservedAt": "2026-07-13T09:08:55Z",
+        "lastSeenAt": "2026-07-13T08:54:26Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T09:08:55Z"
+      },
+      {
+        "pid": 16244,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T09:11:08Z",
+        "lastObservedAt": "2026-07-13T10:06:43Z",
+        "lastSeenAt": "2026-07-13T10:06:31Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:06:43Z"
+      },
+      {
+        "pid": 18332,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:08:03Z",
+        "lastObservedAt": "2026-07-13T10:22:31Z",
+        "lastSeenAt": "2026-07-13T10:09:15Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:22:31Z"
+      },
+      {
+        "pid": 50936,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:22:38Z",
+        "lastObservedAt": "2026-07-13T10:24:50Z",
+        "lastSeenAt": "2026-07-13T10:22:39Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:24:50Z"
+      },
+      {
+        "pid": 80388,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:24:52Z",
+        "lastObservedAt": "2026-07-13T11:45:45Z",
+        "lastSeenAt": "2026-07-13T10:24:53Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T11:45:45Z"
+      },
+      {
+        "pid": 2960,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T11:47:22Z",
+        "lastObservedAt": "2026-07-13T11:52:56Z",
+        "lastSeenAt": "2026-07-13T11:47:23Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T11:52:56Z"
+      },
+      {
+        "pid": 73840,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T11:52:58Z",
+        "lastObservedAt": "2026-07-13T21:31:49Z",
+        "lastSeenAt": "2026-07-13T11:53:38Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T21:31:49Z"
+      },
+      {
+        "pid": 1832,
+        "name": "MyGame_x64r.exe",
+        "role": "game-client",
+        "ownership": "user_preexisting",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-13T11:53:37Z",
+        "lastSeenAt": "2026-07-13T11:53:37Z",
+        "creationTime": "2026-07-13T10:23:04Z"
+      },
+      {
+        "pid": 61780,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": true,
+        "creationTime": "2026-07-14T05:32:16+08:00",
+        "lastObservedAt": "2026-07-13T23:59:53Z",
+        "lastSeenAt": "2026-07-13T23:59:53Z",
+        "cleanupAllowed": false,
+        "identityLimit": "Read-only final observation: responsive controller window is present but runs the pre-current-build target-p4-s2-rebind executable; no restart or input."
+      },
+      {
+        "pid": 68420,
+        "name": "MyGame_x64r.exe",
+        "role": "game-client",
+        "ownership": "created_by_current_run",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-13T23:59:54Z",
+        "lastSeenAt": "2026-07-13T23:59:54Z",
+        "creationTime": "2026-07-14T05:33:48+08:00",
+        "identityLimit": "Read-only final observation: main HWND 33818884 title is 错误; it is not an eligible 梦幻西游：时空 game window and no game input was sent."
+      },
+      {
+        "pid": 86812,
+        "name": "MyGame_x64r.exe",
+        "role": "game-client",
+        "ownership": "user_preexisting",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-14T09:31:35Z",
+        "lastSeenAt": "2026-07-14T09:31:35Z",
+        "creationTime": "2026-07-14T08:48:47.6033654+08:00"
+      },
+      {
+        "pid": 71740,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller",
+        "ownership": "task_owned",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-14T09:31:34Z",
+        "lastSeenAt": "2026-07-14T09:31:34Z",
+        "creationTime": "2026-07-14T17:25:50.1188755+08:00"
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ],
+    "lastWindowIdentity": {
+      "targetIdentity": "game-client:86812@MyGame_x64r.exe:26157554",
+      "verified": true,
+      "observedAt": "2026-07-14T10:07:47Z",
+      "evidenceId": "EVD-0308",
+      "identity": {
+        "hwnd": 26157554,
+        "pid": 86812,
+        "title": "梦幻西游：时空",
+        "process": "MyGame_x64r.exe",
+        "clientWidth": 509,
+        "clientHeight": 382,
+        "privilege": "elevated"
+      }
+    }
+  },
+  "resume": {
+    "blockers": [
+      "Game HWND exists (PID 86812 / HWND 26157554) but controller privilege is insufficient for gated input."
+    ],
+    "nextCommands": [
+      "npm run execution:resume-check"
+    ],
+    "doNotDo": [
+      "Do not send live game input; do not stop game process."
+    ],
+    "lastSafeResumeSnapshotId": "CP-0049"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:ee965c5d660e76240860e74bc6083050291fe0573af46da1647b401ac1eb8c52"
+}

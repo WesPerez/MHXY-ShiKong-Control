@@ -7,30 +7,33 @@ export const HOME_VITALITY_BLUEPRINT = {
   label: '\u5bb6\u56ed\u6d3b\u529b',
   category: '\u5bb6\u56ed',
   defaultPrefix: '\u5bb6\u56ed\u6d3b\u529b',
+  autoRecovery: true,
   description:
     '\u6253\u5f00\u5bb6\u56ed/\u4eba\u7269\u76f8\u5173\u5165\u53e3\uff0c\u6309 OCR \u548c\u56fe\u50cf\u76ee\u6807\u5904\u7406\u6d3b\u529b\u3001\u6253\u7406\u4e0e\u786e\u8ba4\u52a8\u4f5c\u3002',
   steps: [
-    { type: 'detect_page', name: '\u786e\u8ba4\u4e3b\u754c\u9762', target: 'page.home.ready', command: 'threshold=0.86', expect: 'home.visible' },
-    { type: 'hotkey', name: '\u6253\u5f00\u529f\u80fd\u9762\u677f', target: 'ALT+N', command: 'mode=hwnd-key', expect: 'panel.open' },
-    { type: 'delay', name: '\u7b49\u5f85\u754c\u9762\u52a8\u753b', target: '800ms', command: 'reason=panel_transition', expect: 'time.elapsed' },
-    { type: 'ocr_assert', name: '\u786e\u8ba4\u529f\u80fd\u9762\u677f', target: '\u5bb6\u56ed', command: 'lang=zh; roi=top', expect: 'text_found' },
-    { type: 'wait_image', name: '\u7b49\u5f85\u5bb6\u56ed\u5165\u53e3', target: 'entry.home', command: 'threshold=0.86', expect: 'visible' },
-    { type: 'image_click', name: '\u8fdb\u5165\u5bb6\u56ed', target: 'entry.home', command: 'button=left; point=center', expect: 'home.panel.ready' },
-    { type: 'retry_until', name: '\u7b49\u5f85\u5bb6\u56ed\u9875\u9762', target: 'page.home_yard.ready', command: 'interval=700ms', expect: 'ready=true', timeoutMs: 7000, retry: 3 },
-    { type: 'wait_image', name: '\u7b49\u5f85\u6253\u7406\u6309\u94ae', target: 'button.home_clean', command: 'threshold=0.86', expect: 'visible' },
-    { type: 'image_click', name: '\u6267\u884c\u6253\u7406', target: 'button.home_clean', command: 'button=left; point=center', expect: 'action.accepted' },
-    { type: 'delay', name: '\u7b49\u5f85\u7ed3\u7b97', target: '1000ms', command: 'reason=server_response', expect: 'time.elapsed' },
-    { type: 'ocr_assert', name: '\u786e\u8ba4\u6d3b\u529b\u72b6\u6001', target: '\u6d3b\u529b', command: 'lang=zh; roi=panel', expect: 'text_found' },
-    { type: 'snapshot', name: '\u8bb0\u5f55\u5bb6\u56ed\u7ed3\u679c', target: 'window.client', command: 'dry-run log only', expect: 'snapshot.recorded' },
-    { type: 'restore', name: '\u6062\u590d\u4e3b\u754c\u9762', target: 'restore.home', command: 'safe sequence', expect: 'page.home.ready' },
+    { type: 'detect_page', name: '\u786e\u8ba4\u4e3b\u754c\u9762', target: 'page.home.ready', command: 'threshold=0.86', expect: 'home.visible', onFail: 'stop' },
+    { type: 'snapshot', name: '\u8bb0\u5f55\u4efb\u52a1\u8d77\u59cb\u753b\u9762', target: 'window.client', command: 'capture=strict; purpose=home_vitality_before', expect: 'snapshot.observed', onFail: 'stop' },
+    { type: 'hotkey', name: '\u6253\u5f00\u529f\u80fd\u9762\u677f', target: 'ALT+N', command: 'mode=hwnd-key', expect: 'panel.open', onFail: 'stop' },
+    { type: 'wait_image', name: '\u7b49\u5f85\u5bb6\u56ed\u5165\u53e3', target: 'entry.home', command: 'threshold=0.86', expect: 'visible', onFail: 'restore' },
+    { type: 'ocr_assert', name: '\u786e\u8ba4\u529f\u80fd\u9762\u677f', target: '\u5bb6\u56ed', command: 'lang=zh; roi=top', expect: 'text_found', onFail: 'restore' },
+    { type: 'image_click', name: '\u8fdb\u5165\u5bb6\u56ed', target: 'entry.home', command: 'button=left; point=center; confirmation=manual-required', expect: 'home.panel.ready', onFail: 'restore', requiresManualConfirmation: true },
+    { type: 'detect_page', name: '\u786e\u8ba4\u5bb6\u56ed\u9875\u9762', target: 'page.home_yard.ready', command: 'threshold=0.86', expect: 'home_yard.visible', onFail: 'restore' },
+    { type: 'ocr_assert', name: '\u8bfb\u53d6\u6253\u7406\u524d\u6d3b\u529b', target: '\u6d3b\u529b', command: 'lang=zh; roi=panel; capture=before', expect: 'vitality.before_recorded', onFail: 'restore' },
+    { type: 'wait_image', name: '\u7b49\u5f85\u6253\u7406\u6309\u94ae', target: 'button.home_clean', command: 'threshold=0.86', expect: 'visible', onFail: 'restore' },
+    { type: 'image_click', name: '\u6267\u884c\u6253\u7406', target: 'button.home_clean', command: 'button=left; point=center; offsetX=0; offsetY=0; confirmation=manual-required', expect: 'action.accepted', onFail: 'restore', requiresManualConfirmation: true },
+    { type: 'delay', name: '\u7b49\u5f85\u7ed3\u7b97', target: '1000ms', command: 'reason=server_response', expect: 'time.elapsed', onFail: 'restore' },
+    { type: 'ocr_assert', name: '\u786e\u8ba4\u6d3b\u529b\u53d8\u5316', target: '\u6d3b\u529b', command: 'lang=zh; roi=panel; compare=before; direction=expected', expect: 'vitality.changed', onFail: 'restore' },
+    { type: 'snapshot', name: '\u8bb0\u5f55\u5bb6\u56ed\u6210\u529f\u753b\u9762', target: 'window.client', command: 'capture=strict; annotate=button.home_clean; purpose=home_vitality_after', expect: 'snapshot.observed', onFail: 'restore' },
+    { type: 'hotkey', name: '\u8fd4\u56de\u4e3b\u754c\u9762', target: 'ESC', command: 'mode=hwnd-key', expect: 'panel.closed', onFail: 'stop' },
+    { type: 'detect_page', name: '\u786e\u8ba4\u5df2\u8fd4\u56de\u4e3b\u754c\u9762', target: 'page.home.ready', command: 'threshold=0.86', expect: 'home.visible', onFail: 'stop' },
   ],
 };
 
 export const HOME_VITALITY_TEMPLATE_BINDINGS = [
   { target: 'page.home.ready', key: 'zonghe/jiahao.png', kind: 'page', name: '\u4e3b\u754c\u9762\u5224\u5b9a', threshold: 0.86 },
-  { target: 'entry.home', key: 'jiayuan/jiayuan.png', kind: 'image', name: '\u5bb6\u56ed\u5165\u53e3', threshold: 0.82 },
+  { target: 'entry.home', key: 'jiayuan/jiayuan.png', kind: 'image', name: '\u5bb6\u56ed\u5165\u53e3', threshold: 0.82, requiresManualConfirmation: true },
   { target: 'page.home_yard.ready', key: 'jiayuan/dali.png', kind: 'page', name: '\u5bb6\u56ed\u6253\u7406\u9875\u5224\u5b9a' },
-  { target: 'button.home_clean', key: 'jiayuan/dali.png', kind: 'image', name: '\u5bb6\u56ed\u6253\u7406\u6309\u94ae' },
+  { target: 'button.home_clean', key: 'jiayuan/dali.png', kind: 'image', name: '\u5bb6\u56ed\u6253\u7406\u6309\u94ae', requiresManualConfirmation: true },
 ];
 
 /** Live e2e gates for P4; all stay blocked until real game windows and evidence exist. */
@@ -107,6 +110,7 @@ export function assessHomeVitalityReadiness(options = {}) {
   const bindings = options.bindings || HOME_VITALITY_TEMPLATE_BINDINGS;
   const targetAssets = options.targetAssets || {};
   const availableKeys = new Set(options.availableTemplateKeys || []);
+  const manuallyConfirmedTargets = new Set(options.manualConfirmedTargets || []);
 
   const steps = (blueprint.steps || []).map((step, index) => {
     const base = {
@@ -182,6 +186,13 @@ export function assessHomeVitalityReadiness(options = {}) {
     const hasBuiltin = Boolean(binding?.key && availableKeys.has(binding.key));
     return !(hasAsset || hasBuiltin);
   });
+  const manualConfirmationTargets = requiredTargets.filter(
+    (target) => templateBindingForTarget(target, bindings)?.requiresManualConfirmation === true,
+  );
+  const missingManualConfirmationTargets = manualConfirmationTargets.filter((target) => {
+    const asset = targetAssets[target] || null;
+    return !manuallyConfirmedTargets.has(target) && asset?.manualConfirmed !== true && asset?.manualConfirmationValid !== true;
+  });
   const visualReady = steps
     .filter((step) => VISUAL_STEP_TYPES.has(step.type))
     .every((step) => step.ready);
@@ -192,6 +203,8 @@ export function assessHomeVitalityReadiness(options = {}) {
     stepCount: steps.length,
     requiredVisualTargets: requiredTargets,
     missingVisualTargets: missingTargets,
+    manualConfirmationTargets,
+    missingManualConfirmationTargets,
     steps,
     offlineScaffoldReady: visualReady && missingTargets.length === 0,
     liveReady: false,
@@ -208,6 +221,9 @@ export function summarizeHomeVitalityGaps(assessment) {
   const gaps = [];
   for (const target of source.missingVisualTargets || []) {
     gaps.push({ kind: 'visual_target', target, status: 'needs_capture' });
+  }
+  for (const target of source.missingManualConfirmationTargets || []) {
+    gaps.push({ kind: 'manual_confirmation', target, status: 'needs_manual_confirmation' });
   }
   for (const step of source.steps || []) {
     if (step.status === 'needs_ocr_backend') {

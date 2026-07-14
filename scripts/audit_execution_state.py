@@ -218,8 +218,8 @@ def audit_unlocked() -> int:
     for record in evidence:
         if record.get("category") not in progress.EVIDENCE_CATEGORIES:
             fail(errors, "evidence {} has an unknown category".format(record.get("id")))
-        command_required_categories = {"source_audit", "test", "build", "app_runtime", "multi_window", "persistence", "appdata_backup", "cleanup_audit"}
-        artifact_required_categories = {"build", "app_runtime", "live_outcome", "multi_window", "persistence", "appdata_backup"}
+        command_required_categories = {"source_audit", "test", "build", "app_runtime", "live_preflight", "multi_window", "persistence", "appdata_backup", "cleanup_audit"}
+        artifact_required_categories = {"build", "app_runtime", "live_preflight", "live_outcome", "multi_window", "persistence", "appdata_backup"}
         if record.get("status") == "passed" and record.get("category") in command_required_categories:
             if not record.get("command") or record.get("exitCode") != 0:
                 fail(errors, "passed evidence {} lacks a successful command".format(record.get("id")))
@@ -256,10 +256,22 @@ def audit_unlocked() -> int:
                 fail(errors, "passed evidence {} records a missing artifact".format(record.get("id")))
         safety = record.get("safety", {})
         any_input_sent = any_input_sent or bool(safety.get("inputSent"))
-        if record.get("category") in {"live_input", "live_outcome"} and record.get("status") == "passed":
+        if record.get("category") in {"live_preflight", "live_input", "live_outcome"} and record.get("status") == "passed":
             window_record = evidence_by_id.get(record.get("windowEvidenceId"), {})
-            if not (safety.get("inputSent") and record.get("targetIdentity") and window_record.get("category") == "window_identity" and window_record.get("targetIdentity") == record.get("targetIdentity") and window_record.get("safety", {}).get("windowIdentityVerified")):
+            has_window_link = (
+                record.get("targetIdentity")
+                and window_record.get("category") == "window_identity"
+                and window_record.get("targetIdentity") == record.get("targetIdentity")
+                and window_record.get("safety", {}).get("windowIdentityVerified")
+                and progress.evidence_provenance_valid(window_record)
+                and (window_record.get("windowIdentity") or {}).get("privilege") in {"same", "elevated"}
+            )
+            if not has_window_link:
                 fail(errors, "passed live evidence {} lacks a valid window identity evidence link".format(record.get("id")))
+            if record.get("category") == "live_preflight" and safety.get("inputSent") is not False:
+                fail(errors, "passed live_preflight evidence {} must explicitly report inputSent=false".format(record.get("id")))
+            if record.get("category") in {"live_input", "live_outcome"} and not safety.get("inputSent"):
+                fail(errors, "passed live input evidence {} lacks inputSent".format(record.get("id")))
         if record.get("category") == "live_outcome" and record.get("status") == "passed" and not record.get("outcome", {}).get("postconditionObserved"):
             fail(errors, "passed live_outcome evidence {} lacks postcondition proof".format(record.get("id")))
         if record.get("category") == "appdata_backup" and record.get("status") == "passed":

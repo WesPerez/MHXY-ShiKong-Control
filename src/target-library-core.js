@@ -1,3 +1,8 @@
+import {
+  normalizeManualConfirmationSafety,
+  normalizedManualConfirmation,
+} from "./manual-confirmation-core.js";
+
 export const TARGET_LIBRARY_KIND = "mhxy-target-library";
 
 const DEFAULT_IMAGE_THRESHOLD = 0.86;
@@ -9,7 +14,7 @@ function timestamp(options = {}) {
 export function normalizeTarget(value, options = {}) {
   const threshold = normalizedThreshold(value?.match?.threshold ?? value?.threshold, options.defaultImageThreshold);
   const createdAt = String(value?.createdAt || timestamp(options));
-  return {
+  const target = {
     id: String(value?.id || randomTargetId(options)),
     name: String(value?.name || "未命名目标"),
     kind: String(value?.kind || (value?.dataUrl ? "image" : value?.roi ? "roi" : "unknown")),
@@ -30,7 +35,15 @@ export function normalizeTarget(value, options = {}) {
     width: Number(value?.width || 0),
     height: Number(value?.height || 0),
     note: String(value?.note || ""),
+    safety: normalizeManualConfirmationSafety({
+      ...(value?.safety || {}),
+      requiresManualConfirmation:
+        value?.safety?.requiresManualConfirmation ?? value?.requiresManualConfirmation,
+    }),
+    manualConfirmation: value?.manualConfirmation || null,
   };
+  target.manualConfirmation = normalizedManualConfirmation(target);
+  return target;
 }
 
 export function targetLibraryExportPayload(targets, options = {}) {
@@ -108,6 +121,18 @@ export function mergeImportedTargetIntoExisting(existing, incoming, options = {}
   }
   if (targetNoteIsGeneric(existing.note) && incoming.note) {
     existing.note = incoming.note;
+    changed = true;
+  }
+  if (incoming.safety?.requiresManualConfirmation && !existing.safety?.requiresManualConfirmation) {
+    existing.safety = {
+      ...(existing.safety || {}),
+      requiresManualConfirmation: true,
+    };
+    changed = true;
+  }
+  const manualConfirmation = normalizedManualConfirmation(existing);
+  if (JSON.stringify(existing.manualConfirmation || null) !== JSON.stringify(manualConfirmation)) {
+    existing.manualConfirmation = manualConfirmation;
     changed = true;
   }
   if (changed) existing.updatedAt = timestamp(options);

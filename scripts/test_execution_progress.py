@@ -16,6 +16,7 @@ import tempfile
 import unittest
 
 import execution_progress as progress
+import verify_app_runtime_launch as app_runtime_verifier
 import verify_p0_workspace_backup as backup_verifier
 
 
@@ -398,7 +399,87 @@ class ExecutionProgressTests(unittest.TestCase):
                 
                 self.assertIn("current-app-launch-v1", progress.SPECIALIZED_VERIFIER_ALLOWLIST["app_runtime"])
                 self.assertIn("window-identity-v1", progress.SPECIALIZED_VERIFIER_ALLOWLIST["window_identity"])
+                self.assertIn("live_preflight", progress.SPECIALIZED_EVIDENCE_CATEGORIES)
+                self.assertIn(
+                    "strict-capture-preflight-v1",
+                    progress.SPECIALIZED_VERIFIER_ALLOWLIST["live_preflight"],
+                )
                 self.assertEqual(progress.load_jsonl(progress.EVIDENCE_PATH), [])
+
+    def test_runtime_verifier_scope_requires_criterion_or_explicit_gate_rebind(self) -> None:
+        state = {
+            "activeSlice": {
+                "acceptanceCriteria": [
+                    {
+                        "id": "APP-C1",
+                        "requiredEvidenceCategories": ["app_runtime"],
+                    }
+                ]
+            }
+        }
+        self.assertEqual(
+            app_runtime_verifier.runtime_evidence_criteria(state, "APP-C1", False),
+            ["APP-C1"],
+        )
+        self.assertEqual(app_runtime_verifier.runtime_evidence_criteria(state, None, True), [])
+        with self.assertRaises(RuntimeError):
+            app_runtime_verifier.runtime_evidence_criteria(state, None, False)
+        with self.assertRaises(RuntimeError):
+            app_runtime_verifier.runtime_evidence_criteria(state, "APP-C1", True)
+
+    def test_expected_git_binding_rejects_verifier_source_drift(self) -> None:
+        with temporary_work_dir(prefix="mhxy-progress-expected-git-") as temp:
+            base = Path(temp)
+            root = create_clean_progress_repo(base)
+            with PatchedProgressPaths(root, base / "external"):
+                with self.assertRaisesRegex(RuntimeError, "source workspace changed"):
+                    progress.record_evidence(
+                        argparse.Namespace(
+                            category="runtime_observation",
+                            expected_git_binding={
+                                "observedHead": "not-the-current-head",
+                                "workingTreeFingerprint": "sha256:not-current",
+                            },
+                        )
+                    )
+
+    def test_expected_criterion_binding_rejects_active_slice_drift(self) -> None:
+        state = {
+            "activeSlice": {
+                "id": "P4-S3",
+                "acceptanceCriteria": [
+                    {
+                        "id": "P4-S3-C1",
+                        "requiredEvidenceCategories": ["live_preflight"],
+                    }
+                ],
+            }
+        }
+        binding = {
+            "sliceId": "P4-S3",
+            "criterionId": "P4-S3-C1",
+            "requiredEvidenceCategories": ["live_preflight"],
+        }
+        progress.validate_expected_criterion_binding(
+            state, binding, "live_preflight", ["P4-S3-C1"]
+        )
+        state["activeSlice"]["id"] = "P4-S4"
+        with self.assertRaisesRegex(RuntimeError, "active slice changed"):
+            progress.validate_expected_criterion_binding(
+                state, binding, "live_preflight", ["P4-S3-C1"]
+            )
+
+    @unittest.skipUnless(os.name == "nt", "window identity verifier is Windows-only")
+    def test_window_identity_input_eligibility_rejects_insufficient_privilege(self) -> None:
+        import verify_window_identity as window_identity_verifier
+
+        window_identity_verifier.require_input_eligible_privilege("same", True)
+        window_identity_verifier.require_input_eligible_privilege("elevated", True)
+        window_identity_verifier.require_input_eligible_privilege("insufficient", False)
+        with self.assertRaises(RuntimeError):
+            window_identity_verifier.require_input_eligible_privilege("insufficient", True)
+        with self.assertRaises(RuntimeError):
+            window_identity_verifier.require_input_eligible_privilege("unknown", True)
 
     def test_resume_check_returns_blocked_for_malformed_ledger(self) -> None:
         with temporary_work_dir(prefix="mhxy-progress-malformed-resume-") as temp:

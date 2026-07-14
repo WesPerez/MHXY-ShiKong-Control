@@ -1,0 +1,929 @@
+{
+  "kind": "mhxy-shikong.execution-checkpoint",
+  "schemaVersion": 1,
+  "id": "CP-0044",
+  "createdAt": "2026-07-14T00:00:02Z",
+  "type": "state_snapshot",
+  "reason": "零输入严格捕获预检已离线验证；最终只读复核 PID 61780 仍为旧控制器构建，PID 68420 仍仅有错误窗口。未启动、停止或输入任何游戏窗口。",
+  "run": {
+    "runId": "RUN-20260710-CONTINUITY-BASELINE",
+    "attempt": 4,
+    "primaryThreadId": "019f5d35-4496-75e0-a2fb-00edbd673a83",
+    "previousThreadId": "019f42cc-2993-7681-b8d2-5269cf5447e1",
+    "startedAt": "2026-07-10T08:31:39Z",
+    "owner": "primary-agent"
+  },
+  "phaseId": "P4",
+  "slice": {
+    "id": "P4-S2",
+    "title": "Read-only game window identity for home-vitality live prep",
+    "status": "blocked",
+    "startedAt": "2026-07-13T11:53:38Z",
+    "scope": [
+      "scripts/verify_window_identity.py",
+      "docs/execution"
+    ],
+    "nonGoals": [
+      "Do not send live game input",
+      "Do not claim home-vitality e2e complete",
+      "Do not stop user game process"
+    ],
+    "safetyBoundaries": [
+      "Game process is user_preexisting; cleanupAllowed=false",
+      "Read-only HWND/process identity only; no PostMessage or SendInput"
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "P4-S2-C1",
+        "text": "game client window identity verified read-only for MyGame_x64r with privilege sufficient for later gated input",
+        "status": "blocked",
+        "evidenceIds": [
+          "EVD-0161",
+          "EVD-0166",
+          "EVD-0173"
+        ],
+        "requiredEvidenceCategories": [
+          "window_identity"
+        ]
+      },
+      {
+        "id": "P4-S2-C2",
+        "text": "controller app window identity still verified read-only and distinct from game HWND",
+        "status": "blocked",
+        "evidenceIds": [
+          "EVD-0162",
+          "EVD-0167",
+          "EVD-0172",
+          "EVD-0178"
+        ],
+        "requiredEvidenceCategories": [
+          "window_identity"
+        ]
+      },
+      {
+        "id": "P4-S2-C3",
+        "text": "core regression and Vite build remain green after game-identity slice",
+        "status": "passed",
+        "evidenceIds": [
+          "EVD-0163",
+          "EVD-0164",
+          "EVD-0165",
+          "EVD-0168",
+          "EVD-0169",
+          "EVD-0170",
+          "EVD-0174",
+          "EVD-0175",
+          "EVD-0176",
+          "EVD-0177",
+          "EVD-0179",
+          "EVD-0180",
+          "EVD-0181",
+          "EVD-0182",
+          "EVD-0183",
+          "EVD-0184",
+          "EVD-0185",
+          "EVD-0186",
+          "EVD-0187"
+        ],
+        "requiredEvidenceCategories": [
+          "build",
+          "test"
+        ]
+      }
+    ],
+    "nextAction": "等待用户使 MyGame_x64r 出现真实且同权限的游戏 HWND；随后先执行只读 verify_window_identity --require-input-eligible。",
+    "blockers": [
+      "Task-owned MyGame_x64r PID 68420 has no visible eligible HWND after startup; no credentials or input entered."
+    ]
+  },
+  "git": {
+    "branch": "main",
+    "observedHead": "3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+    "upstreamHead": "3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9",
+    "dirtyPaths": [
+      "docs/execution/STATUS.md",
+      "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      "docs/execution/events.jsonl",
+      "docs/execution/evidence.jsonl",
+      "docs/execution/state.json",
+      "package.json",
+      "scripts/audit_execution_state.py",
+      "scripts/audit_runtime_lane.py",
+      "scripts/audit_strict_capture_preflight.py",
+      "scripts/audit_workflow_readiness.py",
+      "scripts/execution_progress.py",
+      "scripts/test_execution_progress.py",
+      "scripts/test_runtime_lane_audit.py",
+      "scripts/test_strict_capture_preflight_audit.py",
+      "scripts/test_strict_capture_probe_binary.py",
+      "scripts/test_verify_strict_capture_preflight.py",
+      "scripts/test_workflow_readiness_audit.py",
+      "scripts/verify_app_runtime_launch.py",
+      "scripts/verify_strict_capture_preflight.py",
+      "scripts/verify_window_identity.py",
+      "src-tauri/src/bin/strict_capture_probe.rs"
+    ],
+    "dirtyStatus": [
+      " M docs/execution/STATUS.md",
+      "?? docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "?? docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "?? docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "?? docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "?? docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "?? docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "?? docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      " M docs/execution/events.jsonl",
+      " M docs/execution/evidence.jsonl",
+      " M docs/execution/state.json",
+      " M package.json",
+      " M scripts/audit_execution_state.py",
+      " M scripts/audit_runtime_lane.py",
+      "?? scripts/audit_strict_capture_preflight.py",
+      " M scripts/audit_workflow_readiness.py",
+      " M scripts/execution_progress.py",
+      " M scripts/test_execution_progress.py",
+      "?? scripts/test_runtime_lane_audit.py",
+      "?? scripts/test_strict_capture_preflight_audit.py",
+      "?? scripts/test_strict_capture_probe_binary.py",
+      "?? scripts/test_verify_strict_capture_preflight.py",
+      "?? scripts/test_workflow_readiness_audit.py",
+      " M scripts/verify_app_runtime_launch.py",
+      "?? scripts/verify_strict_capture_preflight.py",
+      " M scripts/verify_window_identity.py",
+      "?? src-tauri/src/bin/strict_capture_probe.rs"
+    ],
+    "dirtyEntries": [
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/STATUS.md",
+        "displayPath": "docs/execution/STATUS.md"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+        "displayPath": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+        "displayPath": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+        "displayPath": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+        "displayPath": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+        "displayPath": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+        "displayPath": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+        "displayPath": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/events.jsonl",
+        "displayPath": "docs/execution/events.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/evidence.jsonl",
+        "displayPath": "docs/execution/evidence.jsonl"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "docs/execution/state.json",
+        "displayPath": "docs/execution/state.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "package.json",
+        "displayPath": "package.json"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_execution_state.py",
+        "displayPath": "scripts/audit_execution_state.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_runtime_lane.py",
+        "displayPath": "scripts/audit_runtime_lane.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_strict_capture_preflight.py",
+        "displayPath": "scripts/audit_strict_capture_preflight.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/audit_workflow_readiness.py",
+        "displayPath": "scripts/audit_workflow_readiness.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/execution_progress.py",
+        "displayPath": "scripts/execution_progress.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_execution_progress.py",
+        "displayPath": "scripts/test_execution_progress.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_runtime_lane_audit.py",
+        "displayPath": "scripts/test_runtime_lane_audit.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_strict_capture_preflight_audit.py",
+        "displayPath": "scripts/test_strict_capture_preflight_audit.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_strict_capture_probe_binary.py",
+        "displayPath": "scripts/test_strict_capture_probe_binary.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_verify_strict_capture_preflight.py",
+        "displayPath": "scripts/test_verify_strict_capture_preflight.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/test_workflow_readiness_audit.py",
+        "displayPath": "scripts/test_workflow_readiness_audit.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_app_runtime_launch.py",
+        "displayPath": "scripts/verify_app_runtime_launch.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_strict_capture_preflight.py",
+        "displayPath": "scripts/verify_strict_capture_preflight.py"
+      },
+      {
+        "status": " M",
+        "sourcePath": null,
+        "destinationPath": "scripts/verify_window_identity.py",
+        "displayPath": "scripts/verify_window_identity.py"
+      },
+      {
+        "status": "??",
+        "sourcePath": null,
+        "destinationPath": "src-tauri/src/bin/strict_capture_probe.rs",
+        "displayPath": "src-tauri/src/bin/strict_capture_probe.rs"
+      }
+    ],
+    "dirtyFiles": [
+      {
+        "path": "docs/execution/STATUS.md",
+        "exists": true,
+        "sha256": "3d845b92c97ba12cb9033d46b6d784477c55fd2b4f903fc445a72901adddd6f9",
+        "size": 14814
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+        "exists": true,
+        "sha256": "075dcf21c474c97f064ad38b9150917ca5f44cb90e06b3ce8998d831dc338c04",
+        "size": 17316
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+        "exists": true,
+        "sha256": "c10e3a3d90fc1613fe47fbc9c945aa867ac8b74999dcd1263e0b3042a7b4c042",
+        "size": 18623
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+        "exists": true,
+        "sha256": "9c0ecfe5f5c8b154c33fb5b75e2c1d7af9e1e08865521fb30b035eb75e8f0d74",
+        "size": 19857
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+        "exists": true,
+        "sha256": "01901aaaa79ca283055e0968a96fe0222154192691cc892808d879011ecce676",
+        "size": 24451
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+        "exists": true,
+        "sha256": "476e9923104309586fefb3a955aefee47880aa0ec6aef7ef0b0880bb387a05f9",
+        "size": 30400
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+        "exists": true,
+        "sha256": "07e7867057dbbfea65376b2ff1ca3528532d3823436f007d4a37da1f50075921",
+        "size": 32225
+      },
+      {
+        "path": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+        "exists": true,
+        "sha256": "05a0441e515ee7cbe8933ba345fdeec8600059d2d37bf413fed6e7a90350175f",
+        "size": 32205
+      },
+      {
+        "path": "docs/execution/events.jsonl",
+        "exists": true,
+        "sha256": "aa9da0db1e729c63a54739f6e1abfbe494a2a3665a3ee3a1035329eb3dfb5042",
+        "size": 715891
+      },
+      {
+        "path": "docs/execution/evidence.jsonl",
+        "exists": true,
+        "sha256": "b8c085357c625b9b9074a441ba5ff2f33f1008335f7d096ab0b1adbbca7fb9c6",
+        "size": 391541
+      },
+      {
+        "path": "docs/execution/state.json",
+        "exists": true,
+        "sha256": "2c38af96a17ee98d93e99286f4ad95b805571cb30c83a26f1f31c21966bfcfed",
+        "size": 72995
+      },
+      {
+        "path": "package.json",
+        "exists": true,
+        "sha256": "30d9ecc04babbb043dd84c7927b63442aad51ff72c66f505d0dda4a7bc81d346",
+        "size": 5904
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "exists": true,
+        "sha256": "fed72c1c3d6ef498a125edacdedbc3689add78ca1c36165a1f30766670c81046",
+        "size": 32031
+      },
+      {
+        "path": "scripts/audit_runtime_lane.py",
+        "exists": true,
+        "sha256": "2c52e035d5864338831d4bf14cff7f66347b918ab87aa32206b8e4414334f624",
+        "size": 8320
+      },
+      {
+        "path": "scripts/audit_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "df65fbeadb9460b2ab3e2b9e01fd85e4f7f98f26897310d6465656c72f157726",
+        "size": 7640
+      },
+      {
+        "path": "scripts/audit_workflow_readiness.py",
+        "exists": true,
+        "sha256": "dab955bc71399e0dd28caab18adf2c75d7e171ce2726b06c9b42e974b188740b",
+        "size": 30183
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "exists": true,
+        "sha256": "b5c70b73302606f88df8dbec04bb321f44f097237fd3f803d6165d65e3260a1a",
+        "size": 126075
+      },
+      {
+        "path": "scripts/test_execution_progress.py",
+        "exists": true,
+        "sha256": "9c58d9009ece5059de041b63a70e91a076f0156d25e67b62ae9abfbb4e9cd208",
+        "size": 45515
+      },
+      {
+        "path": "scripts/test_runtime_lane_audit.py",
+        "exists": true,
+        "sha256": "b92b72124e1bd52c5402985a89adcc91790609b86ee449e5bf0913c892baaa66",
+        "size": 555
+      },
+      {
+        "path": "scripts/test_strict_capture_preflight_audit.py",
+        "exists": true,
+        "sha256": "6587f73e6a8b3af3d8118702eb1e844746526105a99e8b0911eb3b8798fe31ee",
+        "size": 652
+      },
+      {
+        "path": "scripts/test_strict_capture_probe_binary.py",
+        "exists": true,
+        "sha256": "c1555149165c74a308bdce973425578686e78a90d9afae040bf592c6cee16693",
+        "size": 5381
+      },
+      {
+        "path": "scripts/test_verify_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "a64f59722cb263b7c027c822f8fb28340cb4dca81c2b3a65ddc29e444c92d316",
+        "size": 5780
+      },
+      {
+        "path": "scripts/test_workflow_readiness_audit.py",
+        "exists": true,
+        "sha256": "2e7e31d1702a3fc2a946f3d6745abc3475878f4a8e81846a2be85ec2c2f99af2",
+        "size": 1060
+      },
+      {
+        "path": "scripts/verify_app_runtime_launch.py",
+        "exists": true,
+        "sha256": "1f2c9544567550b705c0959970980beea40ad87e0850a9a3a3749abf40d0108e",
+        "size": 13671
+      },
+      {
+        "path": "scripts/verify_strict_capture_preflight.py",
+        "exists": true,
+        "sha256": "4cf2ee63b97d8655269204021301266aa1fcb7ebf5835894fb3279f186d0444b",
+        "size": 18392
+      },
+      {
+        "path": "scripts/verify_window_identity.py",
+        "exists": true,
+        "sha256": "aab54b778f024d0cba44908a3ae7167b2ba76e052be5f0420cdcc8a2c3a1c6dc",
+        "size": 14165
+      },
+      {
+        "path": "src-tauri/src/bin/strict_capture_probe.rs",
+        "exists": true,
+        "sha256": "e4001511141e8b2d43ec8c79b2f4ce55a869cb54d50691f8576341676c96e40a",
+        "size": 13548
+      }
+    ],
+    "workingTreeFingerprint": "sha256:aca68742d01c8ae39e5966166bdccc44dc72ab14edec9dbed00a73d9de52989c"
+  },
+  "gitDiffSha256": "c473b429d70c1088c4b5c3a9a8c638049cd3dc2db9ce1a73d81cf9ec52cac7e9",
+  "dirtyFileHashes": [
+    {
+      "path": "docs/execution/STATUS.md",
+      "exists": true,
+      "sha256": "3d845b92c97ba12cb9033d46b6d784477c55fd2b4f903fc445a72901adddd6f9",
+      "size": 14814
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json",
+      "exists": true,
+      "sha256": "075dcf21c474c97f064ad38b9150917ca5f44cb90e06b3ce8998d831dc338c04",
+      "size": 17316
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json",
+      "exists": true,
+      "sha256": "c10e3a3d90fc1613fe47fbc9c945aa867ac8b74999dcd1263e0b3042a7b4c042",
+      "size": 18623
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json",
+      "exists": true,
+      "sha256": "9c0ecfe5f5c8b154c33fb5b75e2c1d7af9e1e08865521fb30b035eb75e8f0d74",
+      "size": 19857
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json",
+      "exists": true,
+      "sha256": "01901aaaa79ca283055e0968a96fe0222154192691cc892808d879011ecce676",
+      "size": 24451
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json",
+      "exists": true,
+      "sha256": "476e9923104309586fefb3a955aefee47880aa0ec6aef7ef0b0880bb387a05f9",
+      "size": 30400
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json",
+      "exists": true,
+      "sha256": "07e7867057dbbfea65376b2ff1ca3528532d3823436f007d4a37da1f50075921",
+      "size": 32225
+    },
+    {
+      "path": "docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json",
+      "exists": true,
+      "sha256": "05a0441e515ee7cbe8933ba345fdeec8600059d2d37bf413fed6e7a90350175f",
+      "size": 32205
+    },
+    {
+      "path": "docs/execution/events.jsonl",
+      "exists": true,
+      "sha256": "aa9da0db1e729c63a54739f6e1abfbe494a2a3665a3ee3a1035329eb3dfb5042",
+      "size": 715891
+    },
+    {
+      "path": "docs/execution/evidence.jsonl",
+      "exists": true,
+      "sha256": "b8c085357c625b9b9074a441ba5ff2f33f1008335f7d096ab0b1adbbca7fb9c6",
+      "size": 391541
+    },
+    {
+      "path": "docs/execution/state.json",
+      "exists": true,
+      "sha256": "2c38af96a17ee98d93e99286f4ad95b805571cb30c83a26f1f31c21966bfcfed",
+      "size": 72995
+    },
+    {
+      "path": "package.json",
+      "exists": true,
+      "sha256": "30d9ecc04babbb043dd84c7927b63442aad51ff72c66f505d0dda4a7bc81d346",
+      "size": 5904
+    },
+    {
+      "path": "scripts/audit_execution_state.py",
+      "exists": true,
+      "sha256": "fed72c1c3d6ef498a125edacdedbc3689add78ca1c36165a1f30766670c81046",
+      "size": 32031
+    },
+    {
+      "path": "scripts/audit_runtime_lane.py",
+      "exists": true,
+      "sha256": "2c52e035d5864338831d4bf14cff7f66347b918ab87aa32206b8e4414334f624",
+      "size": 8320
+    },
+    {
+      "path": "scripts/audit_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "df65fbeadb9460b2ab3e2b9e01fd85e4f7f98f26897310d6465656c72f157726",
+      "size": 7640
+    },
+    {
+      "path": "scripts/audit_workflow_readiness.py",
+      "exists": true,
+      "sha256": "dab955bc71399e0dd28caab18adf2c75d7e171ce2726b06c9b42e974b188740b",
+      "size": 30183
+    },
+    {
+      "path": "scripts/execution_progress.py",
+      "exists": true,
+      "sha256": "b5c70b73302606f88df8dbec04bb321f44f097237fd3f803d6165d65e3260a1a",
+      "size": 126075
+    },
+    {
+      "path": "scripts/test_execution_progress.py",
+      "exists": true,
+      "sha256": "9c58d9009ece5059de041b63a70e91a076f0156d25e67b62ae9abfbb4e9cd208",
+      "size": 45515
+    },
+    {
+      "path": "scripts/test_runtime_lane_audit.py",
+      "exists": true,
+      "sha256": "b92b72124e1bd52c5402985a89adcc91790609b86ee449e5bf0913c892baaa66",
+      "size": 555
+    },
+    {
+      "path": "scripts/test_strict_capture_preflight_audit.py",
+      "exists": true,
+      "sha256": "6587f73e6a8b3af3d8118702eb1e844746526105a99e8b0911eb3b8798fe31ee",
+      "size": 652
+    },
+    {
+      "path": "scripts/test_strict_capture_probe_binary.py",
+      "exists": true,
+      "sha256": "c1555149165c74a308bdce973425578686e78a90d9afae040bf592c6cee16693",
+      "size": 5381
+    },
+    {
+      "path": "scripts/test_verify_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "a64f59722cb263b7c027c822f8fb28340cb4dca81c2b3a65ddc29e444c92d316",
+      "size": 5780
+    },
+    {
+      "path": "scripts/test_workflow_readiness_audit.py",
+      "exists": true,
+      "sha256": "2e7e31d1702a3fc2a946f3d6745abc3475878f4a8e81846a2be85ec2c2f99af2",
+      "size": 1060
+    },
+    {
+      "path": "scripts/verify_app_runtime_launch.py",
+      "exists": true,
+      "sha256": "1f2c9544567550b705c0959970980beea40ad87e0850a9a3a3749abf40d0108e",
+      "size": 13671
+    },
+    {
+      "path": "scripts/verify_strict_capture_preflight.py",
+      "exists": true,
+      "sha256": "4cf2ee63b97d8655269204021301266aa1fcb7ebf5835894fb3279f186d0444b",
+      "size": 18392
+    },
+    {
+      "path": "scripts/verify_window_identity.py",
+      "exists": true,
+      "sha256": "aab54b778f024d0cba44908a3ae7167b2ba76e052be5f0420cdcc8a2c3a1c6dc",
+      "size": 14165
+    },
+    {
+      "path": "src-tauri/src/bin/strict_capture_probe.rs",
+      "exists": true,
+      "sha256": "e4001511141e8b2d43ec8c79b2f4ce55a869cb54d50691f8576341676c96e40a",
+      "size": 13548
+    }
+  ],
+  "eventTail": {
+    "seq": 491,
+    "id": "EVT-0491",
+    "hash": "sha256:2c26eb9e3e70d0e3bbaf65cae0f2367ddfec10b4b4a0a9981f6d0f8118b48ede"
+  },
+  "evidenceTail": {
+    "seq": 187,
+    "id": "EVD-0187",
+    "hash": "sha256:094b20f5013cb264384b8f85a58f1b9c088438d62a08a3e98084e2d401d4dcb5"
+  },
+  "inFlightAction": null,
+  "runtime": {
+    "observedAt": "2026-07-13T23:59:54Z",
+    "staleAfterSeconds": 300,
+    "managedProcesses": [
+      {
+        "pid": 61780,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "exePath": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+        "cwd": "E:\\Project\\Common\\mhxy-shikong-control",
+        "commandLine": "E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+        "creationTime": "2026-07-13T21:32:16Z",
+        "ownership": "created_by_current_run",
+        "ownershipEvidence": [
+          "goal-externalAuthorization-local_app_run_owned_process_only",
+          "cwd=E:\\Project\\Common\\mhxy-shikong-control",
+          "exePath=E:\\Project\\Common\\mhxy-shikong-control\\src-tauri\\target-p4-s2-rebind\\debug\\mhxy-shikong-control.exe",
+          "exeSha256=d15717f597d274086c492dfde576126165da667c453de306780a8eb4993b7093",
+          "expectedHead=3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+          "verifier=current-app-launch-v1",
+          "exeSha256=d15717f597d274086c492dfde576126165da667c453de306780a8eb4993b7093",
+          "observedHead=3e6066660d7774f94b5cf4f1ed21631bb7d38701",
+          "actionId=ACT-P4S2-APP-LAUNCH-005"
+        ],
+        "cleanupAllowed": true,
+        "createdByRunId": "RUN-20260710-CONTINUITY-BASELINE",
+        "createdByActionId": "ACT-P4S2-APP-LAUNCH-005",
+        "createdAt": "2026-07-13T21:32:19Z",
+        "present": true,
+        "lastObservedAt": "2026-07-13T21:32:19Z"
+      }
+    ],
+    "observedExternalProcesses": [
+      {
+        "pid": 42432,
+        "name": "mhxy-shikong-control.exe",
+        "role": "旧控制器历史线索",
+        "ownership": "preexisting",
+        "creationTime": "2026-07-09T15:20:29+08:00",
+        "identityLimit": "本轮未停止；当前未发现",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:48Z",
+        "observedAbsentAt": "2026-07-11T18:46:48Z"
+      },
+      {
+        "pid": 26056,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 A",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:37.972416+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:49Z",
+        "lastSeenAt": "2026-07-10T12:23:34Z",
+        "observedAbsentAt": "2026-07-11T18:46:49Z"
+      },
+      {
+        "pid": 52448,
+        "name": "MyGame_x64r.exe",
+        "role": "历史游戏窗口线索 B",
+        "ownership": "user_preexisting",
+        "creationTime": "2026-07-10T00:55:23.169428+08:00",
+        "identityLimit": "ExecutablePath/CommandLine unavailable; HWND/title only read-only observed; no live authorization",
+        "cleanupAllowed": false,
+        "present": false,
+        "lastObservedAt": "2026-07-11T18:46:50Z",
+        "lastSeenAt": "2026-07-10T12:23:35Z",
+        "observedAbsentAt": "2026-07-11T18:46:50Z"
+      },
+      {
+        "pid": 12744,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "task-owned",
+        "present": false,
+        "creationTime": "2026-07-13T08:54:11Z",
+        "lastObservedAt": "2026-07-13T09:08:55Z",
+        "lastSeenAt": "2026-07-13T08:54:26Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T09:08:55Z"
+      },
+      {
+        "pid": 16244,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T09:11:08Z",
+        "lastObservedAt": "2026-07-13T10:06:43Z",
+        "lastSeenAt": "2026-07-13T10:06:31Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:06:43Z"
+      },
+      {
+        "pid": 18332,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:08:03Z",
+        "lastObservedAt": "2026-07-13T10:22:31Z",
+        "lastSeenAt": "2026-07-13T10:09:15Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:22:31Z"
+      },
+      {
+        "pid": 50936,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:22:38Z",
+        "lastObservedAt": "2026-07-13T10:24:50Z",
+        "lastSeenAt": "2026-07-13T10:22:39Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T10:24:50Z"
+      },
+      {
+        "pid": 80388,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T10:24:52Z",
+        "lastObservedAt": "2026-07-13T11:45:45Z",
+        "lastSeenAt": "2026-07-13T10:24:53Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T11:45:45Z"
+      },
+      {
+        "pid": 2960,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T11:47:22Z",
+        "lastObservedAt": "2026-07-13T11:52:56Z",
+        "lastSeenAt": "2026-07-13T11:47:23Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T11:52:56Z"
+      },
+      {
+        "pid": 73840,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": false,
+        "creationTime": "2026-07-13T11:52:58Z",
+        "lastObservedAt": "2026-07-13T21:31:49Z",
+        "lastSeenAt": "2026-07-13T11:53:38Z",
+        "cleanupAllowed": false,
+        "observedAbsentAt": "2026-07-13T21:31:49Z"
+      },
+      {
+        "pid": 1832,
+        "name": "MyGame_x64r.exe",
+        "role": "game-client",
+        "ownership": "user_preexisting",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-13T11:53:37Z",
+        "lastSeenAt": "2026-07-13T11:53:37Z",
+        "creationTime": "2026-07-13T10:23:04Z"
+      },
+      {
+        "pid": 61780,
+        "name": "mhxy-shikong-control.exe",
+        "role": "controller-app",
+        "ownership": "created_by_current_run",
+        "present": true,
+        "creationTime": "2026-07-14T05:32:16+08:00",
+        "lastObservedAt": "2026-07-13T23:59:53Z",
+        "lastSeenAt": "2026-07-13T23:59:53Z",
+        "cleanupAllowed": false,
+        "identityLimit": "Read-only final observation: responsive controller window is present but runs the pre-current-build target-p4-s2-rebind executable; no restart or input."
+      },
+      {
+        "pid": 68420,
+        "name": "MyGame_x64r.exe",
+        "role": "game-client",
+        "ownership": "created_by_current_run",
+        "cleanupAllowed": false,
+        "present": true,
+        "lastObservedAt": "2026-07-13T23:59:54Z",
+        "lastSeenAt": "2026-07-13T23:59:54Z",
+        "creationTime": "2026-07-14T05:33:48+08:00",
+        "identityLimit": "Read-only final observation: main HWND 33818884 title is 错误; it is not an eligible 梦幻西游：时空 game window and no game input was sent."
+      }
+    ],
+    "managedArtifacts": [
+      {
+        "path": "AGENTS.md",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "docs/execution/",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/execution_progress.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "scripts/audit_execution_state.py",
+        "ownership": "created_by_continuity_baseline",
+        "cleanupAllowed": false
+      }
+    ],
+    "observedArtifacts": [
+      {
+        "path": "assets/resource/ShiKong/reports/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": "src-tauri/target*/",
+        "ownership": "preexisting_ignored",
+        "cleanupAllowed": false
+      },
+      {
+        "path": ".codex-window-*.png",
+        "ownership": "preexisting_ignored_unknown",
+        "cleanupAllowed": false
+      }
+    ],
+    "lastWindowIdentity": {
+      "targetIdentity": "controller-app:61780@mhxy-shikong-control.exe:27662846",
+      "verified": true,
+      "observedAt": "2026-07-13T21:32:49Z",
+      "evidenceId": "EVD-0172",
+      "identity": {
+        "hwnd": 27662846,
+        "pid": 61780,
+        "title": "时空任务编排器",
+        "process": "mhxy-shikong-control.exe",
+        "clientWidth": 1460,
+        "clientHeight": 880,
+        "privilege": "same"
+      }
+    }
+  },
+  "resume": {
+    "blockers": [
+      "P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动"
+    ],
+    "nextCommands": [
+      "npm run execution:resume-check"
+    ],
+    "doNotDo": [
+      "未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push"
+    ],
+    "lastSafeResumeSnapshotId": "CP-0043"
+  },
+  "safeToResume": true,
+  "safeToRunLiveInput": false,
+  "liveScope": null,
+  "hash": "sha256:8ff99909b8bc6531dab80577914652d9949a8ddb54fd9af25b2181f39dee3895"
+}

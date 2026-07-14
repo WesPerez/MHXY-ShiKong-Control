@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -25,17 +26,24 @@ def function_block(source: str, signature: str) -> str:
     start = source.find(signature)
     if start < 0:
         return ""
-    end = source.find("\nfn ", start + len(signature))
-    return source[start:] if end < 0 else source[start:end]
+    following = source[start + len(signature) :]
+    next_function = re.search(r"\n(?:pub\s+)?fn\s+", following)
+    end = start + len(signature) + next_function.start() if next_function else len(source)
+    return source[start:end]
 
 
 def audit(project_root: Path) -> dict[str, object]:
     rust_main = (project_root / "src-tauri/src/main.rs").read_text(encoding="utf-8")
     lane = (project_root / "src-tauri/src/runtime/window_lane.rs").read_text(encoding="utf-8")
     ocr_pool = (project_root / "src-tauri/src/runtime/ocr_pool.rs").read_text(encoding="utf-8")
+    vision_path = project_root / "src-tauri/src/runtime/vision_match.rs"
+    vision_match = vision_path.read_text(encoding="utf-8") if vision_path.is_file() else ""
     frontend = (project_root / "src/main.js").read_text(encoding="utf-8")
     package = json.loads((project_root / "package.json").read_text(encoding="utf-8"))
     failures: list[str] = []
+
+    if not vision_match:
+        failures.append("budgeted template matching module is missing")
 
     for field in ["session_id", "step_id", "deadline_ms", "cancel_token_id"]:
         require(failures, lane, f"pub {field}:", f"execution context is missing {field}")
@@ -84,7 +92,7 @@ def audit(project_root: Path) -> dict[str, object]:
     ]:
         require(failures, rust_main, token, message)
 
-    matcher = function_block(rust_main, "fn match_template(")
+    matcher = function_block(vision_match, "pub fn match_template_budgeted(")
     for token, message in [
         ("CHECKPOINT_PIXEL_BUDGET", "template matching must define a bounded checkpoint budget"),
         ("pixels_since_checkpoint", "template matching must track work between checkpoints"),
@@ -129,7 +137,8 @@ def audit(project_root: Path) -> dict[str, object]:
             "executionContextFields": 4,
             "frontendExecutionContexts": frontend.count("execution: {"),
             "runtimeTests": lane.count("#[test]"),
-            "templateCheckpointTests": rust_main.count("template_match_stops_on_"),
+            "templateCheckpointTests": vision_match.count("checkpoint_can_cancel_search")
+            + rust_main.count("template_match_stops_on_"),
         },
     }
 

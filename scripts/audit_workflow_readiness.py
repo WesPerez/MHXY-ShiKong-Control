@@ -13,6 +13,7 @@ from pathlib import Path
 
 REQUIRED_FILES = [
     "src/main.js",
+    "src/home-vitality-core.js",
     "assets/resource/ShiKong/template_mapping.json",
     "assets/resource/ShiKong/template_text_fallbacks.json",
     "assets/resource/ShiKong/app_launch.example.json",
@@ -279,17 +280,68 @@ def parse_step_defaults(source: str) -> dict[str, dict[str, str]]:
     return defaults
 
 
-def parse_blueprints(source: str) -> list[dict[str, object]]:
+def extract_object_property_array(source: str, name: str) -> str:
+    marker = re.search(rf"\b{re.escape(name)}\s*:\s*\[", source)
+    if not marker:
+        return "[]"
+    start = source.find("[", marker.end() - 1)
+    return source[start : find_matching(source, start, "[", "]") + 1]
+
+
+def parse_blueprint_steps(source: str) -> list[dict[str, str]]:
+    steps = []
+    for item in split_top_level_objects(extract_object_property_array(source, "steps")):
+        fields = object_fields(item)
+        if "type" in fields and "target" in fields:
+            steps.append(fields)
+    return steps
+
+
+def parse_blueprint_object(source: str) -> dict[str, object]:
+    fields = object_fields(source)
+    return {
+        "id": fields.get("id", ""),
+        "label": fields.get("label", ""),
+        "steps": parse_blueprint_steps(source),
+    }
+
+
+def parse_string_constant(source: str, name: str) -> str:
+    match = re.search(
+        rf"\b(?:const|let|var)\s+{re.escape(name)}\s*=\s*(\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*')",
+        source,
+    )
+    return js_unquote(match.group(1)) if match else ""
+
+
+def parse_home_vitality_blueprint(source: str) -> dict[str, object]:
+    blueprint = parse_blueprint_object(extract_object(source, "HOME_VITALITY_BLUEPRINT"))
+    if not blueprint["id"]:
+        blueprint["id"] = parse_string_constant(source, "HOME_VITALITY_BLUEPRINT_ID")
+    return blueprint
+
+
+def parse_blueprints(
+    source: str,
+    external_blueprints: dict[str, dict[str, object]] | None = None,
+) -> list[dict[str, object]]:
+    external_blueprints = external_blueprints or {}
     blueprints = []
     for chunk in split_top_level_objects(extract_array(source, "workflowBlueprints")):
-        fields = object_fields(chunk)
-        steps = []
-        for step_match in re.finditer(r"\{\s*type:\s*\"([^\"]+)\"(?P<body>.*?)\}", chunk, re.S):
-            body = step_match.group(0)
-            step_fields = object_fields(body)
-            if "type" in step_fields and "target" in step_fields:
-                steps.append(step_fields)
-        blueprints.append({"id": fields.get("id", ""), "label": fields.get("label", ""), "steps": steps})
+        external = next(
+            (blueprint for symbol, blueprint in external_blueprints.items() if re.search(rf"\b{re.escape(symbol)}\b", chunk)),
+            None,
+        )
+        if external is not None:
+            blueprints.append(
+                {
+                    "id": external.get("id", ""),
+                    "label": external.get("label", ""),
+                    "steps": [dict(step) for step in external.get("steps", [])],
+                }
+            )
+            continue
+        blueprints.append(parse_blueprint_object(chunk))
     return blueprints
 
 
@@ -479,6 +531,7 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
         return {"passed": False, "failures": failures, "warnings": warnings, "reports": reports, "counts": counts}
 
     source = read_text(project_root / "src/main.js")
+    home_vitality_source = read_text(project_root / "src/home-vitality-core.js")
     mapping = json.loads(read_text(project_root / "assets/resource/ShiKong/template_mapping.json"))
     templates = mapping.get("templates", mapping)
     if not isinstance(templates, dict):
@@ -489,7 +542,10 @@ def audit(project_root: Path, strict_placeholder_targets: bool = False) -> dict[
     step_types = parse_step_types(source)
     step_defaults = parse_step_defaults(source)
     bindings = parse_bindings(source)
-    blueprints = parse_blueprints(source)
+    blueprints = parse_blueprints(
+        source,
+        {"HOME_VITALITY_BLUEPRINT": parse_home_vitality_blueprint(home_vitality_source)},
+    )
     sample_workflows = [
         with_default_recovery_fragment(workflow)
         for workflow in parse_sample_workflows(source, step_defaults)

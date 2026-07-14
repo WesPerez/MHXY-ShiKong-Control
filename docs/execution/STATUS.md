@@ -1,6 +1,6 @@
 <!-- generated-by: scripts/execution_progress.py; do-not-edit-manually -->
-<!-- state-digest: sha256:9b19c8b6cd951c121de171af81f36809e7e8bbae7a2a6ce082c82330ff4d725c -->
-<!-- checkpoint-id: CP-0037 -->
+<!-- state-digest: sha256:937dc303d760432fc170ddbd7536003a11b4d27a85910c2e4ec7a3ad03bb69d8 -->
+<!-- checkpoint-id: CP-0052 -->
 # 长任务执行状态
 
 > 本页由 `scripts/execution_progress.py` 从 `state.json`、事件账本和证据账本生成。
@@ -8,26 +8,26 @@
 
 ## 恢复首屏
 
-- 恢复结论：**可恢复代码工作；其它副作用仍需各自门禁**
-- 更新时间（UTC）：`2026-07-13T11:55:21Z`
-- 更新时间（北京时间）：`2026-07-13T19:55:21+08:00`
+- 恢复结论：**STOP：存在未决副作用，只允许只读对账**
+- 更新时间（UTC）：`2026-07-14T10:59:28Z`
+- 更新时间（北京时间）：`2026-07-14T18:59:28+08:00`
 - 长期任务：`MHXY-AUTOMATION-WORKBENCH`
-- 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `1`
+- 运行：`RUN-20260710-CONTINUITY-BASELINE` / attempt `8`
 - 总体状态：`active`
 - 当前阶段：`P4`
-- 当前切片：`P4-S2` - Read-only game window identity for home-vitality live prep
-- 阶段状态：`in_progress`；切片状态：`verified`；动作状态：`none`
-- 当前切片验收：已满足 `3`，待验证或阻塞 `0`，合计 `3`
+- 当前切片：`P4-S5` - Home-vitality bounded live queue under elevated controller
+- 阶段状态：`in_progress`；切片状态：`in_progress`；动作状态：`running`
+- 当前切片验收：已满足 `0`，待验证或阻塞 `2`，合计 `2`
 - 本轮是否发送真实游戏输入：`false`
-- 当前工作：当前没有副作用动作在执行，停在下一动作之前
-- 最新当前有效证据：P4-S2 game-identity slice: core regression green（EVD-0164，当前工作区绑定有效）
-- 唯一下一动作：User: run controller elevated OR game non-elevated for privilege=same; then P4-S3 capture health + non-destructive wait_image on verified game HWND
-- 当前切片执行 blocker：game target elevated while controller not elevated; privilege=insufficient for live HWND input
-- 全局恢复/验收风险：P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
-- 最新 checkpoint：`CP-0037`；safeToResume=`true`；safeToRunLiveInput=`false`
-- 当前允许：只读审计、连续性元数据对账、当前切片内的代码工作。
-- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、真实游戏输入。
-- 运行观察（STATUS 生成时）：**新鲜**；observedAt=`2026-07-13T11:53:38Z`；年龄=`103s`；TTL=`300s`；expiresAt=`2026-07-13T11:58:38Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
+- 当前工作：未决动作 `ACT-P4S5-COMMIT-001` 处于 `running`，等待只读对账
+- 最新当前有效证据：P4-S5 pre-commit: python audits（EVD-0329，当前工作区绑定有效）
+- 唯一下一动作：对账未决副作用动作 ACT-P4S5-COMMIT-001；结果明确前禁止重放
+- 当前切片执行 blocker：none
+- 全局恢复/验收风险：Game HWND exists (PID 86812 / HWND 26157554) but controller privilege is insufficient for gated input.
+- 最新 checkpoint：`CP-0052`；safeToResume=`true`；safeToRunLiveInput=`false`
+- 当前允许：只读审计、连续性元数据对账。
+- 当前禁止：归属不明对象的清理或停止、未登记 intent 的副作用动作、重放未决动作、真实游戏输入。
+- 运行观察（STATUS 生成时）：**已过期**；observedAt=`2026-07-14T10:50:00Z`；年龄=`568s`；TTL=`300s`；expiresAt=`2026-07-14T10:55:00Z`。执行窗口/进程动作前以 `execution:resume-check` 的动态结果为准。
 
 ## 验收轴
 
@@ -35,8 +35,8 @@
 |---|---|---|
 | 代码表面能力 | `部分` | 源码已有 15 类步骤、任务/目标/队列/readiness/失败报告等表面能力，但大型文件耦合且真实闭环不足。 |
 | 自动测试 | `已过期` | P2-S2 verifier 配置、10 个测试发现和静态全回归通过；真实 Playwright UI 未执行；当前没有绑定现有 HEAD/工作树指纹的有效通过证据 |
-| 当前提交构建 | `已通过` | P4-S1 post-commit Vite EVD-0157 on 162a96a |
-| 当前提交应用已启动 | `已通过` | P4-S1 owned controller relaunch on 162a96a |
+| 当前提交构建 | `已过期` | 源码已新增 source-aware audit 修复，旧 build evidence 不再代表当前工作树。 |
+| 当前提交应用已启动 | `已过期` | 源码已新增 source-aware audit 修复，旧 app-runtime/window evidence 不再代表当前工作树。 |
 | 后台 HWND 输入已实际发送 | `未验证` | 当前 HEAD 没有应用 UI 到指定 hwnd 的真实输入通过证据。 |
 | 游戏后置状态已观察 | `未验证` | 没有绑定当前 HEAD、exe、workspace 和窗口身份的游戏后置状态证据。 |
 | 前台鼠标键盘未受影响 | `部分` | 静态安全审计只允许 PostMessageW 路径，但尚缺当前版本实测前后台 HWND、鼠标位置和用户并行操作证据。 |
@@ -62,71 +62,115 @@
 
 ### 范围
 
-- scripts/verify_window_identity.py
+- src/main.js
+- src/home-vitality-core.js
 - docs/execution
 
 ### 非目标
 
-- Do not send live game input
-- Do not claim home-vitality e2e complete
 - Do not stop user game process
+- Do not expand beyond home-vitality first vertical task
 
 ### 安全边界
 
+- Live input only via controller PostMessage path after manual confirmation
 - Game process is user_preexisting; cleanupAllowed=false
-- Read-only HWND/process identity only; no PostMessage or SendInput
 
 ### 验收条件
 
 | ID | 条件 | 状态 | 允许证据类别 | 证据 |
 |---|---|---|---|---|
-| `P4-S2-C1` | game client window identity verified read-only for MyGame_x64r with privilege sufficient for later gated input | `passed` | `window_identity` | `EVD-0161` |
-| `P4-S2-C2` | controller app window identity still verified read-only and distinct from game HWND | `passed` | `window_identity` | `EVD-0162` |
-| `P4-S2-C3` | core regression and Vite build remain green after game-identity slice | `passed` | `build`, `test` | `EVD-0163`, `EVD-0164` |
+| `P4-S5-C1` | bounded home-vitality input path executes with inputSent evidence only after manual confirmation and elevated window gates | `pending` | `live_input` | none |
+| `P4-S5-C2` | game postcondition observed for vitality change without claiming broader multi-task completion | `pending` | `live_outcome` | none |
 
 ## 当前动作
 
-- 当前没有未决副作用动作。
+- actionId：`ACT-P4S5-COMMIT-001`
+- 类型：`git_commit`
+- 目标：`HEAD`
+- 副作用级别：`git_commit`
+- 状态：`running`
 
 ## 下一步
 
-- 唯一下一动作：User: run controller elevated OR game non-elevated for privilege=same; then P4-S3 capture health + non-destructive wait_image on verified game HWND
+- 唯一下一动作：对账未决副作用动作 ACT-P4S5-COMMIT-001；结果明确前禁止重放
 - 命令：`npm run execution:resume-check`
 
 ## 阻塞与风险
 
 ### 阻塞
 
-- P2 UI 切片需要启动本任务构建的本地应用；externalAuthorization=appdata_backup_only 不包含进程启动
+- Game HWND exists (PID 86812 / HWND 26157554) but controller privilege is insufficient for gated input.
 
 ### 禁止盲目执行
 
-- 未扩展授权前不启动/停止应用、不发送游戏输入、不改写 AppData、不 commit/push
+- Do not stop MyGame_x64r without user request.
 
 ## Git 现场
 
 - 分支：`main`
-- observed HEAD：`162a96a9b9e65cf55a131a22b6c7870de70cec5d`
+- observed HEAD：`3e6066660d7774f94b5cf4f1ed21631bb7d38701`
 - verified HEAD：`162a96a9b9e65cf55a131a22b6c7870de70cec5d`
 - origin/main：`3eef34f8c4b115c94e2c3cd6adb93cf329a60ef9`
-- working tree fingerprint：`sha256:397ab1238db4077d2c250736f879c85f05bb345bd4a69f55f58aafd3dedfb098`
-- 最新 checkpoint：`CP-0037` (state_snapshot)
+- working tree fingerprint：`sha256:a4428ef5b84fc88f023baa90caf0ea78d6c7f0fa013c6fdb3695ff348a4f3493`
+- 最新 checkpoint：`CP-0052` (state_snapshot)
 - checkpoint safeToResume：`true`
 - checkpoint safeToRunLiveInput：`false`
 
 ### 当前非 ignored 改动
 
 - `docs/execution/STATUS.md`
-- `docs/execution/checkpoints/CP-0037-p4-s2-game-window-identity-insufficient-privilege.json`
+- `docs/execution/checkpoints/CP-0038-p4-s2-runtime-rebind.json`
+- `docs/execution/checkpoints/CP-0039-p4-s2-game-identity-rebind.json`
+- `docs/execution/checkpoints/CP-0040-p4-s2-game-no-window.json`
+- `docs/execution/checkpoints/CP-0041-p4-resume-before-s3.json`
+- `docs/execution/checkpoints/CP-0042-p4-strict-preflight-offline.json`
+- `docs/execution/checkpoints/CP-0043-p4-strict-preflight-hardened.json`
+- `docs/execution/checkpoints/CP-0044-p4-final-readonly-runtime.json`
+- `docs/execution/checkpoints/CP-0045-p4-s2-strict-preflight-identity-hardening.json`
+- `docs/execution/checkpoints/CP-0046-p4-home-vitality-offline-contract.json`
+- `docs/execution/checkpoints/CP-0047-p4-offline-manual-confirm-snapshot.json`
+- `docs/execution/checkpoints/CP-0048-p4-offline-contracts-final-bind.json`
+- `docs/execution/checkpoints/CP-0049-p4-controller-elevated.json`
+- `docs/execution/checkpoints/CP-0050-p4-s3-live-preflight-passed.json`
+- `docs/execution/checkpoints/CP-0051-p4-s4-offline-ready.json`
+- `docs/execution/checkpoints/CP-0052-p4-s5-pre-commit-offline-rebind.json`
 - `docs/execution/events.jsonl`
 - `docs/execution/evidence.jsonl`
 - `docs/execution/state.json`
+- `docs/next-agent-goal-prompt.md`
+- `index.html`
+- `package.json`
+- `scripts/audit_execution_state.py`
+- `scripts/audit_runtime_lane.py`
+- `scripts/audit_strict_capture_preflight.py`
+- `scripts/audit_workflow_readiness.py`
+- `scripts/execution_progress.py`
+- `scripts/test_execution_progress.py`
+- `scripts/test_home_vitality_core.mjs`
+- `scripts/test_manual_confirmation_core.mjs`
+- `scripts/test_runtime_lane_audit.py`
+- `scripts/test_strict_capture_preflight_audit.py`
+- `scripts/test_strict_capture_probe_binary.py`
+- `scripts/test_verify_strict_capture_preflight.py`
+- `scripts/test_workflow_readiness_audit.py`
+- `scripts/verify_app_runtime_launch.py`
+- `scripts/verify_strict_capture_preflight.py`
+- `scripts/verify_window_identity.py`
+- `src-tauri/src/bin/strict_capture_probe.rs`
+- `src-tauri/src/main.rs`
+- `src-tauri/src/runtime/vision_match.rs`
+- `src/home-vitality-core.js`
+- `src/main.js`
+- `src/manual-confirmation-core.js`
+- `src/target-library-core.js`
+- `src/workspace-normalization-core.js`
 
 ## 运行进程与产物
 
 ### 本轮管理的进程
 
-- PID `73840`：controller-app；cleanupAllowed=`true`
+- PID `61780`：controller-app；cleanupAllowed=`true`
 
 ### 只观察到的外部进程
 
@@ -139,8 +183,12 @@
 - PID `50936`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
 - PID `80388`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
 - PID `2960`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
-- PID `73840`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`created_by_current_run`，cleanupAllowed=`false`
-- PID `1832`：`MyGame_x64r.exe`，game-client；present=`true`，归属=`user_preexisting`，cleanupAllowed=`false`
+- PID `73840`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
+- PID `1832`：`MyGame_x64r.exe`，game-client；present=`false`，归属=`user_preexisting`，cleanupAllowed=`false`
+- PID `61780`：`mhxy-shikong-control.exe`，controller-app；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
+- PID `68420`：`MyGame_x64r.exe`，game-client；present=`false`，归属=`created_by_current_run`，cleanupAllowed=`false`
+- PID `86812`：`MyGame_x64r.exe`，game-client；present=`true`，归属=`user_preexisting`，cleanupAllowed=`false`
+- PID `71740`：`mhxy-shikong-control.exe`，controller-app；present=`true`，归属=`task_owned`，cleanupAllowed=`false`
 
 ### 本轮管理的产物
 
@@ -159,29 +207,29 @@
 
 | ID | 类型 | 原始结果 | 当前适用性 | 结论/原因 |
 |---|---|---|---|---|
-| `EVD-0157` | `build` | `passed` | `valid` | P4-S1 post-commit rebind on 162a96a: Vite build<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0158` | `source_audit` | `passed` | `valid` | P4-S1 post-commit rebind on 162a96a: offline source audit<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0159` | `test` | `passed` | `valid` | P4-S1 post-commit rebind on 162a96a: core regression<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0160` | `app_runtime` | `passed` | `valid` | Current-commit controller app launched and observed as created_by_current_run process<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0161` | `window_identity` | `passed` | `valid` | Verified live window identity for game-client (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0162` | `window_identity` | `passed` | `valid` | Verified live window identity for controller-app (read-only, no input)<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0163` | `build` | `passed` | `valid` | P4-S2 game-identity slice: Vite build green<br>绑定当前 HEAD、工作树指纹和受信来源 |
-| `EVD-0164` | `test` | `passed` | `valid` | P4-S2 game-identity slice: core regression green<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0322` | `test` | `passed` | `stale` | P4-S5 rebind: Rust static profile retry after flaky ocr_pool queue_full test<br>证据工作树指纹与当前现场不同 |
+| `EVD-0323` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据工作树指纹与当前现场不同 |
+| `EVD-0324` | `window_identity` | `passed` | `stale` | Verified live window identity for game-client (read-only, no input)<br>证据工作树指纹与当前现场不同 |
+| `EVD-0325` | `live_preflight` | `passed` | `stale` | Strict target capture completed bounded zero-input wait_image preflight<br>证据工作树指纹与当前现场不同 |
+| `EVD-0326` | `test` | `passed` | `valid` | P4-S5 pre-commit: core tests after supporting live evidence verifier patch<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0327` | `build` | `passed` | `valid` | P4-S5 pre-commit: Vite build after supporting live evidence verifier patch<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0328` | `source_audit` | `passed` | `valid` | P4-S5 pre-commit: home-vitality offline audit<br>绑定当前 HEAD、工作树指纹和受信来源 |
+| `EVD-0329` | `test` | `passed` | `valid` | P4-S5 pre-commit: python audits<br>绑定当前 HEAD、工作树指纹和受信来源 |
 
 ## 最近事件
 
 | seq | 时间 | 类型 | 摘要 |
 |---:|---|---|---|
-| 430 | `2026-07-13T11:53:03Z` | `slice_state_changed` | 更新验收轴 currentCommitAppLaunched -> passed |
-| 431 | `2026-07-13T11:53:37Z` | `runtime_observation` | Observed user-preexisting game client MyGame_x64r.exe pid=1832 for P4 live prep (read-only) |
-| 432 | `2026-07-13T11:53:38Z` | `runtime_observation` | Owned controller still present pid=73840 |
-| 433 | `2026-07-13T11:53:38Z` | `slice_started` | 开始切片 P4-S2：Read-only game window identity for home-vitality live prep |
-| 434 | `2026-07-13T11:53:45Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
-| 435 | `2026-07-13T11:53:47Z` | `runtime_observation` | Verified live window identity for controller-app (read-only, no input) |
-| 436 | `2026-07-13T11:53:50Z` | `test_run` | P4-S2 game-identity slice: Vite build green |
-| 437 | `2026-07-13T11:54:51Z` | `test_run` | P4-S2 game-identity slice: core regression green |
-| 438 | `2026-07-13T11:55:20Z` | `slice_state_changed` | P4-S2 game HWND identity verified read-only (EVD-0161 privilege=insufficient elevated game vs non-elevated controller); controller HWND distinct (EVD-0162); build/test green. Live input still fail-closed until elevation/handoff. |
-| 439 | `2026-07-13T11:55:21Z` | `checkpoint` | 创建 CP-0037：Game and controller window identities recorded; live input blocked by privilege mismatch |
+| 668 | `2026-07-14T10:48:05Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
+| 669 | `2026-07-14T10:49:34Z` | `runtime_observation` | Verified live window identity for game-client (read-only, no input) |
+| 670 | `2026-07-14T10:50:00Z` | `runtime_observation` | Strict target capture completed bounded zero-input wait_image preflight |
+| 671 | `2026-07-14T10:56:32Z` | `decision` | P4-S5 progress: privilege elevated confirmed (game 86812 + controller 71740); supporting window_identity EVD-0324 and zero-input live_preflight EVD-0325 rebound. Live game_input still blocked until non-metadata dirty is committed, verifiedHead advanced, currentCommitBuilt/AppLaunched pass, and pre-live checkpoint sets safeToRunLiveInput. |
+| 672 | `2026-07-14T10:57:54Z` | `test_run` | P4-S5 pre-commit: core tests after supporting live evidence verifier patch |
+| 673 | `2026-07-14T10:58:01Z` | `test_run` | P4-S5 pre-commit: Vite build after supporting live evidence verifier patch |
+| 674 | `2026-07-14T10:58:05Z` | `evidence_recorded` | P4-S5 pre-commit: home-vitality offline audit |
+| 675 | `2026-07-14T10:58:19Z` | `test_run` | P4-S5 pre-commit: python audits |
+| 676 | `2026-07-14T10:58:33Z` | `checkpoint` | 创建 CP-0052：Before committing P4 offline rebind and supporting live-evidence verifier paths; tests EVD-0326 build EVD-0327 home EVD-0328 audits EVD-0329; elevated identity EVD-0324 preflight EVD-0325; no live input yet. |
+| 677 | `2026-07-14T10:59:28Z` | `action_intent` | 登记副作用动作 ACT-P4S5-COMMIT-001 |
 
 ## 异常恢复
 

@@ -19,6 +19,7 @@ import execution_progress as progress
 
 
 VERIFIER_NAME = "window-identity-v1"
+INPUT_ELIGIBLE_PRIVILEGES = {"same", "elevated"}
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -182,6 +183,13 @@ def privilege_label(controller_elevated: bool, target_elevated: Optional[bool]) 
     return "unknown"
 
 
+def require_input_eligible_privilege(privilege: str, required: bool) -> None:
+    if required and privilege not in INPUT_ELIGIBLE_PRIVILEGES:
+        raise RuntimeError(
+            "target privilege {!r} is not eligible for later gated input".format(privilege)
+        )
+
+
 def verify_window_identity(
     criterion_id: str,
     command_text: str,
@@ -190,6 +198,9 @@ def verify_window_identity(
     expected_title_contains: str,
     expected_process_name: str,
     role: str,
+    require_input_eligible: bool,
+    controller_pid: Optional[int] = None,
+    dependency_for_preflight: bool = False,
 ) -> Dict[str, Any]:
     # ProgressLock is non-reentrant. Validate criterion under lock, then observe and
     # emit specialized evidence outside so record_evidence can take its own lock.
@@ -200,7 +211,29 @@ def verify_window_identity(
             item.get("id"): item for item in state.get("activeSlice", {}).get("acceptanceCriteria", [])
         }
         criterion = active_criteria.get(criterion_id)
-        if not criterion or "window_identity" not in criterion.get("requiredEvidenceCategories", []):
+        if dependency_for_preflight:
+            active_slice = state.get("activeSlice") or {}
+            has_live_preflight = any(
+                isinstance(item.get("requiredEvidenceCategories"), list)
+                and "live_preflight" in item.get("requiredEvidenceCategories", [])
+                for item in active_slice.get("acceptanceCriteria", [])
+            )
+            # Supporting identity for a live slice may be recorded without a
+            # dedicated live_preflight criterion so intermediate gates do not
+            # falsely close live_input/live_outcome acceptance criteria.
+            supporting_live_slice = (
+                active_slice.get("status") == "in_progress"
+                and isinstance(active_slice.get("id"), str)
+                and bool(active_slice.get("id"))
+            )
+            if not has_live_preflight and not supporting_live_slice:
+                raise RuntimeError(
+                    "dependency-for-preflight requires an active live_preflight acceptance criterion "
+                    "or an in_progress live slice for unbound supporting evidence"
+                )
+            if role != "game-client":
+                raise RuntimeError("dependency-for-preflight only supports game-client role")
+        elif not criterion or "window_identity" not in criterion.get("requiredEvidenceCategories", []):
             raise RuntimeError("criterion is not an active window_identity acceptance criterion")
         observed_head = (state.get("git") or {}).get("observedHead")
         working_tree_fingerprint = (state.get("git") or {}).get("workingTreeFingerprint")
@@ -246,9 +279,19 @@ def verify_window_identity(
             "process name {!r} does not match expected {!r}".format(process_name, expected_process_name)
         )
 
-    controller_elevated = current_process_elevated()
+    if controller_pid is None:
+        controller_elevated = current_process_elevated()
+        controller_pid_used = None
+    else:
+        controller_elevated = process_is_elevated(int(controller_pid))
+        if controller_elevated is None:
+            raise RuntimeError(
+                "unable to inspect controller pid {} elevation for privilege comparison".format(controller_pid)
+            )
+        controller_pid_used = int(controller_pid)
     target_elevated = process_is_elevated(pid)
-    privilege = privilege_label(controller_elevated, target_elevated)
+    privilege = privilege_label(bool(controller_elevated), target_elevated)
+    require_input_eligible_privilege(privilege, require_input_eligible)
     target_identity = "{}:{}@{}:{}".format(role, pid, process_name, hwnd)
 
     report_dir = (
@@ -273,13 +316,15 @@ def verify_window_identity(
         "clientWidth": width,
         "clientHeight": height,
         "privilege": privilege,
-        "controllerElevated": controller_elevated,
+        "controllerElevated": bool(controller_elevated),
+        "controllerPid": controller_pid_used,
         "targetElevated": target_elevated,
         "targetIdentity": target_identity,
         "observedHead": observed_head,
         "workingTreeFingerprint": working_tree_fingerprint,
         "readOnly": True,
         "inputSent": False,
+        "inputEligibleRequired": require_input_eligible,
     }
     report_path.write_text(json.dumps(verification, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -299,7 +344,7 @@ def verify_window_identity(
         client_height=height,
         privilege=privilege,
         exit_code=0,
-        criterion=[criterion_id],
+        criterion=[] if dependency_for_preflight else [criterion_id],
         artifact=[str(report_path.relative_to(progress.ROOT)).replace("\\", "/")],
         input_sent=False,
         foreground_unchanged=None,
@@ -327,12 +372,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     if os.name != "nt":
         raise RuntimeError("window identity verifier requires Windows")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--criterion", required=True)
+    parser.add_argument("--criterion", required=False, default="P4-S3-C1")
     parser.add_argument("--pid", type=int)
     parser.add_argument("--hwnd", type=int)
     parser.add_argument("--title-contains", default="")
     parser.add_argument("--process-name", default="")
     parser.add_argument("--role", default="window")
+    parser.add_argument("--require-input-eligible", action="store_true")
+    parser.add_argument("--controller-pid", type=int, help="optional controller process used for privilege comparison")
+    parser.add_argument("--dependency-for-preflight", action="store_true", help="record game-client identity as live_preflight dependency without attaching slice criteria")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     command_text = "python -B scripts/verify_window_identity.py --criterion {}".format(args.criterion)
@@ -346,6 +394,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         command_text += " --process-name {}".format(args.process_name)
     if args.role:
         command_text += " --role {}".format(args.role)
+    if args.require_input_eligible:
+        command_text += " --require-input-eligible"
+    if args.controller_pid is not None:
+        command_text += " --controller-pid {}".format(args.controller_pid)
+    if args.dependency_for_preflight:
+        command_text += " --dependency-for-preflight"
     result = verify_window_identity(
         args.criterion,
         command_text,
@@ -354,6 +408,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         args.title_contains,
         args.process_name,
         args.role,
+        args.require_input_eligible,
+        controller_pid=args.controller_pid,
+        dependency_for_preflight=args.dependency_for_preflight,
     )
     if args.json:
         print(json.dumps(result, ensure_ascii=False))

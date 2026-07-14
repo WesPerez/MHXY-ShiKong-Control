@@ -107,7 +107,36 @@ def resolve_exe(path_text: str) -> Path:
     return path
 
 
-def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait_seconds: float) -> Dict[str, Any]:
+def runtime_evidence_criteria(
+    state: Dict[str, Any],
+    criterion_id: Optional[str],
+    gate_rebind: bool,
+) -> List[str]:
+    """Resolve the one explicit scope allowed for an app-runtime verifier run."""
+    if gate_rebind:
+        if criterion_id:
+            raise RuntimeError("gate-rebind cannot also target an acceptance criterion")
+        return []
+
+    if not criterion_id:
+        raise RuntimeError("app launch requires --criterion or --gate-rebind")
+
+    active_criteria = {
+        item.get("id"): item for item in state.get("activeSlice", {}).get("acceptanceCriteria", [])
+    }
+    criterion = active_criteria.get(criterion_id)
+    if not criterion or "app_runtime" not in criterion.get("requiredEvidenceCategories", []):
+        raise RuntimeError("criterion is not an active app_runtime acceptance criterion")
+    return [criterion_id]
+
+
+def verify_and_launch(
+    action_id: str,
+    criterion_id: Optional[str],
+    gate_rebind: bool,
+    command_text: str,
+    wait_seconds: float,
+) -> Dict[str, Any]:
     with progress.ProgressLock(progress.progress_lock_path()):
         state = progress.load_json(progress.STATE_PATH)
         action = state.get("inFlightAction")
@@ -154,12 +183,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
         if not cwd.is_dir():
             raise RuntimeError("launch cwd is not a directory: {}".format(cwd))
 
-        active_criteria = {
-            item.get("id"): item for item in state.get("activeSlice", {}).get("acceptanceCriteria", [])
-        }
-        criterion = active_criteria.get(criterion_id)
-        if not criterion or "app_runtime" not in criterion.get("requiredEvidenceCategories", []):
-            raise RuntimeError("criterion is not an active app_runtime acceptance criterion")
+        evidence_criteria = runtime_evidence_criteria(state, criterion_id, gate_rebind)
 
         creationflags = 0
         if os.name == "nt":
@@ -259,6 +283,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
         "observedHead": observed_head,
         "workingTreeFingerprint": fingerprint,
         "ownershipEvidence": managed_entry["ownershipEvidence"],
+        "gateRebind": gate_rebind,
     }
     report_path.write_text(json.dumps(verification, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -278,7 +303,7 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
         client_height=None,
         privilege=None,
         exit_code=0,
-        criterion=[criterion_id],
+        criterion=evidence_criteria,
         artifact=[str(report_path.relative_to(progress.ROOT)).replace("\\", "/"), str(exe_path)],
         input_sent=False,
         foreground_unchanged=None,
@@ -311,14 +336,24 @@ def verify_and_launch(action_id: str, criterion_id: str, command_text: str, wait
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--action-id", required=True)
-    parser.add_argument("--criterion", required=True)
+    scope = parser.add_mutually_exclusive_group(required=True)
+    scope.add_argument("--criterion")
+    scope.add_argument("--gate-rebind", action="store_true")
     parser.add_argument("--wait-seconds", type=float, default=8.0)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
-    command_text = "python -B scripts/verify_app_runtime_launch.py --action-id {} --criterion {}".format(
-        args.action_id, args.criterion
+    command_text = "python -B scripts/verify_app_runtime_launch.py --action-id {}".format(args.action_id)
+    if args.criterion:
+        command_text += " --criterion {}".format(args.criterion)
+    else:
+        command_text += " --gate-rebind"
+    result = verify_and_launch(
+        args.action_id,
+        args.criterion,
+        args.gate_rebind,
+        command_text,
+        args.wait_seconds,
     )
-    result = verify_and_launch(args.action_id, args.criterion, command_text, args.wait_seconds)
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     else:

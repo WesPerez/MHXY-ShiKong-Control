@@ -5,7 +5,7 @@ use crate::platform::RgbFrame;
 /// Maximum candidate positions allowed for a single template search.
 pub const MAX_TEMPLATE_SEARCH_POSITIONS: u64 = 180_000;
 /// Soft pixel-compare budget: positions * template_pixels.
-pub const MAX_TEMPLATE_COMPARE_PIXELS: u64 = 40_000_000;
+pub const MAX_TEMPLATE_COMPARE_PIXELS: u64 = 400_000_000;
 pub const CHECKPOINT_PIXEL_BUDGET: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
